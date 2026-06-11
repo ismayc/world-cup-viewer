@@ -5,6 +5,10 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-11
+- **Distinct nav icons:** Schedule, Week, and the Calendar subscribe/export button
+  all shared a calendar glyph. Schedule is now `📋`, Week stays `📆`, and the
+  Calendar button is `📤` (it's an export/subscribe action), so each is visually
+  distinct.
 - **Installable (PWA manifest):** added `public/manifest.webmanifest` + app icons
   (192/512/maskable, apple-touch-icon) and linked them in index.html, so the app
   can be added to a phone/desktop home screen and launches standalone (no browser

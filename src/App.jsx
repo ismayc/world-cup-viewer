@@ -23,7 +23,7 @@ const REFRESH_MS = 120000 // auto-refresh every 2 minutes when nothing is live
 const LIVE_REFRESH_MS = 30000 // poll every 30s while a match is in progress
 
 const VIEWS = [
-  { id: 'schedule', label: '📅 Schedule' },
+  { id: 'schedule', label: '📋 Schedule' },
   { id: 'week', label: '📆 Week' },
   { id: 'groups', label: '📊 Groups' },
   { id: 'bracket', label: '🏆 Bracket' },
@@ -231,7 +231,7 @@ export default function App() {
               {hideScores ? '🙈 Scores hidden' : '👁 Scores shown'}
             </button>
             <button className="icon-btn" onClick={() => setCalendarOpen(true)} title="Calendar subscribe & export">
-              📅 Calendar
+              📤 Calendar
             </button>
             <button
               className="icon-btn"
