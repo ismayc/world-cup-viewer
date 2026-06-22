@@ -143,7 +143,11 @@ async function scoreboardEvents(signal, dates = scoreboardDates()) {
     if (r.status !== 'fulfilled' || !r.value) continue
     reached = true
     for (const ev of r.value.events || []) {
-      const id = ev.id ?? ev.uid ?? ev.date
+      // Dedup the same match across adjacent date queries by its unique id —
+      // NOT by date, which would wrongly merge two simultaneous matches (final
+      // group matchday). Without an id we keep the event (worst case a harmless
+      // duplicate that resolves to the same team-pair key).
+      const id = ev.id ?? ev.uid
       if (id && seen.has(id)) continue
       if (id) seen.add(id)
       events.push(ev)

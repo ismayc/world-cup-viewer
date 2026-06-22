@@ -5,6 +5,12 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-22
+- **Hardened live handling for simultaneous kickoffs.** On the final group
+  matchday two matches start at once (e.g. the 8 PM ET pair). Live data is keyed
+  by team pair, so they're already independent — but the feed's event-dedup fell
+  back to kickoff *date* when an event lacked an id, which would have merged two
+  same-time matches. Now it dedups by id/uid only. Verified both matches keep
+  their own live score either way. +2 tests.
 - **Delayed matches show an amber "⏸ Delayed" (not a red live clock).** ESPN marks
   a stopped match `STATUS_DELAYED` (e.g. weather) while keeping it "in progress" —
   caught live during France v Iraq. The feed now carries a `delayed` flag, and the
