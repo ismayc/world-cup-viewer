@@ -1342,6 +1342,26 @@ select {
 .nm-countdown.live { color: var(--live); font-weight: 700; }
 .nm-countdown.delayed { color: var(--delay); font-weight: 700; animation: pulse 1.4s infinite; }
 .nm-when { color: var(--text-dim); font-size: 0.85rem; }
+.nextmatch-stack { display: flex; flex-direction: column; gap: 8px; }
+.nm-live-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.nm-live-row:hover { border-color: var(--accent); }
+.nm-row-name { font-size: 0.98rem; font-weight: 700; }
+.nm-live-row .nm-when { margin-left: auto; white-space: nowrap; }
+.nm-live-row .badge-live,
+.nm-live-row .badge-delayed { margin-top: 0; }
 .nm-jump {
   margin-left: auto;
   background: var(--accent);

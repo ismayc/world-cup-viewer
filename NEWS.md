@@ -5,6 +5,11 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-22
+- **Next-match hero stacks multiple live matches.** When two games run at once
+  (final group matchday), the hero now lists them as compact, tap-to-jump rows
+  with each match's live/delayed badge — instead of showing only one. A followed
+  team that's live still takes over: one followed-live match shows solo, and if
+  two followed teams are playing at once, both are shown. +3 tests.
 - **Hardened live handling for simultaneous kickoffs.** On the final group
   matchday two matches start at once (e.g. the 8 PM ET pair). Live data is keyed
   by team pair, so they're already independent — but the feed's event-dedup fell

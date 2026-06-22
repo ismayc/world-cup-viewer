@@ -4,6 +4,7 @@ import { FLAG_BY_TEAM } from '../data/teams.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { dayKey, formatTime, tzAbbrev, liveState, teamKickoffTooltip } from '../utils/time.js'
 import { useFollow } from '../context/follow.jsx'
+import LiveBadge from './LiveBadge.jsx'
 
 function parts(ms) {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -24,35 +25,69 @@ export default function NextMatch({ matches, tz }) {
     return () => clearInterval(id)
   }, [])
 
-  const { match, live, followed } = useMemo(() => {
+  const { mode, list, followed } = useMemo(() => {
     const involvesFollowed = (m) => isFollowed(m.t1) || isFollowed(m.t2)
-    // A live followed match wins; else any live match; else next upcoming
+    // A followed team playing live wins outright; otherwise stack every live
+    // match (final group matchday runs two at once). No live → next upcoming
     // (preferring a followed team's next game).
     const liveMatches = matches.filter((m) => liveState(m, now) === 'live')
-    const live = liveMatches.find(involvesFollowed) || liveMatches[0]
-    if (live) return { match: live, live: true, followed: involvesFollowed(live) }
-
+    if (liveMatches.length) {
+      // Followed teams that are live take over — show all of them (one or
+      // several); otherwise stack every live match.
+      const followedLive = liveMatches.filter(involvesFollowed)
+      const list = followedLive.length ? followedLive : liveMatches
+      return { mode: 'live', list, followed: followedLive.length > 0 }
+    }
     const upcoming = matches
       .filter((m) => new Date(m.ko).getTime() > now)
       .sort((a, b) => new Date(a.ko) - new Date(b.ko))
     const next = (count > 0 && upcoming.find(involvesFollowed)) || upcoming[0]
-    return { match: next, live: false, followed: next ? involvesFollowed(next) : false }
+    return { mode: 'next', list: next ? [next] : [], followed: next ? involvesFollowed(next) : false }
   }, [matches, now, isFollowed, count])
 
-  if (!match) {
+  const jumpTo = (m) => {
+    const el = document.getElementById(`day-${dayKey(m.ko, tz)}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  if (!list.length) {
     return (
       <div className="nextmatch done">🏆 The tournament has concluded — champions crowned!</div>
     )
   }
 
+  // Two-plus live matches and none followed → stack them as compact rows.
+  if (mode === 'live' && list.length > 1) {
+    return (
+      <div className="nextmatch is-live nextmatch-stack">
+        <div className="nm-label">
+          🔴 Live now<span className="nm-stage">{list.length} matches</span>
+        </div>
+        {list.map((m) => {
+          const v = VENUES[m.venue]
+          const st = m.stage === 'Group' ? `Group ${m.group}` : STAGE_LABELS[m.stage]
+          return (
+            <button key={m.num} className="nm-live-row" onClick={() => jumpTo(m)}>
+              <span className="nm-flag">{FLAG_BY_TEAM[m.t1] || '•'}</span>
+              <span className="nm-row-name">{m.t1}</span>
+              <span className="nm-v">vs</span>
+              <span className="nm-row-name">{m.t2}</span>
+              <span className="nm-flag">{FLAG_BY_TEAM[m.t2] || '•'}</span>
+              <LiveBadge match={m} />
+              <span className="nm-when">{st} · {v.city}</span>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const match = list[0]
+  const live = mode === 'live'
   const venue = VENUES[match.venue]
   const stage = match.stage === 'Group' ? `Group ${match.group}` : STAGE_LABELS[match.stage]
   const t = parts(new Date(match.ko).getTime() - now)
-
-  const jump = () => {
-    const el = document.getElementById(`day-${dayKey(match.ko, tz)}`)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  const jump = () => jumpTo(match)
 
   return (
     <div className={`nextmatch${live ? ' is-live' : ''}`}>
