@@ -80,19 +80,25 @@ function AsItStands({ proj, onGoToMatch }) {
   )
 }
 
-function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTeams }) {
+function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTeams, delayedTeams }) {
   const { isFollowed } = useFollow()
   const played = qual.completion[group] || rows.some((r) => r.P > 0)
   const groupLive = rows.some((r) => liveTeams.has(r.name))
+  const groupDelayed = rows.some((r) => delayedTeams.has(r.name))
   return (
     <div className="group-card">
       <h3 className="group-title">
         Group {group}
-        {groupLive && (
-          <span className="group-live" title="A match in this group is in progress — standings are provisional">
-            ● LIVE
-          </span>
-        )}
+        {groupLive &&
+          (groupDelayed ? (
+            <span className="group-delayed" title="A match in this group is delayed — standings are provisional">
+              ⏸ DELAYED
+            </span>
+          ) : (
+            <span className="group-live" title="A match in this group is in progress — standings are provisional">
+              ● LIVE
+            </span>
+          ))}
       </h3>
       <table className="standings-table">
         <thead>
@@ -117,7 +123,12 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTe
                   <span className="team-flag">{r.flag}</span>
                   <span className={`row-team${isFollowed(r.name) ? ' followed' : ''}`}>{r.name}</span>
                   {liveTeams.has(r.name) && (
-                    <span className="row-live-dot" title="Playing now — score is provisional">●</span>
+                    <span
+                      className={`row-live-dot${delayedTeams.has(r.name) ? ' delayed' : ''}`}
+                      title={delayedTeams.has(r.name) ? 'Match delayed — score is provisional' : 'Playing now — score is provisional'}
+                    >
+                      ●
+                    </span>
                   )}
                   {clinched ? (
                     <span className={`q-badge ${clinched.cls}`} title={clinched.title}>
@@ -217,10 +228,15 @@ export default function Standings({ matches, hideScores, clinch, onGoToMatch }) 
   // Teams currently playing a group match — the standings + "As it stands" below
   // reflect their in-progress score, so we blink them to show it's provisional.
   const liveTeams = new Set()
+  const delayedTeams = new Set()
   for (const m of matches) {
     if (m.stage === 'Group' && m.live) {
       liveTeams.add(m.t1)
       liveTeams.add(m.t2)
+      if (m.live.delayed) {
+        delayedTeams.add(m.t1)
+        delayedTeams.add(m.t2)
+      }
     }
   }
 
@@ -263,6 +279,7 @@ export default function Standings({ matches, hideScores, clinch, onGoToMatch }) 
             asItStands={showProjection ? perGroup[g] : null}
             onGoToMatch={onGoToMatch}
             liveTeams={liveTeams}
+            delayedTeams={delayedTeams}
           />
         ))}
       </div>

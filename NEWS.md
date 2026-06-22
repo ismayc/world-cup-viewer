@@ -4,6 +4,15 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-22
+- **Delayed matches show an amber "⏸ Delayed" (not a red live clock).** ESPN marks
+  a stopped match `STATUS_DELAYED` (e.g. weather) while keeping it "in progress" —
+  caught live during France v Iraq. The feed now carries a `delayed` flag, and the
+  UI reflects it: the shared live badge shows amber **⏸ Delayed** (Schedule /
+  Bracket / Match detail), the Next-match hero reads **⏸ Delayed** instead of
+  "● in progress", and a delayed group shows **⏸ DELAYED** with amber dots in the
+  Groups tab. +6 tests; coverage stays 100%.
+
 ## 2026-06-20
 - **Live matches blink in the Groups tab.** Because the standings and "As it
   stands" reflect in-progress scores, any group with a match underway now shows a

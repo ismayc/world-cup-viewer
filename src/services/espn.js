@@ -177,6 +177,9 @@ export async function fetchLive(signal, dates) {
       // break label at stoppages ("HT", "FT") — exactly what the badge shows.
       clock: st.type?.shortDetail || st.displayClock || '',
       detail: st.type?.description || st.type?.shortDetail || '',
+      // ESPN marks a stopped match STATUS_DELAYED (weather, etc.) while keeping
+      // state "in" — flag it so the UI shows "Delayed" rather than a live clock.
+      delayed: /DELAY/i.test(st.type?.name || ''),
       score: parseEspnScore(home, away, state),
       goals: events.goals,
       cards: events.cards,
@@ -259,7 +262,7 @@ export function applyLive(matches, liveMap) {
       if (o && (o.home.length || o.away.length)) out[key] = orient(o)
     }
     if (rec.pens) out.pens = [...rec.pens]
-    if (rec.state === 'in') out.live = { clock: rec.clock, detail: rec.detail }
+    if (rec.state === 'in') out.live = { clock: rec.clock, detail: rec.detail, delayed: rec.delayed }
     out.liveSource = true
     return out
   })

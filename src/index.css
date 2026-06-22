@@ -13,6 +13,7 @@
   --accent-2: #ff5a5f;
   --gold: #f4c542;
   --live: #ff4757;
+  --delay: #f5a623;
   --radius: 14px;
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
   --page-bg: radial-gradient(1200px 600px at 80% -10%, #1d2a45 0%, var(--bg) 55%);
@@ -32,6 +33,7 @@
   --accent-2: #e23b41;
   --gold: #a9760a;
   --live: #e23b41;
+  --delay: #c97a00;
   --shadow: 0 6px 20px rgba(20, 35, 80, 0.1);
   --page-bg: radial-gradient(1200px 600px at 80% -10%, #e3ebfa 0%, var(--bg) 55%);
 }
@@ -448,6 +450,13 @@ select {
   font-size: 0.64rem;
   font-weight: 700;
   color: var(--live);
+  animation: pulse 1.4s infinite;
+}
+.badge-delayed {
+  margin-top: 4px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--delay);
   animation: pulse 1.4s infinite;
 }
 .badge-done {
@@ -1331,6 +1340,7 @@ select {
 }
 .nm-countdown b small { font-size: 0.62rem; color: var(--text-faint); margin-left: 1px; }
 .nm-countdown.live { color: var(--live); font-weight: 700; }
+.nm-countdown.delayed { color: var(--delay); font-weight: 700; animation: pulse 1.4s infinite; }
 .nm-when { color: var(--text-dim); font-size: 0.85rem; }
 .nm-jump {
   margin-left: auto;
@@ -1530,12 +1540,20 @@ select {
   color: var(--live);
   animation: pulse 1.4s infinite;
 }
+.group-delayed {
+  margin-left: 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--delay);
+  animation: pulse 1.4s infinite;
+}
 .row-live-dot {
   margin-left: 6px;
   font-size: 0.58rem;
   color: var(--live);
   animation: pulse 1.4s infinite;
 }
+.row-live-dot.delayed { color: var(--delay); }
 
 .standings-toolbar { display: flex; justify-content: flex-end; margin: -6px 0 14px; }
 .ais-toggle {

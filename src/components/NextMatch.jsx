@@ -57,7 +57,7 @@ export default function NextMatch({ matches, tz }) {
   return (
     <div className={`nextmatch${live ? ' is-live' : ''}`}>
       <div className="nm-label">
-        {live ? '🔴 Live now' : followed ? '⭐ Your next match' : '⏱ Next match'}
+        {live ? (match.live?.delayed ? '⏸ Delayed' : '🔴 Live now') : followed ? '⭐ Your next match' : '⏱ Next match'}
         <span className="nm-stage">{stage}</span>
       </div>
 
@@ -71,7 +71,11 @@ export default function NextMatch({ matches, tz }) {
 
       <div className="nm-bottom">
         {live ? (
-          <span className="nm-countdown live">● in progress</span>
+          match.live?.delayed ? (
+            <span className="nm-countdown delayed">⏸ Delayed</span>
+          ) : (
+            <span className="nm-countdown live">● in progress</span>
+          )
         ) : (
           <span className="nm-countdown" aria-label="time until kickoff">
             {t.d > 0 && <b>{t.d}<small>d</small></b>}
