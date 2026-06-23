@@ -9,12 +9,19 @@
 // (early in the group stage) the combination isn't in the table, so we fall back
 // to constraint-matching the candidate-group lists — always a valid bracket.
 
+import { MATCHES } from '../data/matches.js'
 import { TEAMS } from '../data/teams.js'
 import { computeQualification } from './qualification.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
 
 const GROUPS = Object.keys(TEAMS)
 const ADVANCING_THIRDS = 8
+
+// The R32 slot labels ("Winner Group A", "3rd C/E/F/H/I") are invariant, but the
+// LIVE matches we're handed have clinched winners already resolved to real teams
+// (e.g. "Winner Group E" → "Germany") — which would no longer parse as a slot.
+// So read each R32 match's slot labels from the STATIC schedule, by match number.
+const R32_SLOTS = new Map(MATCHES.filter((m) => m.stage === 'R32').map((m) => [m.num, [m.t1, m.t2]]))
 
 function parseSlot(label) {
   let m = /^Winner Group ([A-L])$/.exec(label)
@@ -68,8 +75,9 @@ export function projectKnockout(matches) {
   const sides = []
   for (const m of matches) {
     if (m.stage !== 'R32') continue
-    sides.push({ matchNum: m.num, sideIdx: 0, slot: parseSlot(m.t1) })
-    sides.push({ matchNum: m.num, sideIdx: 1, slot: parseSlot(m.t2) })
+    const [t1, t2] = R32_SLOTS.get(m.num) || [m.t1, m.t2]
+    sides.push({ matchNum: m.num, sideIdx: 0, slot: parseSlot(t1) })
+    sides.push({ matchNum: m.num, sideIdx: 1, slot: parseSlot(t2) })
   }
   const byMatch = new Map()
   for (const s of sides) {

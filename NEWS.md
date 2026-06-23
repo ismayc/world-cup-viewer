@@ -4,6 +4,16 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-23
+- **Fix: "As it stands" dropped some 1st/3rd matchups once a group clinched.** When
+  a group's winner is decided, the live feed resolves its R32 slot ("Winner Group
+  A" → "Mexico"), which no longer parsed as a slot — so that winner's projection
+  *and* the paired qualifying-third's projection both vanished (e.g. Groups A/D/E
+  1st and C/H/J 3rd showed blank). `projectKnockout` now reads R32 slot labels from
+  the static schedule by match number (they're invariant), independent of resolved
+  team names. Verified live: all 1st/2nd/3rd resolve, pairings symmetric. +1
+  regression test.
+
 ## 2026-06-22
 - **Handle one-off match statuses (suspended/abandoned/postponed/canceled/awarded).**
   Building on the weather-delay work, ESPN's `status.type.name` is now categorized
