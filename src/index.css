@@ -1346,7 +1346,8 @@ select {
 .nm-live-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap; /* let a long venue (e.g. "New York/New Jersey") wrap, not overflow */
+  gap: 6px 8px;
   width: 100%;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1359,7 +1360,7 @@ select {
 }
 .nm-live-row:hover { border-color: var(--accent); }
 .nm-row-name { font-size: 0.98rem; font-weight: 700; }
-.nm-live-row .nm-when { margin-left: auto; white-space: nowrap; }
+.nm-live-row .nm-when { margin-left: auto; overflow-wrap: anywhere; }
 .nm-live-row .badge-live,
 .nm-live-row .badge-delayed { margin-top: 0; }
 .nm-jump {

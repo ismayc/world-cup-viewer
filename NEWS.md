@@ -5,6 +5,9 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-22
+- **Fix: long venue name overflowed a stacked live row.** The stacked rows forced
+  the venue onto one line, so "New York/New Jersey" ran past the hero box on
+  mobile. Rows now wrap; verified at 390px against the live Group I doubleheader.
 - **Next-match hero stacks multiple live matches.** When two games run at once
   (final group matchday), the hero now lists them as compact, tap-to-jump rows
   with each match's live/delayed badge — instead of showing only one. A followed
