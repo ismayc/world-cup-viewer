@@ -130,7 +130,18 @@ export function matchStatus(iso, now = Date.now()) {
 // final score is finished — even if it's still inside the time-based window
 // (e.g. ended early). The clock is only a fallback when we have neither.
 export function liveState(match, now = Date.now()) {
+  if (match.voided) return 'voided' // abandoned/postponed/canceled — not live/finished/upcoming
   if (match.live) return 'live'
   if (Array.isArray(match.score)) return 'finished'
   return matchStatus(match.ko, now)
+}
+
+// One-off status for display, or null for a normal match. Drives the amber
+// "paused" badge (delayed/suspended), a "voided" label (abandoned/postponed/
+// canceled), or an "awarded" note — shared so every view renders them the same.
+export function statusFlag(match) {
+  if (match.voided) return { kind: 'voided', label: match.statusLabel || 'Off' }
+  if (match.live?.delayed) return { kind: 'paused', label: match.live.label || 'Delayed' }
+  if (match.awarded) return { kind: 'awarded', label: 'Awarded' }
+  return null
 }

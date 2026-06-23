@@ -3,7 +3,7 @@ import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { US_BROADCAST } from '../data/broadcast.js'
-import { formatTime, formatDateLong, tzAbbrev, liveState, teamKickoffTooltip } from '../utils/time.js'
+import { formatTime, formatDateLong, tzAbbrev, liveState, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { downloadICS } from '../utils/ics.js'
 import { useFollow } from '../context/follow.jsx'
 import { useModalA11y } from '../hooks/useModalA11y.js'
@@ -67,6 +67,9 @@ export default function MatchDetail({ match, tz, hideScores, onClose }) {
   const venue = VENUES[match.venue]
   const stage = match.stage === 'Group' ? `Group ${match.group}` : STAGE_LABELS[match.stage]
   const status = liveState(match)
+  const flag = statusFlag(match)
+  const voided = flag?.kind === 'voided'
+  const awarded = flag?.kind === 'awarded'
   const hasScore = Array.isArray(match.score)
   const scoreHidden = hasScore && hideScores && !reveal
 
@@ -77,7 +80,11 @@ export default function MatchDetail({ match, tz, hideScores, onClose }) {
 
         <div className="md-head">
           <span className="md-stage">{stage} · Match {match.num}</span>
-          {match.live ? (
+          {voided ? (
+            <span className="status-badge" role="status" aria-label={flag.label}>
+              {flag.label === 'Abandoned' || flag.label === 'Canceled' ? '⚠' : '⏸'} {flag.label}
+            </span>
+          ) : match.live ? (
             <LiveBadge match={match} className="md-live" />
           ) : (
             status === 'live' && <span className="md-live">● LIVE</span>
@@ -96,10 +103,14 @@ export default function MatchDetail({ match, tz, hideScores, onClose }) {
                 <button className="md-reveal" onClick={() => setReveal(true)}>🙈 reveal</button>
               ) : (
                 <>
+                  {/* Abandoned keeps a partial score for display only — label it
+                      and skip the source-confirmation badge; it's not a result. */}
+                  {voided && <span className="status-badge">{flag.label}</span>}
                   {match.score[0]}–{match.score[1]}
                   {match.pens && <div className="md-extra">pens {match.pens[0]}–{match.pens[1]}</div>}
                   {match.aet && !match.pens && <div className="md-extra">after extra time</div>}
-                  <ScoreCheck match={match} />
+                  {awarded && <span className="awarded-note">awarded</span>}
+                  {!voided && <ScoreCheck match={match} />}
                 </>
               )
             ) : (

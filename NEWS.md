@@ -5,6 +5,26 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-22
+- **Handle one-off match statuses (suspended/abandoned/postponed/canceled/awarded).**
+  Building on the weather-delay work, ESPN's `status.type.name` is now categorized
+  in the feed: **paused** (delayed *or* suspended → amber "⏸ Delayed"/"⏸ Suspended",
+  still live-but-stopped), **voided** (abandoned/postponed/canceled → not a real
+  result), and **awarded** (forfeit/walkover → an awarded final). Correctness:
+  voided matches are **excluded from clinch and the standings/"As it stands"** (an
+  abandoned partial score can't quietly shift the tables), via a shared
+  `statusFlag` helper + `liveState → 'voided'`. UI: all four views (schedule card,
+  detail, bracket, week) show a muted grey pill (⏸ Postponed / ⚠ Abandoned /
+  ⚠ Canceled) instead of a countdown or live clock — abandoned shows its partial
+  score *labeled*, not as a confirmed final; awarded shows the score with an
+  "awarded" note; all respect spoiler mode. Grounded in WC history (2018 fair-play,
+  abandonments, walkovers); a guard test locks the no-group-shootout 2026 scoring
+  assumption. New tests across status-card/detail/bracket/week + espn/logic/guard.
+- **Venue cross-check in the schedule monitor.** The FIFA-anchored `check:schedule`
+  now also compares each group match's stored venue to FIFA's stadium (matched by
+  team pair, via an `IdStadium` alias map for all 16 venues) and reports any
+  mismatch in the email — report-only, no auto-fix. Verified live: 0 venue
+  mismatches today. `scripts/schedule-core.mjs` stays pure (venue data passed in);
+  +15 tests.
 - **Fix: long venue name overflowed a stacked live row.** The stacked rows forced
   the venue onto one line, so "New York/New Jersey" ran past the hero box on
   mobile. Rows now wrap; verified at 390px against the live Group I doubleheader.

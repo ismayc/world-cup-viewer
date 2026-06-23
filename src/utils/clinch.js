@@ -52,7 +52,7 @@ function analyzeGroup(group, matches) {
   // running score (m.live set), but its outcome isn't settled — so it's treated
   // as remaining, exactly like an unplayed fixture. Counting a live score as
   // final would clinch teams a result early (e.g. while they're still winning).
-  const decided = (m) => m.score && !m.live
+  const decided = (m) => m.score && !m.live && !m.voided
   const played = all.filter(decided)
   const remaining = all.filter((m) => !decided(m))
   const names = TEAMS[group].map((t) => t.name)
@@ -101,7 +101,7 @@ function analyzeGroup(group, matches) {
 // (ties counted pessimistically) and the group's third-place POINTS range.
 function pointsAnalysis(group, matches) {
   const all = matches.filter((m) => m.stage === 'Group' && m.group === group)
-  const decided = (m) => m.score && !m.live
+  const decided = (m) => m.score && !m.live && !m.voided
   const remaining = all.filter((m) => !decided(m))
   const names = TEAMS[group].map((t) => t.name)
   const base = {}

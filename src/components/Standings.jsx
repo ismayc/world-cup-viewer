@@ -80,19 +80,20 @@ function AsItStands({ proj, onGoToMatch }) {
   )
 }
 
-function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTeams, delayedTeams }) {
+function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTeams, pausedTeams }) {
   const { isFollowed } = useFollow()
   const played = qual.completion[group] || rows.some((r) => r.P > 0)
   const groupLive = rows.some((r) => liveTeams.has(r.name))
-  const groupDelayed = rows.some((r) => delayedTeams.has(r.name))
+  const pauseRow = rows.find((r) => pausedTeams.has(r.name))
+  const pauseLabel = pauseRow ? pausedTeams.get(pauseRow.name) : null
   return (
     <div className="group-card">
       <h3 className="group-title">
         Group {group}
         {groupLive &&
-          (groupDelayed ? (
-            <span className="group-delayed" title="A match in this group is delayed — standings are provisional">
-              ⏸ DELAYED
+          (pauseLabel ? (
+            <span className="group-delayed" title={`A match in this group is ${pauseLabel.toLowerCase()} — standings are provisional`}>
+              ⏸ {pauseLabel.toUpperCase()}
             </span>
           ) : (
             <span className="group-live" title="A match in this group is in progress — standings are provisional">
@@ -124,8 +125,8 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTe
                   <span className={`row-team${isFollowed(r.name) ? ' followed' : ''}`}>{r.name}</span>
                   {liveTeams.has(r.name) && (
                     <span
-                      className={`row-live-dot${delayedTeams.has(r.name) ? ' delayed' : ''}`}
-                      title={delayedTeams.has(r.name) ? 'Match delayed — score is provisional' : 'Playing now — score is provisional'}
+                      className={`row-live-dot${pausedTeams.has(r.name) ? ' delayed' : ''}`}
+                      title={pausedTeams.has(r.name) ? `${pausedTeams.get(r.name)} — score is provisional` : 'Playing now — score is provisional'}
                     >
                       ●
                     </span>
@@ -228,14 +229,15 @@ export default function Standings({ matches, hideScores, clinch, onGoToMatch }) 
   // Teams currently playing a group match — the standings + "As it stands" below
   // reflect their in-progress score, so we blink them to show it's provisional.
   const liveTeams = new Set()
-  const delayedTeams = new Set()
+  const pausedTeams = new Map() // team -> 'Delayed' | 'Suspended'
   for (const m of matches) {
     if (m.stage === 'Group' && m.live) {
       liveTeams.add(m.t1)
       liveTeams.add(m.t2)
       if (m.live.delayed) {
-        delayedTeams.add(m.t1)
-        delayedTeams.add(m.t2)
+        const lbl = m.live.label || 'Delayed'
+        pausedTeams.set(m.t1, lbl)
+        pausedTeams.set(m.t2, lbl)
       }
     }
   }
@@ -279,7 +281,7 @@ export default function Standings({ matches, hideScores, clinch, onGoToMatch }) 
             asItStands={showProjection ? perGroup[g] : null}
             onGoToMatch={onGoToMatch}
             liveTeams={liveTeams}
-            delayedTeams={delayedTeams}
+            pausedTeams={pausedTeams}
           />
         ))}
       </div>

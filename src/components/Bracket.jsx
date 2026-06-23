@@ -3,7 +3,7 @@ import { STAGE_LABELS } from '../data/matches.js'
 import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { BRACKET, matchesByNum } from '../utils/bracket.js'
-import { formatTime, tzAbbrev, teamKickoffTooltip } from '../utils/time.js'
+import { formatTime, tzAbbrev, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
@@ -33,6 +33,9 @@ function BracketMatch({ num, byNum, tz, hideScores }) {
     month: 'short',
     day: 'numeric',
   })
+  const flag = statusFlag(m)
+  const voided = flag?.kind === 'voided'
+  const awarded = flag?.kind === 'awarded'
   const showScore = m.score && !hideScores
   return (
     <div className="bx-match" id={`bx-m${m.num}`} role="button" tabIndex={0}
@@ -41,7 +44,13 @@ function BracketMatch({ num, byNum, tz, hideScores }) {
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openDetail(m)}>
       <div className="bx-meta">
         <span>M{m.num}</span>
-        {m.live ? <LiveBadge match={m} /> : (
+        {/* Voided (abandoned/postponed/canceled): a muted pill instead of a
+            kickoff time. Otherwise the live clock, else the scheduled time. */}
+        {voided ? (
+          <span className="status-badge" role="status" aria-label={flag.label}>
+            {flag.label === 'Abandoned' || flag.label === 'Canceled' ? '⚠' : '⏸'} {flag.label}
+          </span>
+        ) : m.live ? <LiveBadge match={m} /> : (
           <span>
             {date} · {formatTime(m.ko, tz)} {tzAbbrev(m.ko, tz)}
           </span>
@@ -51,10 +60,12 @@ function BracketMatch({ num, byNum, tz, hideScores }) {
       <Side name={m.t2} ko={m.ko} />
       {showScore && (
         <div className="bx-score">
+          {voided && <span className="status-badge">{flag.label}</span>}
           {m.score[0]}–{m.score[1]}
           {m.pens && <span className="bx-pens"> (p {m.pens[0]}–{m.pens[1]})</span>}
           {m.aet && !m.pens && <span className="bx-pens"> AET</span>}
-          <ScoreCheck match={m} compact />
+          {awarded && <span className="awarded-note">awarded</span>}
+          {!voided && <ScoreCheck match={m} compact />}
         </div>
       )}
       <div className="bx-venue">

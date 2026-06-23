@@ -3,7 +3,7 @@ import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { US_BROADCAST } from '../data/broadcast.js'
-import { formatTime, tzAbbrev, liveState, teamKickoffTooltip } from '../utils/time.js'
+import { formatTime, tzAbbrev, liveState, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { downloadICS } from '../utils/ics.js'
 import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
@@ -89,6 +89,9 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
   const openDetail = useDetail()
   const venue = VENUES[match.venue]
   const status = liveState(match)
+  const flag = statusFlag(match)
+  const voided = flag?.kind === 'voided'
+  const awarded = flag?.kind === 'awarded'
   const viewerTime = formatTime(match.ko, tz)
   const viewerAbbr = tzAbbrev(match.ko, tz)
   const localTime = formatTime(match.ko, venue.tz)
@@ -106,17 +109,28 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
   return (
     <article className={`card status-${status}`}>
       <div className="card-time">
-        <div className="kickoff">{viewerTime}</div>
-        <div className="kickoff-tz">{viewerAbbr}</div>
-        {/* Real in-match status from ESPN (clock/HT) beats the time-based guess;
-            a match with a final score reads FT even if still inside the window. */}
-        {match.live ? (
-          <LiveBadge match={match} />
-        ) : status === 'live' ? (
-          <div className="badge-live">● LIVE</div>
-        ) : status === 'finished' ? (
-          <div className="badge-done" aria-label="Full time">FT</div>
-        ) : null}
+        {/* Abandoned/postponed/canceled: a muted status pill instead of a
+            kickoff time/countdown — it isn't a real result. */}
+        {voided ? (
+          <span className="status-badge" role="status" aria-label={flag.label}>
+            {flag.label === 'Abandoned' || flag.label === 'Canceled' ? '⚠' : '⏸'} {flag.label}
+          </span>
+        ) : (
+          <>
+            <div className="kickoff">{viewerTime}</div>
+            <div className="kickoff-tz">{viewerAbbr}</div>
+            {/* Real in-match status from ESPN (clock/HT) beats the time-based guess;
+                a match with a final score reads FT even if still inside the window.
+                A paused (delayed/suspended) match shows the LiveBadge, not a countdown. */}
+            {match.live ? (
+              <LiveBadge match={match} />
+            ) : status === 'live' ? (
+              <div className="badge-live">● LIVE</div>
+            ) : status === 'finished' ? (
+              <div className="badge-done" aria-label="Full time">FT</div>
+            ) : null}
+          </>
+        )}
       </div>
 
       <div className="card-body">
@@ -138,11 +152,15 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
               </button>
             ) : (
               <span className="score">
+                {/* An abandoned match keeps a partial score for display only —
+                    label it so it doesn't read as a normal final. */}
+                {voided && <span className="status-badge">{flag.label}</span>}
                 {match.score[0]}<span className="score-dash">–</span>{match.score[1]}
                 {match.pens && (
                   <span className="score-extra">pens {match.pens[0]}–{match.pens[1]}</span>
                 )}
                 {match.aet && !match.pens && <span className="score-extra">AET</span>}
+                {awarded && <span className="awarded-note">awarded</span>}
               </span>
             )
           ) : (
@@ -152,8 +170,9 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
         </div>
 
         {/* Cross-source confirmation of the final score (OpenFootball / ESPN /
-            TheSportsDB). Hidden in spoiler mode along with the score itself. */}
-        {!scoreHidden && <ScoreCheck match={match} />}
+            TheSportsDB). Hidden in spoiler mode along with the score itself, and
+            never shown for a voided match (its score isn't a real result). */}
+        {!scoreHidden && !voided && <ScoreCheck match={match} />}
 
         <div className="venue">
           <span className="venue-flag">{venue.countryFlag}</span>

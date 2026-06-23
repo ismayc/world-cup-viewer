@@ -45,6 +45,17 @@ export const normEspn = (name) => normalizeTeam(ESPN_ALIASES[name] || name)
 const toNum = (v) => (v == null || v === '' ? null : Number(v))
 
 // Parse ESPN's competitor.score / shootout into our shapes.
+// Human label for a one-off ESPN status.type.name (most severe first), or null.
+function statusLabelOf(name) {
+  if (/SUSPEND/i.test(name)) return 'Suspended'
+  if (/DELAY/i.test(name)) return 'Delayed'
+  if (/ABANDON/i.test(name)) return 'Abandoned'
+  if (/POSTPON/i.test(name)) return 'Postponed'
+  if (/CANCEL/i.test(name)) return 'Canceled'
+  if (/FORFEIT|AWARD/i.test(name)) return 'Awarded'
+  return null
+}
+
 function parseEspnScore(home, away, state) {
   if (state === 'pre') return null
   const h = toNum(home.score)
@@ -181,9 +192,14 @@ export async function fetchLive(signal, dates) {
       // break label at stoppages ("HT", "FT") — exactly what the badge shows.
       clock: st.type?.shortDetail || st.displayClock || '',
       detail: st.type?.description || st.type?.shortDetail || '',
-      // ESPN marks a stopped match STATUS_DELAYED (weather, etc.) while keeping
-      // state "in" — flag it so the UI shows "Delayed" rather than a live clock.
-      delayed: /DELAY/i.test(st.type?.name || ''),
+      // One-off statuses from ESPN's status.type.name:
+      //   paused  = stopped but resuming (DELAYED/weather, SUSPENDED) — state "in"
+      //   voided  = not a real result (ABANDONED/POSTPONED/CANCELED)
+      //   awarded = result awarded without a normal finish (FORFEIT/AWARD)
+      paused: /DELAY|SUSPEND/i.test(st.type?.name || ''),
+      voided: /ABANDON|POSTPON|CANCEL/i.test(st.type?.name || ''),
+      awarded: /FORFEIT|AWARD/i.test(st.type?.name || ''),
+      statusLabel: statusLabelOf(st.type?.name || ''),
       score: parseEspnScore(home, away, state),
       goals: events.goals,
       cards: events.cards,
@@ -236,6 +252,13 @@ export function applyLive(matches, liveMap) {
       return out
     }
 
+    // One-off statuses that aren't a normal result: mark the match voided so the
+    // standings/clinch ignore it and the UI shows a label instead of a fake final
+    // or a dead countdown. Abandoned keeps its partial score (for display only).
+    if (rec.voided) {
+      return { ...m, voided: true, statusLabel: rec.statusLabel, score: rec.score || undefined }
+    }
+
     const bothReal = isRealTeam(m.t1) && isRealTeam(m.t2)
 
     // Nothing to show yet (pre-match or no numeric score): only resolve knockout
@@ -266,7 +289,8 @@ export function applyLive(matches, liveMap) {
       if (o && (o.home.length || o.away.length)) out[key] = orient(o)
     }
     if (rec.pens) out.pens = [...rec.pens]
-    if (rec.state === 'in') out.live = { clock: rec.clock, detail: rec.detail, delayed: rec.delayed }
+    if (rec.state === 'in') out.live = { clock: rec.clock, detail: rec.detail, delayed: rec.paused, label: rec.statusLabel }
+    if (rec.awarded) out.awarded = true
     out.liveSource = true
     return out
   })

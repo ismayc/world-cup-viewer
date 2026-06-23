@@ -45,7 +45,7 @@ function baseStats(group, matches) {
   const rows = {}
   for (const t of TEAMS[group]) rows[t.name] = blank(t, group)
   for (const m of matches) {
-    if (m.stage !== 'Group' || m.group !== group || !m.score) continue
+    if (m.stage !== 'Group' || m.group !== group || !m.score || m.voided) continue
     const [g1, g2] = m.score
     const a = rows[m.t1]
     const b = rows[m.t2]

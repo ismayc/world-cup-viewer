@@ -39,7 +39,7 @@ export default function NextMatch({ matches, tz }) {
       return { mode: 'live', list, followed: followedLive.length > 0 }
     }
     const upcoming = matches
-      .filter((m) => new Date(m.ko).getTime() > now)
+      .filter((m) => !m.voided && new Date(m.ko).getTime() > now)
       .sort((a, b) => new Date(a.ko) - new Date(b.ko))
     const next = (count > 0 && upcoming.find(involvesFollowed)) || upcoming[0]
     return { mode: 'next', list: next ? [next] : [], followed: next ? involvesFollowed(next) : false }
@@ -92,7 +92,7 @@ export default function NextMatch({ matches, tz }) {
   return (
     <div className={`nextmatch${live ? ' is-live' : ''}`}>
       <div className="nm-label">
-        {live ? (match.live?.delayed ? '⏸ Delayed' : '🔴 Live now') : followed ? '⭐ Your next match' : '⏱ Next match'}
+        {live ? (match.live?.delayed ? `⏸ ${match.live.label || 'Delayed'}` : '🔴 Live now') : followed ? '⭐ Your next match' : '⏱ Next match'}
         <span className="nm-stage">{stage}</span>
       </div>
 
@@ -107,7 +107,7 @@ export default function NextMatch({ matches, tz }) {
       <div className="nm-bottom">
         {live ? (
           match.live?.delayed ? (
-            <span className="nm-countdown delayed">⏸ Delayed</span>
+            <span className="nm-countdown delayed">⏸ {match.live.label || 'Delayed'}</span>
           ) : (
             <span className="nm-countdown live">● in progress</span>
           )

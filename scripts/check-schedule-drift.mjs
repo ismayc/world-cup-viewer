@@ -18,6 +18,7 @@
 import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { MATCHES } from '../src/data/matches.js'
+import { VENUES } from '../src/data/venues.js'
 import { LIVE_SOURCE, normEspn } from '../src/services/espn.js'
 import { BACKUP_SOURCE, normSdb } from '../src/services/thesportsdb.js'
 import { RESULTS_SOURCE, normalizeTeam, pairKey } from '../src/services/results.js'
@@ -66,6 +67,29 @@ const FIFA_ALIASES = {
 }
 const normFifa = (n) => normalizeTeam(FIFA_ALIASES[n] || n)
 
+// FIFA's stadium IdStadium → our VENUES key. FIFA names venues generically
+// (sponsor-free, city-based: "Los Angeles Stadium" = SoFi), so the stable
+// numeric IdStadium is the reliable join. Built by curling the calendar's 16
+// unique Stadium objects and matching each city to our venue.
+const FIFA_VENUE_ALIASES = {
+  '400222084': 'azteca', // Mexico City Stadium
+  '400252150': 'akron', // Guadalajara Stadium
+  '400242032': 'bmo', // Toronto Stadium
+  '400017978': 'sofi', // Los Angeles Stadium
+  '400257521': 'levis', // San Francisco Bay Area Stadium
+  '400257536': 'metlife', // New York/New Jersey Stadium
+  '400248623': 'gillette', // Boston Stadium
+  '400248370': 'bcplace', // BC Place Vancouver
+  '400249385': 'nrg', // Houston Stadium
+  '400257526': 'att', // Dallas Stadium
+  '400248622': 'linc', // Philadelphia Stadium
+  '400238450': 'bbva', // Monterrey Stadium
+  '400098290': 'mercedes', // Atlanta Stadium
+  '400216606': 'lumen', // Seattle Stadium
+  '400257525': 'hardrock', // Miami Stadium
+  '400254717': 'arrowhead', // Kansas City Stadium
+}
+
 // Every UTC day a match falls on, ±1 (ESPN files some games under an adjacent date).
 function matchDates() {
   const days = new Set()
@@ -80,22 +104,33 @@ function matchDates() {
   return [...days].sort()
 }
 
+// Returns { byKey: Map(pairKey -> kickoff ms), venueByKey: Map(pairKey -> {id,name,city}) }.
 async function fifaByKey() {
   const map = new Map()
+  const venueByKey = new Map()
   try {
     const r = await fetch(FIFA_URL, { cache: 'no-store' })
-    if (!r.ok) return map
+    if (!r.ok) return { byKey: map, venueByKey }
     for (const m of (await r.json()).Results || []) {
       const home = m.Home?.TeamName?.[0]?.Description
       const away = m.Away?.TeamName?.[0]?.Description
       if (!home || !away) continue
+      const key = pairKey(normFifa(home), normFifa(away))
       const t = new Date(m.Date).getTime()
-      if (!Number.isNaN(t)) map.set(pairKey(normFifa(home), normFifa(away)), t)
+      if (!Number.isNaN(t)) map.set(key, t)
+      const st = m.Stadium
+      if (st?.Name?.[0]?.Description) {
+        venueByKey.set(key, {
+          id: st.IdStadium,
+          name: st.Name[0].Description,
+          city: st.CityName?.[0]?.Description,
+        })
+      }
     }
   } catch {
     /* best-effort */
   }
-  return map
+  return { byKey: map, venueByKey }
 }
 
 async function espnByKey() {
@@ -175,7 +210,8 @@ async function main() {
   const reportOnly = process.env.SCHEDULE_REPORT_ONLY === '1'
   const thresholdMin = Number(process.env.THRESHOLD_MIN) || 5
 
-  const [fifa, espn, sdb, of] = await Promise.all([fifaByKey(), espnByKey(), sdbByKey(), openFootballByKey()])
+  const [fifaRes, espn, sdb, of] = await Promise.all([fifaByKey(), espnByKey(), sdbByKey(), openFootballByKey()])
+  const { byKey: fifa, venueByKey: fifaVenues } = fifaRes
   const sources = [
     { name: 'FIFA', byKey: fifa },
     { name: 'ESPN', byKey: espn },
@@ -190,11 +226,18 @@ async function main() {
   if (!fifa.size) console.warn('⚠ FIFA (authority) unreachable — falling back to feed consensus this run.')
 
   const groupMatches = MATCHES.filter((m) => m.stage === 'Group')
-  const { drifts, notes, unmatched } = compareSchedule(groupMatches, sources, { thresholdMin, authority: 'FIFA' })
+  const { drifts, notes, unmatched, venueMismatches } = compareSchedule(groupMatches, sources, {
+    thresholdMin,
+    authority: 'FIFA',
+    venueByKey: fifaVenues,
+    venues: VENUES,
+    venueAliasById: FIFA_VENUE_ALIASES,
+  })
 
   console.log(
     `Schedule check (FIFA-anchored): ${groupMatches.length} group matches | ` +
       `${drifts.length} drift(s) | ${notes.length} note(s) | ${unmatched.length} unmatched | ` +
+      `${venueMismatches.length} venue mismatch(es) | ` +
       `sources: ${sources.map((s) => s.name).join(', ')}`,
   )
   for (const d of drifts) {
@@ -205,11 +248,25 @@ async function main() {
   for (const n of notes.filter((n) => n.kind !== 'authority-missing')) {
     console.log(`  note: M${n.num} ${n.t1} v ${n.t2} — ${n.kind}${n.source ? ` (${n.source} ${n.theirISO})` : ''}`)
   }
+  for (const v of venueMismatches) {
+    console.log(`  VENUE? M${v.num} ${v.t1} v ${v.t2}: ours ${v.ourName} (${v.ourCity}) → FIFA ${v.fifaName} (${v.fifaCity})`)
+  }
 
   // Auto-fix: when enabled, rewrite both files to FIFA's time so the workflow
   // can open a ready-to-merge PR (the email then points to it rather than asking
   // for a manual edit).
   const applied = process.env.SCHEDULE_AUTOFIX === '1' && drifts.length ? applyAutofix(drifts) : []
+
+  // "Venue changed?" — report only, never auto-fixed (unlike time). Reused for
+  // both the standalone email and as an extra section in the kickoff email.
+  const venueSection = venueMismatches.length
+    ? `FIFA's calendar lists a different stadium than we have stored. This is NOT auto-fixed — ` +
+      `verify against FIFA, then update src/data/matches.js (the m.venue key) if it really moved:\n\n` +
+      venueMismatches
+        .map((v) => `- M${v.num} ${v.t1} v ${v.t2}: ours ${v.ourName} (${v.ourCity}) → FIFA ${v.fifaName} (${v.fifaCity})`)
+        .join('\n') +
+      '\n'
+    : ''
 
   if (drifts.length) {
     const lines = drifts.map((d) => {
@@ -230,7 +287,13 @@ async function main() {
           ? `\nFYI — a feed also disagreed with us on a match FIFA confirmed (likely a feed glitch, no action):\n` +
             feedNotes.map((n) => `- M${n.num} ${n.t1} v ${n.t2}: ${n.source} ${n.theirISO}`).join('\n') +
             '\n'
-          : ''),
+          : '') +
+        (venueSection ? `\n--- Venue changed? ---\n${venueSection}` : ''),
+    )
+  } else if (venueSection) {
+    sendEmail(
+      `🏟 Venue change?: ${venueMismatches.length} group match${venueMismatches.length === 1 ? '' : 'es'} differ from FIFA`,
+      venueSection,
     )
   }
 

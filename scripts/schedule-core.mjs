@@ -16,6 +16,35 @@ import { normalizeTeam, pairKey } from '../src/services/results.js'
 
 const keyOf = (t1, t2) => pairKey(normalizeTeam(t1), normalizeTeam(t2))
 
+// Normalise a stadium name so "MetLife Stadium", "New York/New Jersey Stadium"
+// and the like compare on their essential words: lowercase, drop the generic
+// "stadium"/"field"/"place" tokens, and strip punctuation/whitespace.
+export function normVenue(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\b(stadium|field|place|estadio|arena)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, '')
+}
+
+// Decide which of our venue keys a FIFA stadium refers to. FIFA uses generic,
+// sponsor-free names ("Los Angeles Stadium" for SoFi), so we lean on an explicit
+// alias map keyed by FIFA's stable IdStadium first, then a name fallback.
+//   fifaVenue: { id, name, city } from FIFA's Stadium object.
+//   venues: our VENUES object (key -> { name, city }).
+//   aliasById: { [IdStadium]: ourVenueKey }.
+// Returns our venue key, or null if it can't be resolved.
+export function resolveFifaVenue(fifaVenue, venues, aliasById = {}) {
+  if (!fifaVenue) return null
+  if (fifaVenue.id != null && aliasById[fifaVenue.id]) return aliasById[fifaVenue.id]
+  const fn = normVenue(fifaVenue.name)
+  const fc = normVenue(fifaVenue.city)
+  for (const [key, v] of Object.entries(venues)) {
+    if (fn && normVenue(v.name) === fn) return key
+    if (fc && normVenue(v.city) === fc) return key
+  }
+  return null
+}
+
 function clusterByTime(items, thrMs) {
   const sorted = [...items].sort((a, b) => a.ms - b.ms)
   const clusters = []
@@ -29,22 +58,59 @@ function clusterByTime(items, thrMs) {
 
 // matches: rows to validate. sources: [{ name, byKey: Map(pairKey -> kickoff ms) }].
 // authority: the name of the source treated as the source of truth (e.g. 'FIFA').
-// Returns { drifts, notes, unmatched }:
+// Venue cross-check (report only — never auto-fixed, unlike time):
+//   venueByKey — Map(pairKey -> FIFA's { id, name, city }) for the match.
+//   venues     — our VENUES object (key -> { name, city }).
+//   venueAliasById — { [FIFA IdStadium]: ourVenueKey }.
+// Returns { drifts, notes, unmatched, venueMismatches }:
 //   drifts  — our stored time is wrong: { num, t1, t2, storedISO, authISO, diffMin,
 //             via ('authority'|'consensus'), corroborators:[names] }
 //   notes   — non-actionable observations: a feed disagreeing while the authority
 //             confirms us, or the authority missing for a match.
 //   unmatched — no source had the match at all.
-export function compareSchedule(matches, sources, { thresholdMin = 5, fromMs = -Infinity, authority = 'FIFA' } = {}) {
+//   venueMismatches — FIFA's stadium clearly differs from ours:
+//             { num, t1, t2, ourVenue (key), ourName, ourCity, fifaName, fifaCity }.
+export function compareSchedule(
+  matches,
+  sources,
+  { thresholdMin = 5, fromMs = -Infinity, authority = 'FIFA', venueByKey = null, venues = null, venueAliasById = {} } = {},
+) {
   const thr = thresholdMin * 60000
   const drifts = []
   const notes = []
   const unmatched = []
+  const venueMismatches = []
 
   for (const m of matches) {
     const stored = new Date(m.ko).getTime()
     if (stored < fromMs) continue
     const key = keyOf(m.t1, m.t2)
+
+    // Venue cross-check (report only). Compare FIFA's stadium for this pair to
+    // our stored venue; flag only when they resolve to different venues.
+    if (venueByKey && venues) {
+      const fifaVenue = venueByKey.get(key)
+      const ours = venues[m.venue]
+      if (fifaVenue && ours) {
+        const fifaKey = resolveFifaVenue(fifaVenue, venues, venueAliasById)
+        // Mismatch when FIFA resolves to a different venue, or can't be matched
+        // to ours at all while clearly naming a different stadium.
+        const differs = fifaKey ? fifaKey !== m.venue : normVenue(fifaVenue.name) !== normVenue(ours.name)
+        if (differs) {
+          venueMismatches.push({
+            num: m.num,
+            t1: m.t1,
+            t2: m.t2,
+            ourVenue: m.venue,
+            ourName: ours.name,
+            ourCity: ours.city,
+            fifaName: fifaVenue.name,
+            fifaCity: fifaVenue.city,
+          })
+        }
+      }
+    }
+
     const reported = sources
       .map((s) => ({ name: s.name, ms: s.byKey.get(key) }))
       .filter((r) => r.ms != null)
@@ -104,5 +170,5 @@ export function compareSchedule(matches, sources, { thresholdMin = 5, fromMs = -
       }
     }
   }
-  return { drifts, notes, unmatched }
+  return { drifts, notes, unmatched, venueMismatches }
 }

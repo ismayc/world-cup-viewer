@@ -465,6 +465,27 @@ select {
   font-weight: 700;
   color: var(--text-faint);
 }
+/* One-off "voided" status (abandoned/postponed/canceled): a muted grey pill,
+   distinct from the red live clock and the amber delayed badge. */
+.status-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+/* Small note next to an awarded final (forfeit/walkover). */
+.awarded-note {
+  margin-left: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--delay);
+}
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }

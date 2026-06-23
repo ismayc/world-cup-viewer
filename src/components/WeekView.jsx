@@ -3,7 +3,7 @@ import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { GROUP_COLORS, KNOCKOUT_COLOR, colorForMatch } from '../data/groupColors.js'
-import { dayKey, formatTime, teamKickoffTooltip } from '../utils/time.js'
+import { dayKey, formatTime, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { weekStartOf, addDays, weekLabel, weekdayHeader } from '../utils/week.js'
 import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
@@ -31,6 +31,9 @@ function WeekCell({ m, tz, hidden }) {
   const venue = VENUES[m.venue]
   const color = colorForMatch(m)
   const label = m.stage === 'Group' ? `Group ${m.group}` : STAGE_LABELS[m.stage]
+  const flag = statusFlag(m)
+  const voided = flag?.kind === 'voided'
+  const awarded = flag?.kind === 'awarded'
   const showScore = Array.isArray(m.score) && !hidden
   const scoreText = showScore
     ? `${m.score[0]}–${m.score[1]}${m.pens ? ` (p ${m.pens[0]}–${m.pens[1]})` : m.aet ? ' AET' : ''}`
@@ -44,21 +47,34 @@ function WeekCell({ m, tz, hidden }) {
       onClick={() => openDetail(m)}
     >
       <div className="wc-time">
-        {formatTime(m.ko, tz)}
-        {m.live && <LiveBadge match={m} className="wc-live" />}
+        {/* Voided shows a muted pill instead of the kickoff time/live clock. */}
+        {voided ? (
+          <span className="status-badge" role="status" aria-label={flag.label}>
+            {flag.label === 'Abandoned' || flag.label === 'Canceled' ? '⚠' : '⏸'} {flag.label}
+          </span>
+        ) : (
+          <>
+            {formatTime(m.ko, tz)}
+            {m.live && <LiveBadge match={m} className="wc-live" />}
+          </>
+        )}
       </div>
       <div className="wc-team" title={teamKickoffTooltip(m.ko, m.t1) || undefined}>
         <span className="wc-flag">{FLAG_BY_TEAM[m.t1] || '•'}</span>
         <span className={cls(m.t1)}>{m.t1}</span>
       </div>
-      <div className="wc-mid">{scoreText}</div>
+      <div className="wc-mid">
+        {voided && showScore && <span className="status-badge">{flag.label}</span>}
+        {scoreText}
+        {awarded && showScore && <span className="awarded-note">awarded</span>}
+      </div>
       <div className="wc-team" title={teamKickoffTooltip(m.ko, m.t2) || undefined}>
         <span className="wc-flag">{FLAG_BY_TEAM[m.t2] || '•'}</span>
         <span className={cls(m.t2)}>{m.t2}</span>
       </div>
       <div className="wc-foot">
         <span className="wc-stage" style={{ color }}>{label}</span>
-        {showScore && <ScoreCheck match={m} compact />}
+        {showScore && !voided && <ScoreCheck match={m} compact />}
         <span className="wc-venue">{venue.countryFlag} {venue.city}</span>
       </div>
     </button>
