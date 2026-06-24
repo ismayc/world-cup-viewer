@@ -5,6 +5,14 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **TheSportsDB backup source restored.** The integration queried
+  `eventsseason.php?…s=2026`, which silently **froze at 5 events on Jun 13** — so
+  the third corroborating source went dark after the opening days. Switched
+  `fetchBackup` (and the schedule-drift script's SDB lookup) to the per-day
+  endpoint (`eventsday.php?d=…&l=4429`) across a date window, the same shape as the
+  ESPN adapter; resilient to a single day's failure. The conservative "final"
+  gate still ignores SDB's occasional mislabeled `HT` status, so a just-finished
+  score is cross-checked, never a half-time one. +2 tests.
 - **Knockout schedule-drift detection.** The FIFA-anchored schedule check covered
   only group matches; it now also validates all 32 knockout matches, keyed by FIFA
   MatchNumber (73–104, which equal our knockout nums) since their teams are still

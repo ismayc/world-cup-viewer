@@ -20,7 +20,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { MATCHES } from '../src/data/matches.js'
 import { VENUES } from '../src/data/venues.js'
 import { LIVE_SOURCE, normEspn } from '../src/services/espn.js'
-import { BACKUP_SOURCE, normSdb } from '../src/services/thesportsdb.js'
+import { normSdb, sdbDayUrl } from '../src/services/thesportsdb.js'
 import { RESULTS_SOURCE, normalizeTeam, pairKey } from '../src/services/results.js'
 import { compareSchedule, compareKnockoutSchedule } from './schedule-core.mjs'
 import { etStrings, editMatches, editFixture } from './schedule-fix-core.mjs'
@@ -164,22 +164,28 @@ async function espnByKey() {
 
 async function sdbByKey() {
   const map = new Map()
-  try {
-    const r = await fetch(BACKUP_SOURCE.url, { cache: 'no-store' })
-    if (!r.ok) return map
-    for (const ev of (await r.json()).events || []) {
-      const home = ev.strHomeTeam
-      const away = ev.strAwayTeam
-      const raw = ev.strTimestamp
-        ? ev.strTimestamp + (/[zZ]|[+-]\d\d:?\d\d$/.test(ev.strTimestamp) ? '' : 'Z')
-        : ev.dateEvent && ev.strTime
-          ? `${ev.dateEvent}T${ev.strTime}Z`
-          : null
-      const t = raw ? new Date(raw).getTime() : NaN
-      if (home && away && !Number.isNaN(t)) map.set(pairKey(normSdb(home), normSdb(away)), t)
+  // The season endpoint freezes after the opening days; poll the per-day endpoint
+  // across every match date instead (YYYYMMDD → YYYY-MM-DD), sequentially to stay
+  // gentle on the free key.
+  const dates = matchDates().map((d) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`)
+  for (const d of dates) {
+    try {
+      const r = await fetch(sdbDayUrl(d), { cache: 'no-store' })
+      if (!r.ok) continue
+      for (const ev of (await r.json()).events || []) {
+        const home = ev.strHomeTeam
+        const away = ev.strAwayTeam
+        const raw = ev.strTimestamp
+          ? ev.strTimestamp + (/[zZ]|[+-]\d\d:?\d\d$/.test(ev.strTimestamp) ? '' : 'Z')
+          : ev.dateEvent && ev.strTime
+            ? `${ev.dateEvent}T${ev.strTime}Z`
+            : null
+        const t = raw ? new Date(raw).getTime() : NaN
+        if (home && away && !Number.isNaN(t)) map.set(pairKey(normSdb(home), normSdb(away)), t)
+      }
+    } catch {
+      /* best-effort per day */
     }
-  } catch {
-    /* best-effort */
   }
   return map
 }
