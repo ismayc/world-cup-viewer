@@ -268,6 +268,40 @@ export function resolveClinchedSlots(matches, clinch) {
   })
 }
 
+// Once a group's matches are ALL final, its runner-up is settled, so fill the
+// "Runner-up Group X" knockout placeholders with the real team — mirroring how
+// resolveClinchedSlots fills the winner. (The winner can clinch earlier, on
+// points alone; a runner-up is only pinned down once results settle, which for
+// a 4-team group means every group match is final.) Third-place slots stay as
+// placeholders: which third lands in which tie depends on the cross-group race.
+const RUNNERUP_SLOT = /^Runner-up Group ([A-L])$/
+const GROUP_MATCH_COUNT = 6 // 4 teams => 6 matches per group
+const isFinal = (m) => m.score && !m.live && !m.voided
+export function groupRunnersUp(matches) {
+  const out = {}
+  for (const g of GROUPS) {
+    const groupMatches = matches.filter((m) => m.stage === 'Group' && m.group === g)
+    if (groupMatches.length < GROUP_MATCH_COUNT || !groupMatches.every(isFinal)) continue
+    const second = rankGroup(g, groupMatches)[1]
+    if (second) out[g] = second.name
+  }
+  return out
+}
+
+export function resolveRunnerUpSlots(matches) {
+  const runners = groupRunnersUp(matches)
+  if (!Object.keys(runners).length) return matches
+  const sub = (name) => {
+    const hit = RUNNERUP_SLOT.exec(name)
+    return hit && runners[hit[1]] ? runners[hit[1]] : name
+  }
+  return matches.map((m) => {
+    const t1 = sub(m.t1)
+    const t2 = sub(m.t2)
+    return t1 === m.t1 && t2 === m.t2 ? m : { ...m, t1, t2 }
+  })
+}
+
 // Teams whose clinch status newly changed between two sets of results — a new
 // clinch, an upgrade (e.g. top2 → won-group), or a new elimination. Used by the
 // autofill email to announce only what THIS batch of final scores settled

@@ -5,6 +5,19 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Runner-ups flow into the bracket once a group is decided.** When every match
+  in a group is final, the group's second-placed team now fills its
+  "Runner-up Group X" knockout slots everywhere (bracket, schedule, detail modal,
+  calendar) — mirroring how clinched winners already resolve. So e.g. Canada
+  (2nd in Group B) now appears in its Round-of-32 tie (Match 73) instead of a
+  placeholder. Third-place slots stay as placeholders, since which third lands
+  where depends on the cross-group best-third race. +3 tests.
+- **Provisional best-third badge made explicit.** A 3rd-placed team currently
+  inside the 8 best thirds no longer shows a bare `3⃣` (which read like a locked
+  verdict). It now shows a dashed-yellow **"Provisional 3rd"** badge with a
+  tooltip spelling out that it's NOT clinched and depends on the other groups
+  still to finish. Legend updated to match. Clinched advancement still uses the
+  solid ✅ "Through" badge, keeping provisional and guaranteed visually distinct.
 - **Group fixtures pop-up in the Groups tab.** Clicking a **team name** now opens a
   modal with that team's three group-stage matches — results (with scores, an FT
   badge, or the live clock) and games still to play (kickoff in your timezone);
