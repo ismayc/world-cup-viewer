@@ -1603,7 +1603,14 @@ select {
   border-radius: 5px;
 }
 .q-in { background: rgba(0, 194, 168, 0.18); color: var(--accent); }
-.q-best3 { background: rgba(244, 197, 66, 0.2); color: var(--gold); }
+/* Provisional best-third: dashed yellow outline signals "not locked yet". */
+.q-best3 {
+  background: rgba(244, 197, 66, 0.2);
+  color: var(--gold);
+  border: 1px dashed rgba(244, 197, 66, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
 .q-out { background: transparent; color: var(--text-faint); }
 /* Guaranteed clinch verdicts (also used as match-card tags). */
 .c-won { background: rgba(244, 197, 66, 0.22); color: var(--gold); }

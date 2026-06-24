@@ -4,6 +4,8 @@ import { TEAMS } from '../src/data/teams.js'
 import {
   computeClinch,
   resolveClinchedSlots,
+  resolveRunnerUpSlots,
+  groupRunnersUp,
   groupWinners,
   newlyClinched,
   clinchHeadline,
@@ -120,6 +122,37 @@ describe('resolveClinchedSlots — fill knockout placeholders in the data', () =
 
   it('returns the original array untouched when nothing is clinched', () => {
     expect(resolveClinchedSlots(MATCHES, {})).toBe(MATCHES)
+  })
+})
+
+describe('resolveRunnerUpSlots — fill the runner-up once a group is fully final', () => {
+  // Group A all six matches final: Mexico 9, South Korea 6, South Africa 3,
+  // Czechia 0 — so South Korea is the unambiguous runner-up (no tie-breaker).
+  const groupAFinal = { 1: [2, 0], 2: [2, 0], 25: [0, 1], 28: [1, 0], 53: [0, 2], 54: [0, 2] }
+
+  it('rewrites "Runner-up Group A" to the real team in every match', () => {
+    const matches = withScores(groupAFinal)
+    expect(groupRunnersUp(matches)).toEqual({ A: 'South Korea' })
+
+    const resolved = resolveRunnerUpSlots(matches)
+    // M73 = "Runner-up Group A" vs "Runner-up Group B".
+    const m73 = resolved.find((m) => m.num === 73)
+    expect(m73.t1).toBe('South Korea')
+    // Group B isn't final, so its runner-up slot stays a placeholder.
+    expect(m73.t2).toBe('Runner-up Group B')
+    expect(resolved.some((m) => m.t1 === 'Runner-up Group A' || m.t2 === 'Runner-up Group A')).toBe(false)
+  })
+
+  it('does NOT resolve while any group match is still live (score provisional)', () => {
+    const live = withScores(groupAFinal).map((m) =>
+      m.num === 53 ? { ...m, live: { clock: "70'", detail: '' } } : m,
+    )
+    expect(groupRunnersUp(live)).toEqual({})
+    expect(resolveRunnerUpSlots(live).find((m) => m.num === 73).t1).toBe('Runner-up Group A')
+  })
+
+  it('returns the original array untouched when no group has settled', () => {
+    expect(resolveRunnerUpSlots(MATCHES)).toBe(MATCHES)
   })
 })
 

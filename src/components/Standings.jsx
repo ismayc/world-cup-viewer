@@ -11,7 +11,7 @@ const GROUPS = Object.keys(TEAMS)
 
 const STATUS_BADGE = {
   in: { cls: 'q-in', label: '✓', title: 'Advances to the Round of 32' },
-  best3: { cls: 'q-best3', label: '3⃣', title: 'Provisionally among the 8 best third-placed teams' },
+  best3: { cls: 'q-best3', label: 'Provisional 3rd', title: 'Provisionally among the 8 best third-placed teams — NOT clinched; depends on the other groups still to finish' },
   out3: { cls: 'q-out', label: '·', title: 'Third place, outside the best 8 so far' },
   out: { cls: 'q-out', label: '✕', title: 'Eliminated' },
 }
@@ -268,8 +268,8 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
         whole group’s schedule.
       </p>
       <p className="standings-legend">
-        <span className="legend-swatch" /> Top two advance · <span className="q-badge q-best3">3⃣</span>{' '}
-        best-third spot ·{' '}
+        <span className="legend-swatch" /> Top two advance ·{' '}
+        <span className="q-badge q-best3">Provisional 3rd</span> best-third spot, not yet clinched ·{' '}
         <span
           className="legend-tb"
           tabIndex={0}
