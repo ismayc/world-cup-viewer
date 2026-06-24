@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import Bracket from '../src/components/Bracket.jsx'
 import { FollowProvider } from '../src/context/follow.jsx'
 import { DetailContext } from '../src/context/detail.js'
-import { MATCHES } from '../src/data/matches.js'
+import { MATCHES, STAGE_LABELS } from '../src/data/matches.js'
 
 Element.prototype.scrollIntoView = vi.fn()
 
@@ -96,5 +96,49 @@ describe('Bracket', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('Bracket — mobile round view', () => {
+  let originalMM
+  beforeEach(() => {
+    vi.clearAllMocks()
+    originalMM = window.matchMedia
+    // Force the mobile branch (narrow viewport).
+    window.matchMedia = (q) => ({
+      matches: true,
+      media: q,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })
+  })
+  afterEach(() => {
+    window.matchMedia = originalMM
+  })
+
+  it('shows a round selector and only one round at a time (no wide bracket)', () => {
+    renderBracket(MATCHES)
+    // A pill per round.
+    expect(screen.getByRole('tab', { name: STAGE_LABELS.R32 })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: STAGE_LABELS.QF })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: STAGE_LABELS.Final })).toBeInTheDocument()
+    // Nothing decided yet → defaults to R32: its matches render, later rounds don't.
+    expect(screen.getByRole('tab', { name: STAGE_LABELS.R32 }).getAttribute('aria-selected')).toBe('true')
+    expect(document.getElementById('bx-m73')).toBeInTheDocument() // R32
+    expect(document.getElementById('bx-m89')).toBeNull() // R16 hidden
+    expect(document.getElementById('bx-m104')).toBeNull() // Final hidden
+  })
+
+  it('switches the visible round when a pill is tapped', () => {
+    renderBracket(MATCHES)
+    fireEvent.click(screen.getByRole('tab', { name: STAGE_LABELS.QF }))
+    expect(document.getElementById('bx-m97')).toBeInTheDocument() // QF shown
+    expect(document.getElementById('bx-m73')).toBeNull() // R32 no longer rendered
+  })
+
+  it('opens to the target round when arriving via a focus link', () => {
+    renderBracket(MATCHES, { focusMatch: 97 }) // a QF match
+    expect(screen.getByRole('tab', { name: STAGE_LABELS.QF }).getAttribute('aria-selected')).toBe('true')
+    expect(document.getElementById('bx-m97')).toBeInTheDocument()
   })
 })
