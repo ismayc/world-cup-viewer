@@ -77,8 +77,11 @@ export default function GroupGamesModal({ group, team, matches, tz, hideScores, 
   const [revealed, setRevealed] = useState(false)
   const scoreHidden = hideScores && !revealed
 
+  // A team is selected → just that team's three group matches; otherwise (group
+  // title clicked) the whole group's schedule.
   const fixtures = matches
     .filter((m) => m.stage === 'Group' && m.group === group)
+    .filter((m) => !team || m.t1 === team || m.t2 === team)
     .sort((a, b) => a.num - b.num)
 
   // A game counts as "played" once it has a result or is in progress; everything

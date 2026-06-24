@@ -19,17 +19,29 @@ const withGroupAResult = () =>
   MATCHES.map((m) => (m.num === 1 ? { ...m, score: [2, 1] } : m))
 
 describe('Group games pop-up', () => {
-  it('opens a pop-up of the group fixtures when a team is clicked', () => {
+  it('shows only the selected team’s three matches when a team is clicked', () => {
     renderStandings(withGroupAResult())
 
     fireEvent.click(screen.getByRole('button', { name: 'Mexico' }))
 
     const dialog = screen.getByRole('dialog')
-    expect(within(dialog).getByText('Group A')).toBeInTheDocument()
+    expect(dialog.querySelector('.gg-head-team')).toHaveTextContent('Mexico')
+    // A team plays exactly three group-stage games.
+    expect(dialog.querySelectorAll('.gg-fixture')).toHaveLength(3)
     // Played section shows the finished result; still-to-play lists the rest.
     expect(within(dialog).getByText('Results')).toBeInTheDocument()
     expect(within(dialog).getByText('Still to play')).toBeInTheDocument()
     expect(within(dialog).getByText('2–1')).toBeInTheDocument()
+  })
+
+  it('shows the whole group’s six matches when the group title is clicked', () => {
+    renderStandings(withGroupAResult())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Group A' }))
+
+    const dialog = screen.getByRole('dialog')
+    // A four-team group plays six matches in all.
+    expect(dialog.querySelectorAll('.gg-fixture')).toHaveLength(6)
   })
 
   it('clicking a fixture opens the match detail view', () => {

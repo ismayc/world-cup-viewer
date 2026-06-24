@@ -90,7 +90,14 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
   return (
     <div className="group-card">
       <h3 className="group-title">
-        Group {group}
+        <button
+          type="button"
+          className="group-title-btn"
+          onClick={() => onSelectTeam(group, null)}
+          title={`Show all Group ${group} fixtures & results`}
+        >
+          Group {group}
+        </button>
         {groupLive &&
           (pauseLabel ? (
             <span className="group-delayed" title={`A match in this group is ${pauseLabel.toLowerCase()} — standings are provisional`}>
