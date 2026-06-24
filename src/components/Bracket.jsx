@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { STAGE_LABELS } from '../data/matches.js'
 import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
@@ -88,14 +88,95 @@ function Column({ title, nums, byNum, tz, hideScores }) {
   )
 }
 
+// Match numbers per knockout round, both halves combined and in numeric order —
+// the one-round-at-a-time mobile view. The Final round shows the Final then the
+// third-place play-off.
+const bothHalves = (round) => [...BRACKET.left[round], ...BRACKET.right[round]].sort((a, b) => a - b)
+const ROUNDS = [
+  { key: 'R32', label: STAGE_LABELS.R32, short: 'R32', nums: bothHalves('R32') },
+  { key: 'R16', label: STAGE_LABELS.R16, short: 'R16', nums: bothHalves('R16') },
+  { key: 'QF', label: STAGE_LABELS.QF, short: 'QF', nums: bothHalves('QF') },
+  { key: 'SF', label: STAGE_LABELS.SF, short: 'SF', nums: bothHalves('SF') },
+  { key: 'Final', label: STAGE_LABELS.Final, short: '🏆 Final', nums: [...BRACKET.final, ...BRACKET.third] },
+]
+const roundOfMatch = (num) => ROUNDS.find((r) => r.nums.includes(num))?.key
+
+// The round worth opening to: the earliest one still to be decided (the live /
+// upcoming round), else the Final once everything is played.
+function currentRound(byNum) {
+  for (const r of ROUNDS) {
+    if (r.nums.some((n) => { const m = byNum[n]; return m && !(m.score && !m.live) })) return r.key
+  }
+  return 'Final'
+}
+
+// Track a CSS media query (no SSR here, so reading matchMedia on mount is safe).
+function useMediaQuery(query) {
+  const [match, setMatch] = useState(
+    () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(query).matches,
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia(query)
+    const onChange = () => setMatch(mq.matches)
+    onChange()
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [query])
+  return match
+}
+
+// Phones / small tablets: one round at a time, picked from a pill selector, as a
+// full-width vertical list — no horizontal scrolling.
+function MobileBracket({ common, activeRound, setActiveRound }) {
+  const round = ROUNDS.find((r) => r.key === activeRound) || ROUNDS[0]
+  return (
+    <>
+      <div className="bx-rounds" role="tablist" aria-label="Knockout rounds">
+        {ROUNDS.map((r) => (
+          <button
+            key={r.key}
+            type="button"
+            role="tab"
+            aria-selected={r.key === activeRound}
+            aria-label={r.label}
+            className={`bx-round-btn${r.key === activeRound ? ' active' : ''}`}
+            onClick={() => setActiveRound(r.key)}
+          >
+            {r.short}
+          </button>
+        ))}
+      </div>
+      <div className="bx-mobile-list">
+        {round.nums.map((n) => (
+          <Fragment key={n}>
+            {n === BRACKET.third[0] && <div className="bx-third-label">{STAGE_LABELS['3rd']}</div>}
+            <BracketMatch num={n} {...common} />
+          </Fragment>
+        ))}
+      </div>
+    </>
+  )
+}
+
 export default function Bracket({ matches, tz, hideScores, focusMatch, onFocusHandled }) {
   const byNum = matchesByNum(matches)
   const common = { byNum, tz, hideScores }
+  const isMobile = useMediaQuery('(max-width: 720px)')
+  const [activeRound, setActiveRound] = useState(() => currentRound(byNum))
 
-  // When arriving from an "As it stands" link, scroll the target match into
-  // view (the bracket scrolls horizontally) and flash a highlight, then clear.
+  // Arriving from an "As it stands" link: on mobile switch to the target match's
+  // round first (so the card is mounted), then scroll it into view and flash.
+  // activeRound is in the deps so the second pass runs once the round is shown.
   useEffect(() => {
     if (focusMatch == null) return
+    if (isMobile) {
+      const r = roundOfMatch(focusMatch)
+      if (r && r !== activeRound) {
+        setActiveRound(r)
+        return
+      }
+    }
     const el = document.getElementById(`bx-m${focusMatch}`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'center' })
@@ -103,31 +184,37 @@ export default function Bracket({ matches, tz, hideScores, focusMatch, onFocusHa
       setTimeout(() => el.classList.remove('bx-focus'), 2200)
     }
     onFocusHandled?.()
-  }, [focusMatch, onFocusHandled])
+  }, [focusMatch, isMobile, activeRound, onFocusHandled])
 
   return (
     <div className="bracket-wrap">
-      <p className="bracket-hint">Scroll horizontally to follow the path to the Final →</p>
-      <div className="bracket">
-        <Column title={STAGE_LABELS.R32} nums={BRACKET.left.R32} {...common} />
-        <Column title={STAGE_LABELS.R16} nums={BRACKET.left.R16} {...common} />
-        <Column title={STAGE_LABELS.QF} nums={BRACKET.left.QF} {...common} />
-        <Column title={STAGE_LABELS.SF} nums={BRACKET.left.SF} {...common} />
+      {isMobile ? (
+        <MobileBracket common={common} activeRound={activeRound} setActiveRound={setActiveRound} />
+      ) : (
+        <>
+          <p className="bracket-hint">Scroll horizontally to follow the path to the Final →</p>
+          <div className="bracket">
+            <Column title={STAGE_LABELS.R32} nums={BRACKET.left.R32} {...common} />
+            <Column title={STAGE_LABELS.R16} nums={BRACKET.left.R16} {...common} />
+            <Column title={STAGE_LABELS.QF} nums={BRACKET.left.QF} {...common} />
+            <Column title={STAGE_LABELS.SF} nums={BRACKET.left.SF} {...common} />
 
-        <div className="bx-col bx-col-final">
-          <div className="bx-col-head bx-final-head">🏆 {STAGE_LABELS.Final}</div>
-          <div className="bx-col-body">
-            <BracketMatch num={BRACKET.final[0]} {...common} />
-            <div className="bx-third-label">{STAGE_LABELS['3rd']}</div>
-            <BracketMatch num={BRACKET.third[0]} {...common} />
+            <div className="bx-col bx-col-final">
+              <div className="bx-col-head bx-final-head">🏆 {STAGE_LABELS.Final}</div>
+              <div className="bx-col-body">
+                <BracketMatch num={BRACKET.final[0]} {...common} />
+                <div className="bx-third-label">{STAGE_LABELS['3rd']}</div>
+                <BracketMatch num={BRACKET.third[0]} {...common} />
+              </div>
+            </div>
+
+            <Column title={STAGE_LABELS.SF} nums={BRACKET.right.SF} {...common} />
+            <Column title={STAGE_LABELS.QF} nums={BRACKET.right.QF} {...common} />
+            <Column title={STAGE_LABELS.R16} nums={BRACKET.right.R16} {...common} />
+            <Column title={STAGE_LABELS.R32} nums={BRACKET.right.R32} {...common} />
           </div>
-        </div>
-
-        <Column title={STAGE_LABELS.SF} nums={BRACKET.right.SF} {...common} />
-        <Column title={STAGE_LABELS.QF} nums={BRACKET.right.QF} {...common} />
-        <Column title={STAGE_LABELS.R16} nums={BRACKET.right.R16} {...common} />
-        <Column title={STAGE_LABELS.R32} nums={BRACKET.right.R32} {...common} />
-      </div>
+        </>
+      )}
     </div>
   )
 }

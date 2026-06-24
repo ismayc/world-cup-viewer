@@ -1055,6 +1055,42 @@ select {
   margin: 14px 0 4px;
 }
 
+/* Mobile bracket: a round-selector + one round at a time as a full-width
+   vertical list, so the knockouts need no horizontal scrolling on phones. */
+.bx-rounds {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 14px;
+  padding-bottom: 2px;
+}
+.bx-round-btn {
+  flex: 1 0 auto;
+  white-space: nowrap;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bx-round-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--card-hover);
+}
+.bx-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bx-mobile-list .bx-match {
+  width: 100%;
+}
+
 /* ---------- Week view ---------- */
 .week-nav {
   display: flex;

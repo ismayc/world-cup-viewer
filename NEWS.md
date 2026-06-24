@@ -5,6 +5,12 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Mobile-friendly bracket.** On phones the knockout bracket no longer demands
+  side-to-side scrolling across nine columns: it shows a **round selector**
+  (R32 / R16 / QF / SF / 🏆 Final) and renders one round at a time as a full-width
+  vertical list. It opens to the round in play, and "as it stands" links jump to
+  the right round automatically. Desktop keeps the full two-sided bracket. +3
+  tests.
 - **Bracket auto-fills through the knockouts.** Completing the placeholder
   resolution: once the group stage is fully final, the eight best third-placed
   teams drop into their "3rd X/Y/Z" Round-of-32 slots (via FIFA's Annexe C table,
