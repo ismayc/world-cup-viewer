@@ -5,6 +5,23 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Knockout schedule-drift detection.** The FIFA-anchored schedule check covered
+  only group matches; it now also validates all 32 knockout matches, keyed by FIFA
+  MatchNumber (73–104, which equal our knockout nums) since their teams are still
+  placeholders. Catches a moved kickoff or venue for R32→Final, and feeds the same
+  report/auto-fix/email path. Currently 0 drift — our times match FIFA. +5 tests.
+- **Calendar: friendly knockout labels.** The .ics feed showed OpenFootball's
+  cryptic slot codes (1A, 2B, 3A/B/C/D/F, W73, L101) for undecided knockout ties;
+  it now maps them to the same wording the app uses ("Winner Group A", "Runner-up
+  Group B", "Winner Match 73", …). +4 tests.
+- **Team-name alias coverage locked for all 48.** Re-captured ESPN's spellings now
+  that every team has played (24→48) and added a test asserting the snapshot covers
+  all 48 — so a never-before-seen spelling can't silently drop a live score when a
+  team advances. (TheSportsDB's season feed still lags at the opening days.)
+- **Final-results lock extended to the R32 draw.** The final-group-results fixture
+  gains an `OFFICIAL_R32` draw + a test that, once all twelve groups are locked,
+  asserts our resolved bracket reproduces FIFA's published R32 matchups (the
+  cross-group best-third/Annexe C check). Dormant until the group stage ends.
 - **Mobile-friendly bracket.** On phones the knockout bracket no longer demands
   side-to-side scrolling across nine columns: it shows a **round selector**
   (R32 / R16 / QF / SF / 🏆 Final) and renders one round at a time as a full-width

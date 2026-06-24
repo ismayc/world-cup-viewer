@@ -9,6 +9,24 @@ const MATCH_MS = 135 * 60 * 1000
 const ALIASES = { 'Czech Republic': 'Czechia', Turkey: 'Türkiye' }
 const norm = (n) => (n ? ALIASES[n] || n : n)
 
+// OpenFootball's knockout slot codes (1A, 2B, 3A/B/C/D/F, W73, L101) are cryptic
+// in a calendar. Map them to the same friendly wording the app's bracket uses; a
+// resolved real team name just passes through (normalised).
+function prettySlot(label) {
+  if (!label) return label
+  let m = /^1([A-L])$/.exec(label)
+  if (m) return `Winner Group ${m[1]}`
+  m = /^2([A-L])$/.exec(label)
+  if (m) return `Runner-up Group ${m[1]}`
+  if (/^3[A-L](\/[A-L])+$/.test(label)) return `3rd place (${label.slice(1)})`
+  m = /^W(\d+)$/.exec(label)
+  if (m) return `Winner Match ${m[1]}`
+  m = /^L(\d+)$/.exec(label)
+  if (m) return `Loser Match ${m[1]}`
+  return norm(label)
+}
+exports.prettySlot = prettySlot
+
 const STAGE = {
   'Round of 32': 'Round of 32',
   'Round of 16': 'Round of 16',
@@ -55,7 +73,7 @@ function vevent(m) {
   const end = new Date(start.getTime() + MATCH_MS)
   const stage = m.round && m.round.startsWith('Matchday') ? (m.group || 'Group stage') : STAGE[m.round] || m.round
   const ft = m.score && Array.isArray(m.score.ft) ? ` (${m.score.ft[0]}–${m.score.ft[1]})` : ''
-  const summary = `World Cup: ${norm(m.team1)} vs ${norm(m.team2)}${ft}`
+  const summary = `World Cup: ${prettySlot(m.team1)} vs ${prettySlot(m.team2)}${ft}`
   return [
     'BEGIN:VEVENT',
     `UID:${uid(m)}`,
