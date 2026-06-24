@@ -828,6 +828,16 @@ select {
 }
 
 /* ---------- Standings ---------- */
+.standings-tip {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0 0 12px;
+}
+.standings-tip strong { color: var(--text); font-weight: 600; }
 .standings-legend {
   position: relative; /* anchor the tie-breakers tooltip to the legend, not the span */
   font-size: 0.82rem;

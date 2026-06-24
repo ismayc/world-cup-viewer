@@ -57,4 +57,12 @@ describe('Group games pop-up', () => {
 
     expect(opened?.num).toBe(1)
   })
+
+  it('shows a tip describing the team / group click functionality', () => {
+    renderStandings(MATCHES)
+    const tip = document.querySelector('.standings-tip')
+    expect(tip).toBeInTheDocument()
+    expect(tip).toHaveTextContent(/click a team name/i)
+    expect(tip).toHaveTextContent(/group title/i)
+  })
 })

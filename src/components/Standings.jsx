@@ -262,6 +262,11 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
 
   return (
     <>
+      <p className="standings-tip">
+        💡 Tip: click a <strong>team name</strong> to see that team’s three group
+        matches — played and upcoming — or a <strong>group title</strong> for the
+        whole group’s schedule.
+      </p>
       <p className="standings-legend">
         <span className="legend-swatch" /> Top two advance · <span className="q-badge q-best3">3⃣</span>{' '}
         best-third spot ·{' '}
