@@ -5,6 +5,7 @@ import { clinchBadge } from '../utils/clinch.js'
 import { projectKnockout } from '../utils/asItStands.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { useFollow } from '../context/follow.jsx'
+import GroupGamesModal from './GroupGamesModal.jsx'
 
 const GROUPS = Object.keys(TEAMS)
 
@@ -80,7 +81,7 @@ function AsItStands({ proj, onGoToMatch }) {
   )
 }
 
-function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTeams, pausedTeams }) {
+function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSelectTeam, liveTeams, pausedTeams }) {
   const { isFollowed } = useFollow()
   const played = qual.completion[group] || rows.some((r) => r.P > 0)
   const groupLive = rows.some((r) => liveTeams.has(r.name))
@@ -89,7 +90,14 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTe
   return (
     <div className="group-card">
       <h3 className="group-title">
-        Group {group}
+        <button
+          type="button"
+          className="group-title-btn"
+          onClick={() => onSelectTeam(group, null)}
+          title={`Show all Group ${group} fixtures & results`}
+        >
+          Group {group}
+        </button>
         {groupLive &&
           (pauseLabel ? (
             <span className="group-delayed" title={`A match in this group is ${pauseLabel.toLowerCase()} — standings are provisional`}>
@@ -122,7 +130,14 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, liveTe
                   <span className="rank">{r.rank}</span>
                   <Star name={r.name} />
                   <span className="team-flag">{r.flag}</span>
-                  <span className={`row-team${isFollowed(r.name) ? ' followed' : ''}`}>{r.name}</span>
+                  <button
+                    type="button"
+                    className={`row-team row-team-btn${isFollowed(r.name) ? ' followed' : ''}`}
+                    onClick={() => onSelectTeam(group, r.name)}
+                    title={`Show Group ${group} fixtures & results`}
+                  >
+                    {r.name}
+                  </button>
                   {liveTeams.has(r.name) && (
                     <span
                       className={`row-live-dot${pausedTeams.has(r.name) ? ' delayed' : ''}`}
@@ -193,8 +208,11 @@ function BestThirds({ qual }) {
   )
 }
 
-export default function Standings({ matches, hideScores, clinch, onGoToMatch }) {
+export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch }) {
   const [revealed, setRevealed] = useState(false)
+  // The group whose fixtures pop-up is open (set by clicking a team name).
+  const [groupGames, setGroupGames] = useState(null)
+  const onSelectTeam = (group, team) => setGroupGames({ group, team })
   // "As it stands" R32 projection is shown by default; this toggle (persisted)
   // hides it for those who just want the tables.
   const [showProjection, setShowProjection] = useState(() => {
@@ -280,12 +298,23 @@ export default function Standings({ matches, hideScores, clinch, onGoToMatch }) 
             clinch={clinch}
             asItStands={showProjection ? perGroup[g] : null}
             onGoToMatch={onGoToMatch}
+            onSelectTeam={onSelectTeam}
             liveTeams={liveTeams}
             pausedTeams={pausedTeams}
           />
         ))}
       </div>
       <BestThirds qual={qual} />
+      {groupGames && (
+        <GroupGamesModal
+          group={groupGames.group}
+          team={groupGames.team}
+          matches={matches}
+          tz={tz}
+          hideScores={hideScores}
+          onClose={() => setGroupGames(null)}
+        />
+      )}
     </>
   )
 }
