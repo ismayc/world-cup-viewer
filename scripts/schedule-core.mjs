@@ -172,3 +172,65 @@ export function compareSchedule(
   }
   return { drifts, notes, unmatched, venueMismatches }
 }
+
+// Knockout matches can't be keyed by team pair — the teams are placeholders
+// ("Winner Group A", "Winner Match 73") until the bracket resolves. FIFA is the
+// only source that publishes a stable MatchNumber for an as-yet-undecided tie,
+// and our knockout match numbers (73–104) ARE those FIFA numbers, so we validate
+// kickoff time + venue against FIFA by number. FIFA-only (no feed corroboration)
+// — consistent with the "authority decides" model; drift objects use the same
+// shape as compareSchedule so reporting / autofix / email handle them uniformly.
+//   fifaByNum: Map(num -> { ms, venue: { id, name, city } | null }).
+export function compareKnockoutSchedule(
+  matches,
+  fifaByNum,
+  { thresholdMin = 5, venues = null, venueAliasById = {} } = {},
+) {
+  const thr = thresholdMin * 60000
+  const drifts = []
+  const notes = []
+  const unmatched = []
+  const venueMismatches = []
+
+  for (const m of matches) {
+    const fifa = fifaByNum?.get(m.num)
+    if (!fifa || fifa.ms == null) {
+      unmatched.push({ num: m.num, t1: m.t1, t2: m.t2 })
+      continue
+    }
+    const stored = new Date(m.ko).getTime()
+    const base = { num: m.num, t1: m.t1, t2: m.t2, storedISO: new Date(stored).toISOString() }
+
+    // Venue cross-check (report only, like the group path).
+    if (venues && fifa.venue) {
+      const ours = venues[m.venue]
+      if (ours) {
+        const fifaKey = resolveFifaVenue(fifa.venue, venues, venueAliasById)
+        const differs = fifaKey ? fifaKey !== m.venue : normVenue(fifa.venue.name) !== normVenue(ours.name)
+        if (differs) {
+          venueMismatches.push({
+            num: m.num,
+            t1: m.t1,
+            t2: m.t2,
+            ourVenue: m.venue,
+            ourName: ours.name,
+            ourCity: ours.city,
+            fifaName: fifa.venue.name,
+            fifaCity: fifa.venue.city,
+          })
+        }
+      }
+    }
+
+    if (Math.abs(fifa.ms - stored) >= thr) {
+      drifts.push({
+        ...base,
+        authISO: new Date(fifa.ms).toISOString(),
+        diffMin: Math.round((fifa.ms - stored) / 60000),
+        via: 'authority',
+        corroborators: [],
+      })
+    }
+  }
+  return { drifts, notes, unmatched, venueMismatches }
+}

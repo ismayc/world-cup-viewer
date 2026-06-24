@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { MATCHES } from '../src/data/matches.js'
 import { normalizeTeam, pairKey } from '../src/services/results.js'
-import { compareSchedule } from '../scripts/schedule-core.mjs'
+import { VENUES } from '../src/data/venues.js'
+import { compareSchedule, compareKnockoutSchedule } from '../scripts/schedule-core.mjs'
 
 const m4 = MATCHES.find((m) => m.num === 4) // USA v Paraguay (group)
 const keyOf = (m) => pairKey(normalizeTeam(m.t1), normalizeTeam(m.t2))
@@ -66,5 +67,43 @@ describe('compareSchedule — FIFA-anchored, multi-source', () => {
     const { drifts, unmatched } = compareSchedule([m4], [{ name: 'FIFA', byKey: new Map() }], {})
     expect(drifts).toHaveLength(0)
     expect(unmatched).toHaveLength(1)
+  })
+})
+
+describe('compareKnockoutSchedule — FIFA-anchored by match number', () => {
+  const m73 = MATCHES.find((m) => m.num === 73) // R32, placeholder teams
+  const fifaNum = (m, ms, venue = null) => new Map([[m.num, { ms, venue }]])
+
+  it('reports no drift when FIFA agrees with our stored time', () => {
+    const { drifts, unmatched } = compareKnockoutSchedule([m73], fifaNum(m73, ko(m73)))
+    expect(drifts).toHaveLength(0)
+    expect(unmatched).toHaveLength(0)
+  })
+
+  it('flags a drift (past threshold) keyed by match number, FIFA as the answer', () => {
+    const moved = shift(m73.ko, 30)
+    const { drifts } = compareKnockoutSchedule([m73], fifaNum(m73, moved))
+    expect(drifts).toHaveLength(1)
+    expect(drifts[0]).toMatchObject({ num: 73, via: 'authority', diffMin: 30, corroborators: [] })
+  })
+
+  it('respects the threshold (4 min ignored, 5 min flagged)', () => {
+    expect(compareKnockoutSchedule([m73], fifaNum(m73, shift(m73.ko, 4))).drifts).toHaveLength(0)
+    expect(compareKnockoutSchedule([m73], fifaNum(m73, shift(m73.ko, 5))).drifts).toHaveLength(1)
+  })
+
+  it('marks the match unmatched when FIFA has no number for it', () => {
+    const { drifts, unmatched } = compareKnockoutSchedule([m73], new Map())
+    expect(drifts).toHaveLength(0)
+    expect(unmatched).toEqual([{ num: 73, t1: m73.t1, t2: m73.t2 }])
+  })
+
+  it('flags a venue mismatch against FIFA (report only)', () => {
+    // FIFA names a different stadium than our stored venue for M73.
+    const otherVenue = Object.entries(VENUES).find(([k]) => k !== m73.venue)[1]
+    const fifa = fifaNum(m73, ko(m73), { id: 'X', name: otherVenue.name, city: otherVenue.city })
+    const { venueMismatches } = compareKnockoutSchedule([m73], fifa, { venues: VENUES })
+    expect(venueMismatches).toHaveLength(1)
+    expect(venueMismatches[0]).toMatchObject({ num: 73, fifaName: otherVenue.name })
   })
 })

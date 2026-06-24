@@ -22,7 +22,7 @@ import { VENUES } from '../src/data/venues.js'
 import { LIVE_SOURCE, normEspn } from '../src/services/espn.js'
 import { BACKUP_SOURCE, normSdb } from '../src/services/thesportsdb.js'
 import { RESULTS_SOURCE, normalizeTeam, pairKey } from '../src/services/results.js'
-import { compareSchedule } from './schedule-core.mjs'
+import { compareSchedule, compareKnockoutSchedule } from './schedule-core.mjs'
 import { etStrings, editMatches, editFixture } from './schedule-fix-core.mjs'
 
 const MATCHES_FILE = 'src/data/matches.js'
@@ -104,33 +104,37 @@ function matchDates() {
   return [...days].sort()
 }
 
-// Returns { byKey: Map(pairKey -> kickoff ms), venueByKey: Map(pairKey -> {id,name,city}) }.
+// Returns { byKey: Map(pairKey -> kickoff ms), venueByKey: Map(pairKey ->
+// {id,name,city}), byNum: Map(MatchNumber -> { ms, venue }) }. byNum covers every
+// match (incl. knockouts whose teams are still placeholders) for the number-keyed
+// knockout check; byKey/venueByKey stay team-pair-keyed for the group check.
 async function fifaByKey() {
   const map = new Map()
   const venueByKey = new Map()
+  const byNum = new Map()
   try {
     const r = await fetch(FIFA_URL, { cache: 'no-store' })
-    if (!r.ok) return { byKey: map, venueByKey }
+    if (!r.ok) return { byKey: map, venueByKey, byNum }
     for (const m of (await r.json()).Results || []) {
+      const t = new Date(m.Date).getTime()
+      const st = m.Stadium
+      const venue = st?.Name?.[0]?.Description
+        ? { id: st.IdStadium, name: st.Name[0].Description, city: st.CityName?.[0]?.Description }
+        : null
+      const num = Number(m.MatchNumber)
+      if (num && !Number.isNaN(t)) byNum.set(num, { ms: t, venue })
+
       const home = m.Home?.TeamName?.[0]?.Description
       const away = m.Away?.TeamName?.[0]?.Description
       if (!home || !away) continue
       const key = pairKey(normFifa(home), normFifa(away))
-      const t = new Date(m.Date).getTime()
       if (!Number.isNaN(t)) map.set(key, t)
-      const st = m.Stadium
-      if (st?.Name?.[0]?.Description) {
-        venueByKey.set(key, {
-          id: st.IdStadium,
-          name: st.Name[0].Description,
-          city: st.CityName?.[0]?.Description,
-        })
-      }
+      if (venue) venueByKey.set(key, venue)
     }
   } catch {
     /* best-effort */
   }
-  return { byKey: map, venueByKey }
+  return { byKey: map, venueByKey, byNum }
 }
 
 async function espnByKey() {
@@ -211,7 +215,7 @@ async function main() {
   const thresholdMin = Number(process.env.THRESHOLD_MIN) || 5
 
   const [fifaRes, espn, sdb, of] = await Promise.all([fifaByKey(), espnByKey(), sdbByKey(), openFootballByKey()])
-  const { byKey: fifa, venueByKey: fifaVenues } = fifaRes
+  const { byKey: fifa, venueByKey: fifaVenues, byNum: fifaByNum } = fifaRes
   const sources = [
     { name: 'FIFA', byKey: fifa },
     { name: 'ESPN', byKey: espn },
@@ -234,8 +238,22 @@ async function main() {
     venueAliasById: FIFA_VENUE_ALIASES,
   })
 
+  // Knockout matches: FIFA-anchored by MatchNumber (their teams are placeholders,
+  // so they can't be keyed by pair). Merge into the same buckets so reporting,
+  // auto-fix, and the email treat group and knockout drifts identically.
+  const koMatches = MATCHES.filter((m) => m.stage !== 'Group')
+  const koResult = compareKnockoutSchedule(koMatches, fifaByNum, {
+    thresholdMin,
+    venues: VENUES,
+    venueAliasById: FIFA_VENUE_ALIASES,
+  })
+  drifts.push(...koResult.drifts)
+  notes.push(...koResult.notes)
+  unmatched.push(...koResult.unmatched)
+  venueMismatches.push(...koResult.venueMismatches)
+
   console.log(
-    `Schedule check (FIFA-anchored): ${groupMatches.length} group matches | ` +
+    `Schedule check (FIFA-anchored): ${groupMatches.length} group + ${koMatches.length} knockout matches | ` +
       `${drifts.length} drift(s) | ${notes.length} note(s) | ${unmatched.length} unmatched | ` +
       `${venueMismatches.length} venue mismatch(es) | ` +
       `sources: ${sources.map((s) => s.name).join(', ')}`,

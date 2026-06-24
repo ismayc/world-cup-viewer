@@ -27,3 +27,11 @@ export const FINAL_GROUP_RESULTS = {
     order: ['Switzerland', 'Canada', 'Bosnia & Herzegovina', 'Qatar'],
   },
 }
+
+// The official Round-of-32 draw, as published by FIFA once the group stage ends:
+// match number -> [home, away] (teams.js spelling). This is the cross-group check
+// the per-group `order` can't make — which eight thirds advance and which tie each
+// lands in (FIFA Annexe C). FILL THIS IN once all twelve groups are locked above;
+// the test then asserts our resolved bracket equals it. Left empty until then.
+//   e.g. 73: ['Canada', 'Mexico'],
+export const OFFICIAL_R32 = {}
