@@ -18,6 +18,7 @@ function slotTooltip(group, slot, clinch) {
   if (!group || !slot) return null
   const r32 = (num) => `Round of 32 · Match ${num}`
   if (clinch === 'won-group') return `Clinched Group ${group} winner → ${r32(slot.win)}`
+  if (clinch === 'runner-up') return `Clinched Group ${group} runner-up → ${r32(slot.runnerUp)}`
   if (clinch === 'eliminated') return `Eliminated from Group ${group} — no knockout slot`
   const parts = []
   if (slot.win) parts.push(`1st → ${r32(slot.win)}`)

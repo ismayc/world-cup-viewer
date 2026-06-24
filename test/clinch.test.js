@@ -55,6 +55,28 @@ describe('clinch — within a single group', () => {
     expect(status['South Korea']).toBeNull()
   })
 
+  it('flags a team locked into EXACTLY 2nd as the group runner-up (a game still to play)', () => {
+    // Mexico win all three → 9 pts, 1st locked. South Korea are also done: beat
+    // Czechia and South Africa, lost only to Mexico → 6 pts. The one fixture left
+    // (Czechia v South Africa) can lift neither above 3 — so South Korea is
+    // pinned to 2nd while a match is still outstanding. 'runner-up', not 'top2'.
+    const status = computeClinch(
+      withScores({
+        1: [3, 0], // Mexico 3–0 South Africa
+        2: [3, 0], // South Korea 3–0 Czechia
+        28: [3, 0], // Mexico 3–0 South Korea
+        53: [0, 3], // Czechia 0–3 Mexico
+        54: [0, 3], // South Africa 0–3 South Korea
+        // m25 Czechia v South Africa still to play.
+      }),
+    )
+    expect(status['Mexico']).toBe('won-group')
+    expect(status['South Korea']).toBe('runner-up')
+    // The bottom two still contest 3rd/4th; cross-group race not yet computable.
+    expect(status['Czechia']).toBeNull()
+    expect(status['South Africa']).toBeNull()
+  })
+
   it('treats a live (in-progress) match as undecided, not a final result', () => {
     // Scores that, if all final, clinch the group for Mexico (6 pts; nobody can
     // reach 6). m28 is Mexico's *current* match, shown LIVE with a running 3–0.
@@ -167,6 +189,9 @@ describe('newlyClinched — announce what a result settled (for the email)', () 
     expect(clinchHeadline({ team: 'Mexico', group: 'A', status: 'won-group' })).toBe(
       '🥇 Mexico have WON Group A',
     )
+    expect(clinchHeadline({ team: 'Canada', group: 'B', status: 'runner-up' })).toBe(
+      '🥈 Canada are THROUGH as Group B RUNNERS-UP',
+    )
   })
 
   it('does not repeat a clinch that was already true before the result', () => {
@@ -229,7 +254,7 @@ describe('clinch — full group stage, cross-group third place', () => {
     GROUPS.forEach((g, i) => {
       const [first, second, third, fourth] = TEAMS[g].map((t) => t.name)
       expect(status[first]).toBe('won-group')
-      expect(status[second]).toBe('top2')
+      expect(status[second]).toBe('runner-up')
       // Third places with GD = i-1; the 8 highest (i = 4..11) advance.
       expect(status[third]).toBe(i >= 4 ? 'third' : 'eliminated')
       expect(status[fourth]).toBe('eliminated')
@@ -239,9 +264,10 @@ describe('clinch — full group stage, cross-group third place', () => {
 
 describe('clinchBadge', () => {
   it('maps each status to a distinct badge, and unknown → null', () => {
-    expect(clinchBadge('won-group')).toMatchObject({ cls: 'c-won', text: 'Won group' })
+    expect(clinchBadge('won-group')).toMatchObject({ cls: 'c-won', label: '🥇', text: 'Won group' })
+    expect(clinchBadge('runner-up')).toMatchObject({ cls: 'c-silver', label: '🥈', text: 'Group runner-up' })
     expect(clinchBadge('top2')).toMatchObject({ cls: 'c-in', text: 'Through' })
-    expect(clinchBadge('third')).toMatchObject({ cls: 'c-in', text: 'Through' })
+    expect(clinchBadge('third')).toMatchObject({ cls: 'c-in', text: 'Through (3rd)' })
     expect(clinchBadge('eliminated')).toMatchObject({ cls: 'c-out', text: 'Eliminated' })
     expect(clinchBadge(null)).toBeNull()
     expect(clinchBadge(undefined)).toBeNull()
