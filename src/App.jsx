@@ -16,7 +16,8 @@ import { fetchResults, applyResults, RESULTS_SOURCE, openFootballFinalScore } fr
 import { fetchLive, applyLive, LIVE_SOURCE, espnFinalScore, historyDates } from './services/espn.js'
 import { fetchBackup, BACKUP_SOURCE, sdbFinalScore } from './services/thesportsdb.js'
 import { annotateScoreChecks } from './services/reconcile.js'
-import { computeClinch, resolveClinchedSlots, resolveRunnerUpSlots } from './utils/clinch.js'
+import { computeClinch } from './utils/clinch.js'
+import { resolveBracket } from './utils/bracketResolve.js'
 import { groupSlotMap } from './utils/bracket.js'
 import { detectGoals, goalNotification } from './services/goalNotify.js'
 import { useFollow } from './context/follow.jsx'
@@ -198,14 +199,12 @@ export default function App() {
   const clinch = useMemo(() => computeClinch(matches), [matches])
   // Group → Round-of-32 slot each finishing position feeds into.
   const slotMap = useMemo(() => groupSlotMap(MATCHES), [])
-  // Fill clinched group winners into knockout "Winner Group X" slots, then fill
-  // "Runner-up Group X" slots for groups whose results have fully settled, so
-  // the resolved team reaches every view consistently (schedule, week, bracket,
-  // detail modal, calendar) — not just the bracket's own rendering.
-  const displayMatches = useMemo(
-    () => resolveRunnerUpSlots(resolveClinchedSlots(matches, clinch)),
-    [matches, clinch],
-  )
+  // Resolve every settled knockout placeholder into the real team — group
+  // winners + runners-up, third-place qualifiers (once the group stage is done),
+  // and knockout-match winners/losers as each round plays — so the resolved team
+  // reaches every view consistently (schedule, week, bracket, detail modal,
+  // calendar), not just the bracket's own rendering.
+  const displayMatches = useMemo(() => resolveBracket(matches, clinch), [matches, clinch])
 
   // Auto-refresh: poll fast (30s) while a match is live so the score and clock
   // track ESPN closely, and slow (2 min) otherwise to go easy on the feeds.

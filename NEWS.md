@@ -5,6 +5,19 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Bracket auto-fills through the knockouts.** Completing the placeholder
+  resolution: once the group stage is fully final, the eight best third-placed
+  teams drop into their "3rd X/Y/Z" Round-of-32 slots (via FIFA's Annexe C table,
+  reusing the projection engine); and as each knockout tie finishes, its winner
+  flows into the next round's "Winner Match N" slot and the loser into the
+  third-place play-off (penalties break a draw). All conservative — a slot stays
+  a placeholder until its outcome is genuinely settled. New `utils/bracketResolve`
+  with `resolveBracket` now drives every view. +10 tests.
+- **Final group results locked against the engine.** New `final-group-results`
+  fixture + test freezes each group's verified official finishing order and
+  replays it through the tie-breaker engine, so the standings can't silently
+  drift from the real tournament. Seeded with Group B; extended group-by-group as
+  the stage completes. +2 tests.
 - **Eliminated styling muted to grey, reserving red for LIVE.** The eliminated
   row tint, left-border, and the ❌ badge now use a neutral grey ("faded out /
   done") instead of red, so the only vivid red in the standings is the pulsing
