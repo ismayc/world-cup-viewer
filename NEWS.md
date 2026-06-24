@@ -4,6 +4,22 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-24
+- **Group fixtures pop-up in the Groups tab.** Clicking a **team name** now opens a
+  modal with that team's three group-stage matches — results (with scores, an FT
+  badge, or the live clock) and games still to play (kickoff in your timezone);
+  clicking a **group title** opens the whole group's six-match schedule. Each
+  fixture row opens the full match detail, the selected team is highlighted, and
+  scores respect spoiler mode (•–• with a reveal). A tip at the top of the
+  standings describes the interaction. Reuses the shared modal a11y/status
+  helpers. +4 tests.
+- **Next-match hero stacks simultaneous *upcoming* matches.** Extending the
+  live-match stacking to games that haven't started: when no favorite team drives
+  the pick, the hero now lists every upcoming match sharing the earliest kickoff
+  (final group matchdays run two at once, e.g. today's 3 PM ET pair) under one
+  shared countdown — previously only the first appeared. A followed team's next
+  game still takes over as a single card. +2 tests.
+
 ## 2026-06-23
 - **Fix: "As it stands" dropped some 1st/3rd matchups once a group clinched.** When
   a group's winner is decided, the live feed resolves its R32 slot ("Winner Group
