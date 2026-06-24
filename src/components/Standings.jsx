@@ -176,7 +176,7 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
   )
 }
 
-function BestThirds({ qual }) {
+function BestThirds({ qual, clinch }) {
   const anyPlayed = qual.thirds.some((t) => t.P > 0)
   if (!anyPlayed) return null
   return (
@@ -195,8 +195,17 @@ function BestThirds({ qual }) {
           </tr>
         </thead>
         <tbody>
-          {qual.thirds.map((r, i) => (
-            <tr key={r.name} className={i < 8 ? 'qualifies' : 'eliminated'}>
+          {qual.thirds.map((r, i) => {
+            // Match the group-table scale, per team. A clinched best-third is
+            // green; a mathematically eliminated team is red. Otherwise the cut
+            // is still provisional: top 8 are on the bubble (yellow), the rest
+            // merely outside it for now (plain, not red). Once every group is
+            // done, clinch resolves every third to 'third' or 'eliminated', so
+            // this naturally lands on green for the 8 and red for the other 4.
+            const c = clinch?.[r.name]
+            const rowCls = c === 'third' ? 'qualifies' : c === 'eliminated' ? 'eliminated' : i < 8 ? 'provisional' : ''
+            return (
+            <tr key={r.name} className={rowCls}>
               <td className="col-team">
                 <span className="rank">{i + 1}</span>
                 <span className="team-flag">{r.flag}</span>
@@ -208,7 +217,8 @@ function BestThirds({ qual }) {
               <td>{r.GF}</td>
               <td className="col-pts">{r.Pts}</td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
     </div>
@@ -317,7 +327,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
           />
         ))}
       </div>
-      <BestThirds qual={qual} />
+      <BestThirds qual={qual} clinch={clinch} />
       {groupGames && (
         <GroupGamesModal
           group={groupGames.group}
