@@ -5,6 +5,11 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Eliminated styling muted to grey, reserving red for LIVE.** The eliminated
+  row tint, left-border, and the ❌ badge now use a neutral grey ("faded out /
+  done") instead of red, so the only vivid red in the standings is the pulsing
+  LIVE indicator — removing the colour clash between "playing now" and "out".
+  The ❌ glyph stays as the verdict marker.
 - **Clearer ✓ tooltip on provisional qualifiers.** The "currently top two"
   checkmark now reads "Advances to the Round of 32 (if current match status
   holds)" on two lines — making explicit that it reflects the live/current
