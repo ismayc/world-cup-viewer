@@ -70,6 +70,19 @@ describe('Standings', () => {
     expect(rowFor('South Korea').className).toBe('qualifies') // 2nd → green
     expect(rowFor('Czechia').className).toBe('provisional') // provisional best-third → yellow
     expect(rowFor('South Africa').className).toBe('eliminated') // out → red
+
+    // Wide text verdicts drop to their own line (q-wide); the single-glyph "✓"
+    // qualification mark stays inline beside the name.
+    const badgeIn = (team) => rowFor(team).querySelector('.col-team .q-badge')
+    expect(badgeIn('Mexico').classList.contains('q-wide')).toBe(true) // 🥇 Won group
+    expect(badgeIn('South Africa').classList.contains('q-wide')).toBe(true) // ❌ Eliminated
+    expect(badgeIn('Czechia').classList.contains('q-wide')).toBe(true) // Provisional 3rd
+    expect(badgeIn('South Korea').classList.contains('q-wide')).toBe(false) // ✓ stays inline
+    // The provisional ✓ spells out that it's contingent on current results,
+    // across two lines.
+    expect(badgeIn('South Korea').getAttribute('title')).toBe(
+      'Advances to the Round of 32\n(if current match status holds)',
+    )
   })
 
   it('tints the best-third table per clinch: bubble yellow, clinched green, out red', () => {

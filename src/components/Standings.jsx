@@ -10,7 +10,7 @@ import GroupGamesModal from './GroupGamesModal.jsx'
 const GROUPS = Object.keys(TEAMS)
 
 const STATUS_BADGE = {
-  in: { cls: 'q-in', label: '✓', title: 'Advances to the Round of 32' },
+  in: { cls: 'q-in', label: '✓', title: 'Advances to the Round of 32\n(if current match status holds)' },
   best3: { cls: 'q-best3', label: 'Provisional 3rd', title: 'Provisionally among the 8 best third-placed teams — NOT clinched; depends on the other groups still to finish' },
   out3: { cls: 'q-out', label: '·', title: 'Third place, outside the best 8 so far' },
   out: { cls: 'q-out', label: '✕', title: 'Eliminated' },
@@ -154,11 +154,21 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
                     </span>
                   )}
                   {clinched ? (
-                    <span className={`q-badge ${clinched.cls}`} title={clinched.title}>
+                    // Wide text verdicts drop to their own line below the name
+                    // (q-wide) so they don't wrap raggedly beside it in the
+                    // narrow 3-across layout. Single-glyph marks stay inline.
+                    <span className={`q-badge q-wide ${clinched.cls}`} title={clinched.title}>
                       {clinched.label} {clinched.text}
                     </span>
                   ) : (
-                    badge && <span className={`q-badge ${badge.cls}`} title={badge.title}>{badge.label}</span>
+                    badge && (
+                      <span
+                        className={`q-badge ${badge.cls}${status === 'best3' ? ' q-wide' : ''}`}
+                        title={badge.title}
+                      >
+                        {badge.label}
+                      </span>
+                    )
                   )}
                 </td>
                 <td>{r.P}</td><td>{r.W}</td><td>{r.D}</td><td>{r.L}</td>
