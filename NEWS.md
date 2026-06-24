@@ -5,6 +5,16 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Clearer ✓ tooltip on provisional qualifiers.** The "currently top two"
+  checkmark now reads "Advances to the Round of 32 (if current match status
+  holds)" on two lines — making explicit that it reflects the live/current
+  standings (e.g. while a final-matchday game is in progress), not a clinched
+  outcome.
+- **Wide standings verdicts wrap to their own line.** The text badges — "Won
+  group", "Group runner-up", "Provisional 3rd", "Through (3rd)", "Eliminated" —
+  now sit on their own line beneath the team name instead of wrapping raggedly
+  to its right in the narrow 3-groups-across layout. The single-glyph
+  qualification marks (✓ · ✕) stay inline so most rows keep their height.
 - **Best-third table uses the same green/yellow/red scale, per clinch.** The
   "Best third-placed teams" table no longer paints its top 8 green and bottom 4
   red unconditionally. Each row is now tinted by that team's own clinch verdict:

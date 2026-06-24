@@ -1618,6 +1618,14 @@ select {
   padding: 1px 5px;
   border-radius: 5px;
 }
+/* Wide text verdicts (Won group, Group runner-up, Provisional 3rd, Through,
+   Eliminated) sit on their own line under the team name rather than wrapping
+   raggedly beside it. Block + fit-content keeps the pill sized to its text. */
+.col-team .q-badge.q-wide {
+  display: block;
+  width: fit-content;
+  margin: 3px 0 0;
+}
 .q-in { background: rgba(0, 194, 168, 0.18); color: var(--accent); }
 /* Provisional best-third: dashed yellow outline signals "not locked yet". */
 .q-best3 {
