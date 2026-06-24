@@ -38,9 +38,24 @@ describe('fetchBackup (parsing TheSportsDB shape)', () => {
     expect(ns.score).toBeNull()
   })
 
-  it('throws on a non-OK response', async () => {
+  it('throws when no day in the window returns data (all non-OK)', async () => {
     global.fetch = vi.fn(async () => ({ ok: false, status: 500 }))
-    await expect(fetchBackup()).rejects.toThrow(/500/)
+    await expect(fetchBackup()).rejects.toThrow(/Backup request failed/)
+  })
+
+  it('tolerates a partial failure — keeps the days that succeeded', async () => {
+    const feed = {
+      events: [
+        { strHomeTeam: 'Mexico', strAwayTeam: 'South Africa', intHomeScore: '2', intAwayScore: '0', strStatus: 'FT', strTimestamp: '2026-06-11T19:00:00Z' },
+      ],
+    }
+    let n = 0
+    global.fetch = vi.fn(async () => {
+      n += 1
+      return n === 1 ? { ok: false, status: 500 } : { ok: true, json: async () => feed }
+    })
+    const map = await fetchBackup(undefined, ['2026-06-10', '2026-06-11', '2026-06-12'])
+    expect(map.get(pairKey('Mexico', 'South Africa')).score).toEqual([2, 0])
   })
 })
 

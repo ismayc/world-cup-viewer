@@ -83,14 +83,14 @@ describe('fetchBackup (instant fallback + error branches)', () => {
     expect(map.size).toBe(0)
   })
 
-  it('throws when the body is not valid JSON', async () => {
+  it('throws when no day returns usable data (every day errors)', async () => {
     global.fetch = vi.fn(async () => ({
       ok: true,
       json: async () => {
         throw new Error('bad json')
       },
     }))
-    await expect(fetchBackup()).rejects.toThrow(/not valid JSON/)
+    await expect(fetchBackup()).rejects.toThrow(/Backup request failed/)
   })
 })
 

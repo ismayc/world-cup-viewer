@@ -8,7 +8,10 @@
 // source of finished results and a cross-check that flags when the sources
 // disagree (see services/reconcile.js, scripts/check-feed-freshness.mjs).
 //
-// Endpoint: eventsseason for league 4429 ("FIFA World Cup"), season 2026.
+// Endpoint: eventsday for league 4429 ("FIFA World Cup"), fetched across a small
+// date window around "now". (The eventsSEASON endpoint silently freezes after the
+// opening days — it stalled at 5 events on 2026-06-13 — whereas the per-day
+// endpoint stays current. So we mirror the ESPN adapter: a ±1-day window.)
 // strTimestamp is UTC (e.g. "2026-06-11T19:00:00" == our 15:00 ET kickoff), so
 // we append "Z" to get the right instant.
 
@@ -16,8 +19,21 @@ import { normalizeTeam, isRealTeam, pairKey } from './results.js'
 
 export const BACKUP_SOURCE = {
   name: 'TheSportsDB',
-  url: 'https://www.thesportsdb.com/api/v1/json/3/eventsseason.php?id=4429&s=2026',
+  url: 'https://www.thesportsdb.com/league/4429-fifa-world-cup',
   homepage: 'https://www.thesportsdb.com/',
+}
+
+// Per-day results endpoint for one calendar date (YYYY-MM-DD).
+export const sdbDayUrl = (d) => `https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${d}&l=4429`
+
+// Calendar dates (YYYY-MM-DD) from `spread` days before `base` to `spread` after
+// — the small window we poll, matching ESPN's 3-day scoreboard window.
+export function backupDates(base = new Date(), spread = 1) {
+  const out = []
+  for (let off = -spread; off <= spread; off++) {
+    out.push(new Date(base.getTime() + off * 86_400_000).toISOString().slice(0, 10))
+  }
+  return out
 }
 
 // TheSportsDB spellings that differ from ours. (normalizeTeam already maps the
@@ -51,19 +67,10 @@ function instantOf(ev) {
   return Number.isNaN(t) ? null : t
 }
 
-// Build a lookup of FINAL-score records keyed by team pair and kickoff instant
+// Fold one day's events into the lookup, keyed by team pair AND kickoff instant
 // (same scheme as the ESPN adapter), so it slots into the same matching logic.
-export async function fetchBackup(signal) {
-  const res = await fetch(BACKUP_SOURCE.url, { signal, cache: 'no-store' })
-  if (!res.ok) throw new Error(`Backup request failed (HTTP ${res.status})`)
-  let data
-  try {
-    data = await res.json()
-  } catch {
-    throw new Error('Backup response was not valid JSON')
-  }
-  const map = new Map()
-  for (const ev of data.events || []) {
+function ingestEvents(map, events) {
+  for (const ev of events || []) {
     const home = normSdb(ev.strHomeTeam)
     const away = normSdb(ev.strAwayTeam)
     if (!home || !away) continue
@@ -85,6 +92,29 @@ export async function fetchBackup(signal) {
     map.set(pairKey(home, away), rec)
     if (rec.instant != null) map.set('inst:' + rec.instant, rec)
   }
+  return map
+}
+
+// Build the FINAL-score lookup by polling the per-day endpoint across a date
+// window. Resilient: a single day's failure is tolerated; we only throw if NO
+// day returned data (so a transient blip doesn't wipe the backup source).
+export async function fetchBackup(signal, dates = backupDates()) {
+  const settled = await Promise.allSettled(
+    dates.map((d) =>
+      fetch(sdbDayUrl(d), { signal, cache: 'no-store' }).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      }),
+    ),
+  )
+  const map = new Map()
+  let any = false
+  for (const s of settled) {
+    if (s.status !== 'fulfilled') continue
+    any = true
+    ingestEvents(map, s.value.events)
+  }
+  if (!any) throw new Error('Backup request failed (no day in the window returned data)')
   return map
 }
 
