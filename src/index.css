@@ -12,6 +12,7 @@
   --accent-ink: #06231f;
   --accent-2: #ff5a5f;
   --gold: #f4c542;
+  --silver: #c3ccdb;
   --live: #ff4757;
   --delay: #f5a623;
   --radius: 14px;
@@ -32,6 +33,7 @@
   --accent-ink: #ffffff;
   --accent-2: #e23b41;
   --gold: #a9760a;
+  --silver: #5b6678;
   --live: #e23b41;
   --delay: #c97a00;
   --shadow: 0 6px 20px rgba(20, 35, 80, 0.1);
@@ -1614,6 +1616,7 @@ select {
 .q-out { background: transparent; color: var(--text-faint); }
 /* Guaranteed clinch verdicts (also used as match-card tags). */
 .c-won { background: rgba(244, 197, 66, 0.22); color: var(--gold); }
+.c-silver { background: rgba(176, 186, 201, 0.24); color: var(--silver); }
 .c-in { background: rgba(0, 194, 168, 0.18); color: var(--accent); }
 .c-out { background: rgba(220, 80, 80, 0.16); color: #e06868; }
 .clinch-tag {

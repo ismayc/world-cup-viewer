@@ -280,6 +280,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
           tie-breakers
         </span>{' '}
         · <span className="q-badge c-won">🥇 Won group</span> /{' '}
+        <span className="q-badge c-silver">🥈 Group runner-up</span> /{' '}
         <span className="q-badge c-in">✅ Through</span> /{' '}
         <span className="q-badge c-out">❌ Out</span> mark mathematically clinched outcomes.
       </p>

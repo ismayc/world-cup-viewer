@@ -155,7 +155,8 @@ function pointsAnalysis(group, matches) {
 
 // Public: map of team name -> clinch status string (or null).
 //   'won-group' — guaranteed to finish 1st in the group
-//   'top2'      — guaranteed to finish 1st or 2nd (advances directly)
+//   'runner-up' — guaranteed to finish EXACTLY 2nd (the settled group runner-up)
+//   'top2'      — guaranteed top two, but 1st-vs-2nd still open
 //   'third'     — guaranteed to advance as one of the 8 best third-placed teams
 //   'eliminated'— cannot advance under any remaining results
 //   null        — still undecided (or not yet computable)
@@ -196,7 +197,14 @@ export function computeClinch(matches) {
         status[name] = 'won-group'
         continue
       }
-      // Top two — precise, or guaranteed on points alone.
+      // Exactly 2nd locked → the settled group runner-up. Mirrors won-group for
+      // 1st: precise when the group is enumerable (only rank 2 is reachable),
+      // else a strict points lock (always exactly 2nd, no tie could push it off).
+      if ((feasible && rset.size === 1 && rset.has(2)) || (pess === 2 && opt === 2)) {
+        status[name] = 'runner-up'
+        continue
+      }
+      // Top two but order open — precise, or guaranteed on points alone.
       if ((feasible && saMax <= 2) || pess <= 2) {
         status[name] = 'top2'
         continue
@@ -324,6 +332,8 @@ export function clinchHeadline({ team, group, status }) {
   switch (status) {
     case 'won-group':
       return `🥇 ${team} have WON Group ${group}`
+    case 'runner-up':
+      return `🥈 ${team} are THROUGH as Group ${group} RUNNERS-UP`
     case 'top2':
       return `✅ ${team} are THROUGH to the Round of 32 (top two of Group ${group})`
     case 'third':
@@ -340,10 +350,12 @@ export function clinchBadge(status) {
   switch (status) {
     case 'won-group':
       return { cls: 'c-won', label: '🥇', text: 'Won group', title: 'Has clinched first place in the group' }
+    case 'runner-up':
+      return { cls: 'c-silver', label: '🥈', text: 'Group runner-up', title: 'Has clinched second place — through to the Round of 32 as the group runner-up' }
     case 'top2':
-      return { cls: 'c-in', label: '✅', text: 'Through', title: 'Has clinched a top-two finish — through to the Round of 32' }
+      return { cls: 'c-in', label: '✅', text: 'Through', title: 'Has clinched a top-two finish — through to the Round of 32 (1st vs 2nd still open)' }
     case 'third':
-      return { cls: 'c-in', label: '✅', text: 'Through', title: 'Has clinched advancement to the Round of 32 (guaranteed to finish in a qualifying place, worst case as a best third-placed team)' }
+      return { cls: 'c-in', label: '✅', text: 'Through (3rd)', title: 'Has clinched advancement to the Round of 32 as one of the 8 best third-placed teams' }
     case 'eliminated':
       return { cls: 'c-out', label: '❌', text: 'Eliminated', title: 'Cannot advance under any remaining results' }
     default:
