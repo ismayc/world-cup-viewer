@@ -555,7 +555,7 @@ export default function App() {
 
       {view === 'groups' && (
         <main className="groups-view">
-          <Standings matches={matches} hideScores={hideScores} clinch={clinch} onGoToMatch={goToBracketMatch} />
+          <Standings matches={matches} tz={tz} hideScores={hideScores} clinch={clinch} onGoToMatch={goToBracketMatch} />
         </main>
       )}
 

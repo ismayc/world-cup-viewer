@@ -893,6 +893,21 @@ select {
 }
 .rank { color: var(--text-faint); margin-right: 7px; font-size: 0.75rem; }
 .row-team { color: var(--text); font-weight: 500; margin-left: 6px; }
+.row-team-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px dotted transparent;
+}
+.row-team-btn:hover,
+.row-team-btn:focus-visible {
+  color: var(--accent-2);
+  border-bottom-color: var(--accent-2);
+  outline: none;
+}
 .group-note { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-faint); }
 .standings-hidden, .empty {
   text-align: center; padding: 50px 20px; color: var(--text-dim);
@@ -1482,6 +1497,54 @@ select {
 .timeline .tl-t2 { flex-direction: row-reverse; text-align: right; }
 .tl-min { font-variant-numeric: tabular-nums; color: var(--text-faint); min-width: 30px; }
 .tl-name em { color: var(--text-faint); font-style: normal; font-size: 0.78rem; }
+
+/* ---------- Group games modal ---------- */
+.gg-modal { width: min(520px, 100%); }
+.gg-head-team { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+.gg-spoiler-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  flex-wrap: wrap; font-size: 0.82rem; color: var(--text-dim);
+  margin-bottom: 12px; padding: 8px 10px; border-radius: 8px; background: var(--card);
+}
+.gg-reveal {
+  background: var(--accent); color: var(--accent-ink); border: none;
+  padding: 5px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+}
+.gg-count {
+  font-size: 0.7rem; font-weight: 600; color: var(--text-faint);
+  background: var(--card); border-radius: 999px; padding: 1px 8px; margin-left: 6px;
+}
+.gg-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gg-fixture {
+  width: 100%; display: grid; gap: 4px; text-align: left;
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 10px; cursor: pointer; color: var(--text);
+}
+.gg-fixture:hover,
+.gg-fixture:focus-visible { border-color: var(--accent-2); outline: none; }
+.gg-when { font-size: 0.7rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.gg-matchup {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+}
+.gg-team { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.gg-matchup > .gg-team:last-child { flex-direction: row-reverse; text-align: right; }
+.gg-flag { font-size: 1.1rem; }
+.gg-name { font-size: 0.86rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gg-team-sel .gg-name { font-weight: 800; color: var(--accent-2); }
+.gg-result { text-align: center; }
+.gg-score { font-weight: 800; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.gg-score-hidden { color: var(--text-faint); }
+.gg-pens { font-size: 0.66rem; font-weight: 600; color: var(--text-faint); }
+.gg-vs { font-size: 0.78rem; font-style: italic; color: var(--text-faint); }
+.gg-status { display: flex; justify-content: center; }
+.gg-badge {
+  font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 1px 7px; border-radius: 999px;
+}
+.gg-final { background: rgba(0, 194, 168, 0.14); color: var(--accent); }
+.gg-upcoming { background: var(--card); color: var(--text-faint); border: 1px solid var(--border); }
+.gg-voided { background: rgba(240, 173, 78, 0.16); color: #f0ad4e; }
+.gg-empty { font-size: 0.82rem; color: var(--text-faint); margin: 0; }
 
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }
