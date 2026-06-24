@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import NextMatch from '../src/components/NextMatch.jsx'
 import { FollowProvider } from '../src/context/follow.jsx'
@@ -43,5 +43,35 @@ describe('NextMatch — stacking multiple live matches', () => {
     renderNM([live(a), live(b)])
     expect(document.querySelectorAll('.nm-live-row')).toHaveLength(2)
     for (const name of [a.t1, b.t1]) expect(screen.getByText(name)).toBeInTheDocument()
+  })
+})
+
+describe('NextMatch — stacking simultaneous upcoming matches', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    // Before the 15:00 EDT (19:00 UTC) kickoff that a (M49) and b (M50) share.
+    vi.setSystemTime(new Date('2026-06-24T12:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('stacks every upcoming match sharing the earliest kickoff when no favorite is set', () => {
+    renderNM([a, b])
+    expect(screen.getByText(/Next matches/)).toBeInTheDocument()
+    expect(screen.getByText('2 at once')).toBeInTheDocument()
+    const rows = document.querySelectorAll('.nm-live-row')
+    expect(rows).toHaveLength(2)
+    for (const name of [a.t1, a.t2, b.t1, b.t2]) expect(screen.getByText(name)).toBeInTheDocument()
+    fireEvent.click(rows[0]) // exercises the row's jump handler (no day element → no-op)
+  })
+
+  it('shows only the followed team’s single match (no stack) even if another kicks off at the same time', () => {
+    localStorage.setItem('wc2026:followed', JSON.stringify([b.t1]))
+    renderNM([a, b])
+    expect(document.querySelector('.nm-live-row')).toBeNull()
+    expect(screen.getByText(/Your next match/)).toBeInTheDocument()
+    expect(screen.getByText(b.t1)).toBeInTheDocument()
+    expect(screen.queryByText(a.t1)).toBeNull()
   })
 })

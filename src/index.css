@@ -1419,6 +1419,7 @@ select {
   text-align: left;
 }
 .nm-live-row:hover { border-color: var(--accent); }
+.nm-stack-bottom { margin-top: 2px; }
 .nm-row-name { font-size: 0.98rem; font-weight: 700; }
 .nm-live-row .nm-when { margin-left: auto; overflow-wrap: anywhere; }
 .nm-live-row .badge-live,

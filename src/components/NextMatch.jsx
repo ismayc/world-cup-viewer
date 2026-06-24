@@ -41,8 +41,15 @@ export default function NextMatch({ matches, tz }) {
     const upcoming = matches
       .filter((m) => !m.voided && new Date(m.ko).getTime() > now)
       .sort((a, b) => new Date(a.ko) - new Date(b.ko))
-    const next = (count > 0 && upcoming.find(involvesFollowed)) || upcoming[0]
-    return { mode: 'next', list: next ? [next] : [], followed: next ? involvesFollowed(next) : false }
+    if (!upcoming.length) return { mode: 'next', list: [], followed: false }
+    // A followed team's next game wins outright (single card). Otherwise no
+    // favorite is driving the pick, so stack every match sharing the earliest
+    // kickoff — final group matchdays run two simultaneous games.
+    const followedNext = count > 0 ? upcoming.find(involvesFollowed) : null
+    if (followedNext) return { mode: 'next', list: [followedNext], followed: true }
+    const firstKo = new Date(upcoming[0].ko).getTime()
+    const list = upcoming.filter((m) => new Date(m.ko).getTime() === firstKo)
+    return { mode: 'next', list, followed: false }
   }, [matches, now, isFollowed, count])
 
   const jumpTo = (m) => {
@@ -78,6 +85,45 @@ export default function NextMatch({ matches, tz }) {
             </button>
           )
         })}
+      </div>
+    )
+  }
+
+  // Two-plus upcoming matches sharing the same kickoff and no favorite to single
+  // out → stack them under one shared countdown.
+  if (mode === 'next' && list.length > 1) {
+    const first = list[0]
+    const t = parts(new Date(first.ko).getTime() - now)
+    return (
+      <div className="nextmatch nextmatch-stack">
+        <div className="nm-label">
+          ⏱ Next matches<span className="nm-stage">{list.length} at once</span>
+        </div>
+        {list.map((m) => {
+          const v = VENUES[m.venue]
+          const st = m.stage === 'Group' ? `Group ${m.group}` : STAGE_LABELS[m.stage]
+          return (
+            <button key={m.num} className="nm-live-row" onClick={() => jumpTo(m)}>
+              <span className="nm-flag">{FLAG_BY_TEAM[m.t1] || '•'}</span>
+              <span className="nm-row-name">{m.t1}</span>
+              <span className="nm-v">vs</span>
+              <span className="nm-row-name">{m.t2}</span>
+              <span className="nm-flag">{FLAG_BY_TEAM[m.t2] || '•'}</span>
+              <span className="nm-when">{st} · {v.city}</span>
+            </button>
+          )
+        })}
+        <div className="nm-bottom nm-stack-bottom">
+          <span className="nm-countdown" aria-label="time until kickoff">
+            {t.d > 0 && <b>{t.d}<small>d</small></b>}
+            <b>{t.h}<small>h</small></b>
+            <b>{t.m}<small>m</small></b>
+            <b>{t.s}<small>s</small></b>
+          </span>
+          <span className="nm-when">
+            {formatTime(first.ko, tz)} {tzAbbrev(first.ko, tz)}
+          </span>
+        </div>
       </div>
     )
   }
