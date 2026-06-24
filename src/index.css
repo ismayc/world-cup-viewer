@@ -917,6 +917,20 @@ select {
 .standings-table .qualifies .col-team {
   border-left: 3px solid var(--accent);
 }
+/* On the bubble — provisional best-third place (yellow). */
+.standings-table .provisional td {
+  background: rgba(244, 197, 66, 0.08);
+}
+.standings-table .provisional .col-team {
+  border-left: 3px solid var(--gold);
+}
+/* Mathematically eliminated (red). */
+.standings-table .eliminated td {
+  background: rgba(220, 80, 80, 0.06);
+}
+.standings-table .eliminated .col-team {
+  border-left: 3px solid var(--accent-2);
+}
 .rank { color: var(--text-faint); margin-right: 7px; font-size: 0.75rem; }
 .row-team { color: var(--text); font-weight: 500; margin-left: 6px; }
 .row-team-btn {

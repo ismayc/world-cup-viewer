@@ -43,6 +43,35 @@ describe('Standings', () => {
     expect(screen.getByText(/Eliminated/)).toBeInTheDocument()
   })
 
+  it('tints group rows green / yellow / red by qualification outlook', () => {
+    // Only Group A complete: Mexico 9 (1st), South Korea 6 (2nd), Czechia 3
+    // (3rd — a provisional best-third while other groups play), South Africa 0.
+    const fixture = MATCHES.map((m) => {
+      if (m.stage === 'Group' && m.group === 'A') {
+        const s = { 1: [2, 0], 2: [2, 0], 25: [2, 0], 28: [1, 0], 53: [0, 2], 54: [0, 1] }[m.num]
+        return { ...m, score: s }
+      }
+      return m
+    })
+    const { container } = render(
+      <FollowProvider>
+        <Standings
+          matches={fixture}
+          hideScores={false}
+          clinch={{ Mexico: 'won-group', 'South Africa': 'eliminated' }}
+        />
+      </FollowProvider>,
+    )
+    const rowFor = (team) =>
+      [...container.querySelectorAll('.standings-table tbody tr')].find(
+        (tr) => tr.querySelector('.row-team-btn')?.textContent === team,
+      )
+    expect(rowFor('Mexico').className).toBe('qualifies') // clinched winner → green
+    expect(rowFor('South Korea').className).toBe('qualifies') // 2nd → green
+    expect(rowFor('Czechia').className).toBe('provisional') // provisional best-third → yellow
+    expect(rowFor('South Africa').className).toBe('eliminated') // out → red
+  })
+
   it('hides standings in spoiler-free mode and reveals on click', () => {
     renderStandings({ hideScores: true })
     expect(screen.getByText(/Standings are hidden/)).toBeInTheDocument()

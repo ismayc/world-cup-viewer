@@ -5,6 +5,13 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Group standings rows tint green / yellow / red by outlook.** Extending the
+  existing green highlight for the top two: a **provisional best-third** row now
+  gets a subtle **yellow** tint + gold left-border, and a **mathematically
+  eliminated** team gets a **red** tint + red left-border. Same understated
+  treatment as the green (very light background, the colored edge carries the
+  signal), so the row colors now line up with the clinch badge scale —
+  advancing / on the bubble / out. Undecided rows stay plain. +1 test.
 - **Distinct "Group runner-up" and "Through (3rd)" clinch badges.** Added a new
   `runner-up` clinch status for a team locked into *exactly* 2nd (separate from
   `top2`, which now means "top two, but 1st-vs-2nd still open"). It shows a silver

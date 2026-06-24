@@ -124,8 +124,15 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
             const clinched = clinchBadge(clinch?.[r.name])
             const status = rowStatus(r, group, qual)
             const badge = status && STATUS_BADGE[status]
+            // Row tint mirrors the badge scale: green = advancing (top two or a
+            // clinched best-third), yellow = provisional best-third (on the
+            // bubble), red = mathematically eliminated. Plain = still undecided.
+            const c = clinch?.[r.name]
+            const advancing =
+              status === 'in' || c === 'won-group' || c === 'runner-up' || c === 'top2' || c === 'third'
+            const rowCls = c === 'eliminated' ? 'eliminated' : advancing ? 'qualifies' : status === 'best3' ? 'provisional' : ''
             return (
-              <tr key={r.name} className={r.rank <= 2 ? 'qualifies' : ''}>
+              <tr key={r.name} className={rowCls}>
                 <td className="col-team">
                   <span className="rank">{r.rank}</span>
                   <Star name={r.name} />
