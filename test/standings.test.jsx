@@ -72,6 +72,34 @@ describe('Standings', () => {
     expect(rowFor('South Africa').className).toBe('eliminated') // out → red
   })
 
+  it('tints the best-third table per clinch: bubble yellow, clinched green, out red', () => {
+    // Only Group A complete → Czechia is its (sole) third-placed team, so it is
+    // the lone row in the best-third table.
+    const fixture = MATCHES.map((m) => {
+      if (m.stage === 'Group' && m.group === 'A') {
+        const s = { 1: [2, 0], 2: [2, 0], 25: [2, 0], 28: [1, 0], 53: [0, 2], 54: [0, 1] }[m.num]
+        return { ...m, score: s }
+      }
+      return m
+    })
+    const classFor = (clinch) => {
+      const { container, unmount } = render(
+        <FollowProvider>
+          <Standings matches={fixture} hideScores={false} clinch={clinch} />
+        </FollowProvider>,
+      )
+      const row = [...container.querySelectorAll('.thirds-card tbody tr')].find(
+        (tr) => tr.querySelector('.row-team')?.textContent === 'Czechia',
+      )
+      const cls = row?.className
+      unmount()
+      return cls
+    }
+    expect(classFor({})).toBe('provisional') // undecided, currently top 8 → yellow
+    expect(classFor({ Czechia: 'third' })).toBe('qualifies') // clinched best-third → green
+    expect(classFor({ Czechia: 'eliminated' })).toBe('eliminated') // out → red
+  })
+
   it('hides standings in spoiler-free mode and reveals on click', () => {
     renderStandings({ hideScores: true })
     expect(screen.getByText(/Standings are hidden/)).toBeInTheDocument()

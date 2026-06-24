@@ -5,6 +5,13 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Best-third table uses the same green/yellow/red scale, per clinch.** The
+  "Best third-placed teams" table no longer paints its top 8 green and bottom 4
+  red unconditionally. Each row is now tinted by that team's own clinch verdict:
+  **green** once it has clinched a best-third spot, **red** once mathematically
+  eliminated, **yellow** while merely provisional (currently top 8), plain
+  otherwise — matching the group tables. Rows flip to green the instant a team
+  clinches, not only when every group finishes. +1 test.
 - **Group standings rows tint green / yellow / red by outlook.** Extending the
   existing green highlight for the top two: a **provisional best-third** row now
   gets a subtle **yellow** tint + gold left-border, and a **mathematically
