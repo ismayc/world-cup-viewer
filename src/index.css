@@ -1180,9 +1180,9 @@ select {
 }
 .week-cell:hover { filter: brightness(1.12); }
 .wc-time { font-size: 0.72rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-.wc-team { display: flex; align-items: center; gap: 5px; }
+.wc-team { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .wc-flag { font-size: 0.95rem; flex: 0 0 auto; }
-.wc-name { font-size: 0.8rem; font-weight: 600; line-height: 1.2; }
+.wc-name { font-size: 0.8rem; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wc-mid { font-size: 0.66rem; color: var(--text-faint); margin: 1px 0 1px 22px; }
 .wc-foot {
   margin-top: 5px;
