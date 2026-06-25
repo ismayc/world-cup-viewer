@@ -17,6 +17,14 @@
 // fair play (cards) → FIFA ranking.
 
 export const FINAL_GROUP_RESULTS = {
+  // Mexico sweep all three games (9 pts). South Africa edge South Korea on
+  // points alone (4 vs 3); no tie-breaker needed. Czechia last with 1 pt.
+  A: {
+    verifiedOn: '2026-06-25',
+    sources: ['OpenFootball', 'Web search (Yahoo Sports, CBS Sports, Bolavip)'],
+    scores: { 1: [2, 0], 2: [2, 1], 25: [1, 1], 28: [1, 0], 53: [0, 3], 54: [1, 0] },
+    order: ['Mexico', 'South Africa', 'South Korea', 'Czechia'],
+  },
   // Switzerland win the group. Canada and Bosnia both finish on 4 points with a
   // 1–1 head-to-head, so 2nd is decided on overall goal difference: Canada +5
   // (the 6–0 win over Qatar) vs Bosnia −1 → Canada 2nd, Bosnia 3rd.

@@ -5,6 +5,13 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-25
+- **Locked Group A final standings.** All six Group A matches complete and
+  cross-verified against two independent sources (OpenFootball + web search via
+  Yahoo Sports / CBS Sports / Bolavip). Final order: **Mexico** 1st (9 pts, GD +6,
+  swept all three games with clean sheets), **South Africa** 2nd (4 pts, GD −1),
+  **South Korea** 3rd (3 pts, GD −1), **Czechia** 4th (1 pt, GD −4). South Africa
+  and South Korea separated on points alone; no tie-breaker needed. Frozen in
+  `test/fixtures/final-group-results.js`.
 - **Locked Group C final standings.** All six Group C matches are complete and
   verified against two independent sources (OpenFootball + ESPN). Final order:
   **Brazil** 1st (7 pts, GD +6), **Morocco** 2nd (7 pts, GD +3), **Scotland**
