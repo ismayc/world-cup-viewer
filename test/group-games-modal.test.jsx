@@ -18,6 +18,12 @@ const renderStandings = (matches, opener = () => {}, clinch = {}) =>
 const withGroupAResult = () =>
   MATCHES.map((m) => (m.num === 1 ? { ...m, score: [2, 1] } : m))
 
+// Complete every match in Groups A and B (any scores — completion is by count),
+// so a Runner-up A vs Runner-up B (R32 match 73) tie is fully locked.
+const GROUP_AB_NUMS = new Set([1, 2, 25, 28, 53, 54, 3, 5, 26, 27, 49, 50])
+const completeGroupsAB = () =>
+  MATCHES.map((m) => (GROUP_AB_NUMS.has(m.num) ? { ...m, score: [2, 0] } : m))
+
 describe('Group games pop-up', () => {
   it('shows only the selected team’s three matches when a team is clicked', () => {
     renderStandings(withGroupAResult())
@@ -76,6 +82,27 @@ describe('Group games pop-up', () => {
     expect(ko).toHaveTextContent(/qualified for the knockout round/i)
     // The selected team appears in the projected matchup line.
     expect(ko.querySelector('.gg-ko-match')).toHaveTextContent('Mexico')
+  })
+
+  it('drops the "provisional" note once both sides of the R32 tie are locked', () => {
+    // Groups A & B complete + Canada clinched runner-up → the Runner-up A v
+    // Runner-up B tie (match 73) is settled, not provisional.
+    renderStandings(completeGroupsAB(), () => {}, { Canada: 'runner-up' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Canada' }))
+    const ko = document.querySelector('.gg-knockout')
+    expect(ko).toBeInTheDocument()
+    expect(ko.querySelector('.gg-ko-match')).toHaveTextContent('Canada')
+    expect(ko.querySelector('.gg-ko-note')).toBeNull()
+  })
+
+  it('keeps the "provisional" note while the feeding groups are unfinished', () => {
+    renderStandings(MATCHES, () => {}, { Canada: 'runner-up' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Canada' }))
+    const ko = document.querySelector('.gg-knockout')
+    expect(ko).toBeInTheDocument()
+    expect(ko.querySelector('.gg-ko-note')).toBeInTheDocument()
   })
 
   it('omits the Round-of-32 section for a team that has not clinched', () => {
