@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-24
+- **Knockout matchup in the team pop-up.** Once a team has *clinched* a Round-of-32
+  place (group winner, top-two, or a best third-placed team — from the same
+  `computeClinch` verdict the standings badges use), its team pop-up now shows a
+  **Round of 32** section below the group fixtures: the projected opponent (or
+  "To be determined") and match number, pulled from the "As it stands" projection,
+  with the clinch badge (🥇 Won group / ✅ Through). It's labeled a projected
+  matchup until finishing positions are locked and every group has finished, so it
+  never over-promises an opponent. Shown only for a selected team that's actually
+  through — not for the whole-group view. +3 tests.
 - **TheSportsDB backup source restored.** The integration queried
   `eventsseason.php?…s=2026`, which silently **froze at 5 events on Jun 13** — so
   the third corroborating source went dark after the opening days. Switched

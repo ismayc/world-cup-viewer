@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { VENUES } from '../data/venues.js'
 import { formatTime, tzAbbrev, liveState, statusFlag } from '../utils/time.js'
+import { clinchBadge } from '../utils/clinch.js'
 import { useModalA11y } from '../hooks/useModalA11y.js'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
@@ -69,9 +70,57 @@ function FixtureRow({ match, tz, team, scoreHidden, onOpen }) {
   )
 }
 
+// Once a team has clinched a Round-of-32 place, show who they're set to play
+// there — the projected opponent (provisional until the bracket fully settles).
+function KnockoutSection({ team, knockout }) {
+  if (!team || !knockout) return null
+  const how =
+    knockout.status === 'won-group'
+      ? 'as group winners'
+      : knockout.status === 'runner-up'
+        ? 'as group runners-up'
+        : knockout.status === 'top2'
+          ? 'with a top-two finish'
+          : 'as one of the best third-placed teams'
+  const badge = clinchBadge(knockout.status)
+  return (
+    <div className="md-section gg-knockout">
+      <h4>
+        Round of 32
+        {badge && <span className={`gg-ko-badge ${badge.cls}`} title={badge.title}>{badge.label} {badge.text}</span>}
+      </h4>
+      <p className="gg-ko-sub">{team} qualified for the knockout round {how}.</p>
+      <div className="gg-ko-match">
+        <span className="gg-ko-side gg-team-sel">
+          <span className="gg-flag">{FLAG_BY_TEAM[team] || '•'}</span>
+          <span className="gg-name">{team}</span>
+        </span>
+        <span className="gg-ko-vs">vs</span>
+        <span className="gg-ko-side">
+          {knockout.opponent ? (
+            <>
+              <span className="gg-flag">{FLAG_BY_TEAM[knockout.opponent] || '•'}</span>
+              <span className="gg-name">{knockout.opponent}</span>
+            </>
+          ) : (
+            <span className="gg-name gg-ko-tbd">To be determined</span>
+          )}
+        </span>
+        {knockout.matchNum && <span className="gg-ko-num">Match {knockout.matchNum}</span>}
+      </div>
+      {!knockout.settled && (
+        <p className="gg-ko-note">
+          Projected matchup — the opponent can still change as the remaining group games finish.
+        </p>
+      )}
+    </div>
+  )
+}
+
 // Pop-up for a single group: every fixture, split into games already played
 // (results) and games still to come. Opened by clicking a team in the standings.
-export default function GroupGamesModal({ group, team, matches, tz, hideScores, onClose }) {
+// `knockout` is set only when a selected team has clinched a Round-of-32 place.
+export default function GroupGamesModal({ group, team, matches, tz, hideScores, knockout, onClose }) {
   const cardRef = useModalA11y(onClose)
   const openDetail = useDetail()
   const [revealed, setRevealed] = useState(false)
@@ -142,6 +191,8 @@ export default function GroupGamesModal({ group, team, matches, tz, hideScores, 
             <p className="gg-empty">All group games have been played.</p>
           )}
         </div>
+
+        <KnockoutSection team={team} knockout={knockout} />
       </div>
     </div>
   )

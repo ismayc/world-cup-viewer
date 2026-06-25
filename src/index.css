@@ -1623,6 +1623,25 @@ select {
 .gg-upcoming { background: var(--card); color: var(--text-faint); border: 1px solid var(--border); }
 .gg-voided { background: rgba(240, 173, 78, 0.16); color: #f0ad4e; }
 .gg-empty { font-size: 0.82rem; color: var(--text-faint); margin: 0; }
+.gg-knockout h4 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gg-ko-badge {
+  font-size: 0.66rem; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  text-transform: none; letter-spacing: 0;
+}
+.gg-ko-sub { font-size: 0.82rem; color: var(--text-dim); margin: 0 0 10px; }
+.gg-ko-match {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px;
+}
+.gg-ko-side { display: flex; align-items: center; gap: 6px; }
+.gg-ko-vs { font-size: 0.78rem; font-style: italic; color: var(--text-faint); }
+.gg-ko-tbd { color: var(--text-faint); font-style: italic; }
+.gg-ko-num {
+  margin-left: auto; font-size: 0.66rem; font-weight: 700; color: var(--text-faint);
+  background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px;
+}
+.gg-ko-note { font-size: 0.74rem; color: var(--text-faint); margin: 8px 0 0; font-style: italic; }
 
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }

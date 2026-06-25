@@ -271,6 +271,37 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
 
   const qual = computeQualification(matches)
   const { perGroup } = projectKnockout(matches)
+
+  // For a team that has CLINCHED a Round-of-32 place, its projected knockout
+  // matchup (opponent + match number), pulled from the same projection that
+  // powers "As it stands". null unless the team is mathematically through —
+  // we only promise a knockout opponent once a team has actually made it.
+  const teamKnockout = (group, team) => {
+    if (!team) return null
+    const status = clinch?.[team]
+    const through =
+      status === 'won-group' || status === 'runner-up' || status === 'top2' || status === 'third'
+    if (!through) return null
+    const row = (qual.groups[group] || []).find((r) => r.name === team)
+    if (!row) return null
+    const proj = perGroup[group] || {}
+    const dest = row.rank === 1 ? proj.first : row.rank === 2 ? proj.second : row.rank === 3 ? proj.third : null
+    // The exact opponent is only fixed once finishing positions are locked AND
+    // every group has finished (third-place pairings shuffle until then). A
+    // 'won-group'/'runner-up' verdict pins the exact finishing position.
+    const positionLocked =
+      qual.completion[group] ||
+      (status === 'won-group' && row.rank === 1) ||
+      (status === 'runner-up' && row.rank === 2)
+    const opponent = dest?.opponent || null
+    return {
+      status,
+      opponent,
+      matchNum: dest?.matchNum || null,
+      settled: Boolean(opponent) && positionLocked && qual.allComplete,
+    }
+  }
+
   // Teams currently playing a group match — the standings + "As it stands" below
   // reflect their in-progress score, so we blink them to show it's provisional.
   const liveTeams = new Set()
@@ -345,6 +376,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
           matches={matches}
           tz={tz}
           hideScores={hideScores}
+          knockout={teamKnockout(groupGames.group, groupGames.team)}
           onClose={() => setGroupGames(null)}
         />
       )}

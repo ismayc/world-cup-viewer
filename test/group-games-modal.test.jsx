@@ -5,11 +5,11 @@ import { DetailContext } from '../src/context/detail.js'
 import Standings from '../src/components/Standings.jsx'
 import { MATCHES } from '../src/data/matches.js'
 
-const renderStandings = (matches, opener = () => {}) =>
+const renderStandings = (matches, opener = () => {}, clinch = {}) =>
   render(
     <FollowProvider>
       <DetailContext.Provider value={opener}>
-        <Standings matches={matches} tz="America/New_York" hideScores={false} clinch={{}} />
+        <Standings matches={matches} tz="America/New_York" hideScores={false} clinch={clinch} />
       </DetailContext.Provider>
     </FollowProvider>,
   )
@@ -64,5 +64,31 @@ describe('Group games pop-up', () => {
     expect(tip).toBeInTheDocument()
     expect(tip).toHaveTextContent(/click a team name/i)
     expect(tip).toHaveTextContent(/group title/i)
+  })
+
+  it('shows the Round-of-32 matchup for a team that has clinched a place', () => {
+    renderStandings(MATCHES, () => {}, { Mexico: 'won-group' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mexico' }))
+    const ko = document.querySelector('.gg-knockout')
+    expect(ko).toBeInTheDocument()
+    expect(ko).toHaveTextContent(/Round of 32/i)
+    expect(ko).toHaveTextContent(/qualified for the knockout round/i)
+    // The selected team appears in the projected matchup line.
+    expect(ko.querySelector('.gg-ko-match')).toHaveTextContent('Mexico')
+  })
+
+  it('omits the Round-of-32 section for a team that has not clinched', () => {
+    renderStandings(MATCHES) // empty clinch map
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mexico' }))
+    expect(document.querySelector('.gg-knockout')).toBeNull()
+  })
+
+  it('shows no knockout section when a group title (no single team) is opened', () => {
+    renderStandings(MATCHES, () => {}, { Mexico: 'won-group' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Group A' }))
+    expect(document.querySelector('.gg-knockout')).toBeNull()
   })
 })
