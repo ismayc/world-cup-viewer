@@ -4,6 +4,22 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-25
+- **Locked Group A final standings.** All six Group A matches complete and
+  cross-verified against two independent sources (OpenFootball + web search via
+  Yahoo Sports / CBS Sports / Bolavip). Final order: **Mexico** 1st (9 pts, GD +6,
+  swept all three games with clean sheets), **South Africa** 2nd (4 pts, GD −1),
+  **South Korea** 3rd (3 pts, GD −1), **Czechia** 4th (1 pt, GD −4). South Africa
+  and South Korea separated on points alone; no tie-breaker needed. Frozen in
+  `test/fixtures/final-group-results.js`.
+- **Locked Group C final standings.** All six Group C matches are complete and
+  verified against two independent sources (OpenFootball + ESPN). Final order:
+  **Brazil** 1st (7 pts, GD +6), **Morocco** 2nd (7 pts, GD +3), **Scotland**
+  3rd (3 pts, GD −3), **Haiti** 4th (0 pts). Brazil and Morocco each went W2 D1;
+  goal difference separates them. Scotland advance provisionally as a best
+  third-placed team pending the other groups. Frozen in
+  `test/fixtures/final-group-results.js`.
+
 ## 2026-06-24
 - **Knockout matchup in the team pop-up.** Once a team has *clinched* a Round-of-32
   place (group winner, runner-up, top-two, or a best third-placed team — from the
