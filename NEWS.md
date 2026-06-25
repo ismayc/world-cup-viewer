@@ -4,6 +4,15 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-25
+- **Locked Group C final standings.** All six Group C matches are complete and
+  verified against two independent sources (OpenFootball + ESPN). Final order:
+  **Brazil** 1st (7 pts, GD +6), **Morocco** 2nd (7 pts, GD +3), **Scotland**
+  3rd (3 pts, GD −3), **Haiti** 4th (0 pts). Brazil and Morocco each went W2 D1;
+  goal difference separates them. Scotland advance provisionally as a best
+  third-placed team pending the other groups. Frozen in
+  `test/fixtures/final-group-results.js`.
+
 ## 2026-06-24
 - **TheSportsDB backup source restored.** The integration queried
   `eventsseason.php?…s=2026`, which silently **froze at 5 events on Jun 13** — so

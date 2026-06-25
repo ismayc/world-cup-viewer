@@ -26,6 +26,14 @@ export const FINAL_GROUP_RESULTS = {
     scores: { 3: [1, 1], 5: [1, 1], 26: [4, 1], 27: [6, 0], 49: [2, 1], 50: [3, 1] },
     order: ['Switzerland', 'Canada', 'Bosnia & Herzegovina', 'Qatar'],
   },
+  // Brazil and Morocco both finish on 7 points (W2 D1); Brazil wins the group
+  // on goal difference (+6 vs +3). Scotland 3rd on 3 pts (GD −3). Haiti winless.
+  C: {
+    verifiedOn: '2026-06-25',
+    sources: ['OpenFootball', 'ESPN'],
+    scores: { 6: [1, 1], 7: [0, 1], 30: [0, 1], 31: [3, 0], 51: [0, 3], 52: [4, 2] },
+    order: ['Brazil', 'Morocco', 'Scotland', 'Haiti'],
+  },
 }
 
 // The official Round-of-32 draw, as published by FIFA once the group stage ends:
