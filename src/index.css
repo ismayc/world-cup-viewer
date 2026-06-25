@@ -1250,6 +1250,7 @@ select {
     gap: 10px;
   }
   .card-time {
+    flex: none;
     flex-direction: row;
     border-right: none;
     border-bottom: 1px solid var(--border);
