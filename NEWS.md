@@ -5,6 +5,14 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Scenarios tab: exact scorelines + "possible orders" count.** Two upgrades to
+  the what-if tab. (1) Each picked game now has − / + goal steppers (the W/D/W
+  buttons set a one-goal default), so goal-difference tie-breakers resolve exactly
+  instead of by assumption. (2) Each in-play group header shows how many distinct
+  final standings are still reachable given the results set so far ("5 possible
+  orders" → "order decided"), via an exact enumeration of the remaining games
+  (`possibleOrderings`, with a budget fallback for groups with many games left).
+  +3 tests.
 - **New "Scenarios" (what-if) tab.** A deterministic explorer — no predictions.
   Pick the result (W / D / W) of each remaining group game and the projected group
   standings and Round-of-32 recompute live from exactly those outcomes. Each

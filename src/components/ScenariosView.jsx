@@ -2,49 +2,50 @@ import { useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { computeQualification } from '../utils/qualification.js'
 import { projectKnockout } from '../utils/asItStands.js'
-import { remainingGroupMatches, applyScenarioPicks, unpickedCount } from '../utils/scenarios.js'
+import {
+  remainingGroupMatches,
+  applyScenarioPicks,
+  unpickedCount,
+  possibleOrderings,
+  pickOutcome,
+} from '../utils/scenarios.js'
 
-const PICKS = [
-  { key: 'home', side: 't1' },
-  { key: 'draw', side: null },
-  { key: 'away', side: 't2' },
-]
+function Stepper({ value, onChange, label }) {
+  const v = value ?? 0
+  return (
+    <span className="sc-stepper">
+      <button type="button" className="sc-step" onClick={() => onChange(Math.max(0, v - 1))} disabled={v <= 0} aria-label={`${label} minus`}>−</button>
+      <span className="sc-step-val">{v}</span>
+      <button type="button" className="sc-step" onClick={() => onChange(v + 1)} aria-label={`${label} plus`}>+</button>
+    </span>
+  )
+}
 
-function FixturePicker({ match, pick, onPick }) {
+function FixturePicker({ match, pick, onQuick, onScore }) {
+  const outcome = pickOutcome(pick)
+  const set = Array.isArray(pick)
   return (
     <div className="sc-fixture">
-      <span className={`sc-fx-team${pick === 'home' ? ' sc-win' : ''}`}>
-        {FLAG_BY_TEAM[match.t1] || '•'} {match.t1}
-      </span>
-      <div className="sc-fx-buttons" role="group" aria-label={`${match.t1} vs ${match.t2} result`}>
-        <button
-          type="button"
-          className={`sc-pick${pick === 'home' ? ' active' : ''}`}
-          onClick={() => onPick(match.num, 'home')}
-          title={`${match.t1} win`}
-        >
-          W
-        </button>
-        <button
-          type="button"
-          className={`sc-pick${pick === 'draw' ? ' active' : ''}`}
-          onClick={() => onPick(match.num, 'draw')}
-          title="Draw"
-        >
-          D
-        </button>
-        <button
-          type="button"
-          className={`sc-pick${pick === 'away' ? ' active' : ''}`}
-          onClick={() => onPick(match.num, 'away')}
-          title={`${match.t2} win`}
-        >
-          W
-        </button>
+      <div className="sc-fx-line">
+        <span className={`sc-fx-team${outcome === 'home' ? ' sc-win' : ''}`}>
+          {FLAG_BY_TEAM[match.t1] || '•'} {match.t1}
+        </span>
+        <div className="sc-fx-buttons" role="group" aria-label={`${match.t1} vs ${match.t2} result`}>
+          <button type="button" className={`sc-pick${outcome === 'home' ? ' active' : ''}`} onClick={() => onQuick(match.num, 'home')} title={`${match.t1} win`}>W</button>
+          <button type="button" className={`sc-pick${outcome === 'draw' ? ' active' : ''}`} onClick={() => onQuick(match.num, 'draw')} title="Draw">D</button>
+          <button type="button" className={`sc-pick${outcome === 'away' ? ' active' : ''}`} onClick={() => onQuick(match.num, 'away')} title={`${match.t2} win`}>W</button>
+        </div>
+        <span className={`sc-fx-team sc-fx-right${outcome === 'away' ? ' sc-win' : ''}`}>
+          {match.t2} {FLAG_BY_TEAM[match.t2] || '•'}
+        </span>
       </div>
-      <span className={`sc-fx-team sc-fx-right${pick === 'away' ? ' sc-win' : ''}`}>
-        {match.t2} {FLAG_BY_TEAM[match.t2] || '•'}
-      </span>
+      {set && (
+        <div className="sc-score">
+          <Stepper value={pick[0]} onChange={(n) => onScore(match.num, [n, pick[1]])} label={`${match.t1} goals`} />
+          <span className="sc-score-dash">{pick[0]}–{pick[1]}</span>
+          <Stepper value={pick[1]} onChange={(n) => onScore(match.num, [pick[0], n])} label={`${match.t2} goals`} />
+        </div>
+      )}
     </div>
   )
 }
@@ -94,11 +95,22 @@ function R32Line({ label, dest }) {
   )
 }
 
+const QUICK = { home: [1, 0], draw: [1, 1], away: [0, 1] }
+
 export default function ScenariosView({ matches }) {
   const [picks, setPicks] = useState({})
 
-  const onPick = (num, val) =>
-    setPicks((p) => (p[num] === val ? (({ [num]: _drop, ...rest }) => rest)(p) : { ...p, [num]: val }))
+  // Quick W/D/W: set a representative score, or clear it if that outcome is
+  // already selected (toggle off).
+  const onQuick = (num, outcome) =>
+    setPicks((p) => {
+      if (pickOutcome(p[num]) === outcome) {
+        const { [num]: _drop, ...rest } = p
+        return rest
+      }
+      return { ...p, [num]: QUICK[outcome] }
+    })
+  const onScore = (num, score) => setPicks((p) => ({ ...p, [num]: score }))
   const clear = () => setPicks({})
 
   const remaining = remainingGroupMatches(matches)
@@ -137,18 +149,26 @@ export default function ScenariosView({ matches }) {
       <div className="sc-grid">
         {groupsInPlay.map((g) => {
           const open = remaining[g]
-          const allPicked = open.every((m) => picks[m.num])
+          const allPicked = open.every((m) => Array.isArray(picks[m.num]))
           const proj = perGroup[g] || {}
+          // Distinct final standings still reachable given the results set so far.
+          const { count, decided } = possibleOrderings(g, synthetic)
           return (
             <div className="sc-card" key={g}>
               <h3 className="group-title">
                 Group {g}
-                <span className="sc-card-state">{allPicked ? 'all set' : `${open.filter((m) => !picks[m.num]).length} to pick`}</span>
+                <span className={`sc-card-state${decided ? ' sc-decided' : ''}`}>
+                  {count == null
+                    ? `${open.filter((m) => !Array.isArray(picks[m.num])).length} to pick`
+                    : decided
+                      ? 'order decided'
+                      : `${count} possible orders`}
+                </span>
               </h3>
 
               <div className="sc-fixtures">
                 {open.map((m) => (
-                  <FixturePicker key={m.num} match={m} pick={picks[m.num]} onPick={onPick} />
+                  <FixturePicker key={m.num} match={m} pick={picks[m.num]} onQuick={onQuick} onScore={onScore} />
                 ))}
               </div>
 
@@ -178,8 +198,11 @@ export default function ScenariosView({ matches }) {
       </div>
 
       <p className="sc-foot">
+        The win/draw/win buttons set a one-goal result; use the − / + steppers to set an exact
+        score so goal-difference tie-breakers resolve precisely. “Possible orders” counts the
+        distinct final standings still reachable for a group given the results you’ve set.
         Third-place qualification and exact opponents depend on all groups together, so they update
-        as you set more results. Goal-difference tie-breakers assume a one-goal margin.
+        as you set more results.
       </p>
     </div>
   )
