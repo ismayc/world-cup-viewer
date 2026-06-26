@@ -1645,6 +1645,59 @@ select {
 .gg-ko-confirmed { font-size: 0.64rem; font-weight: 700; color: var(--accent); margin-left: 4px; white-space: nowrap; }
 .gg-ko-note { font-size: 0.74rem; color: var(--text-faint); margin: 8px 0 0; font-style: italic; }
 
+/* ---------- Scenarios (what-if) tab ---------- */
+.sc-intro { margin-bottom: 16px; }
+.sc-intro > p { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 10px; }
+.sc-intro-bar { display: flex; align-items: center; gap: 12px; }
+.sc-left { font-size: 0.82rem; color: var(--text-faint); font-weight: 600; }
+.sc-clear {
+  background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+  padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
+}
+.sc-clear:hover { color: var(--accent-2); border-color: var(--accent-2); }
+.sc-empty { text-align: center; padding: 50px 20px; color: var(--text-dim); }
+.sc-empty-sub { font-size: 0.85rem; color: var(--text-faint); }
+.sc-grid {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+.sc-card { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.sc-card-state { font-size: 0.7rem; font-weight: 600; color: var(--text-faint); margin-left: 8px; }
+.sc-fixtures { display: grid; gap: 8px; margin-bottom: 14px; }
+.sc-fixture {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px;
+}
+.sc-fx-team { font-size: 0.82rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-fx-right { text-align: right; }
+.sc-win { color: var(--accent); font-weight: 700; }
+.sc-fx-buttons { display: flex; gap: 4px; }
+.sc-pick {
+  width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text-dim); font-size: 0.72rem; font-weight: 700; cursor: pointer;
+}
+.sc-pick:hover { border-color: var(--accent); color: var(--text); }
+.sc-pick.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.sc-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.sc-table th { font-size: 0.66rem; text-transform: uppercase; color: var(--text-faint); text-align: center; padding: 4px 6px; font-weight: 600; }
+.sc-table td { text-align: center; padding: 5px 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; border-top: 1px solid var(--border); }
+.sc-table .qualifies td { background: rgba(0, 194, 168, 0.07); }
+.sc-tag { font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; margin-left: 6px; text-transform: uppercase; }
+.sc-adv { background: rgba(0, 194, 168, 0.18); color: var(--accent); }
+.sc-third { background: rgba(244, 197, 66, 0.2); color: var(--gold); }
+.sc-r32 { border-top: 1px solid var(--border); padding-top: 10px; }
+.sc-r32-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent); margin-bottom: 8px; }
+.sc-r32-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.sc-r32-row { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
+.sc-r32-pos { font-size: 0.66rem; font-weight: 700; color: var(--text-faint); min-width: 24px; }
+.sc-r32-team { font-weight: 600; }
+.sc-r32-vs { font-size: 0.72rem; font-style: italic; color: var(--text-faint); }
+.sc-r32-opp { color: var(--text-dim); }
+.sc-r32-num { margin-left: auto; font-size: 0.62rem; font-weight: 700; color: var(--text-faint); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; }
+.sc-r32-out { opacity: 0.7; }
+.sc-r32-note { font-size: 0.72rem; color: var(--text-faint); font-style: italic; }
+.sc-foot { font-size: 0.74rem; color: var(--text-faint); margin: 16px 0 0; font-style: italic; }
+
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }
 .cal-hint { font-size: 0.7rem; font-weight: 400; color: var(--text-faint); text-transform: none; letter-spacing: 0; }

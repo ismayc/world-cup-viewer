@@ -5,6 +5,7 @@ import Filters from './components/Filters.jsx'
 import MatchCard from './components/MatchCard.jsx'
 import Bracket from './components/Bracket.jsx'
 import Standings from './components/Standings.jsx'
+import ScenariosView from './components/ScenariosView.jsx'
 import WeekView from './components/WeekView.jsx'
 import NextMatch from './components/NextMatch.jsx'
 import MatchDetail from './components/MatchDetail.jsx'
@@ -30,6 +31,7 @@ const VIEWS = [
   { id: 'schedule', label: '📋 Schedule' },
   { id: 'week', label: '📆 Week' },
   { id: 'groups', label: '📊 Groups' },
+  { id: 'scenarios', label: '🧮 Scenarios' },
   { id: 'bracket', label: '🏆 Bracket' },
 ]
 
@@ -559,6 +561,12 @@ export default function App() {
       {view === 'groups' && (
         <main className="groups-view">
           <Standings matches={matches} tz={tz} hideScores={hideScores} clinch={clinch} onGoToMatch={goToBracketMatch} />
+        </main>
+      )}
+
+      {view === 'scenarios' && (
+        <main className="scenarios-view">
+          <ScenariosView matches={matches} />
         </main>
       )}
 

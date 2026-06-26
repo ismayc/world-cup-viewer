@@ -4,6 +4,17 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-26
+- **New "Scenarios" (what-if) tab.** A deterministic explorer — no predictions.
+  Pick the result (W / D / W) of each remaining group game and the projected group
+  standings and Round-of-32 recompute live from exactly those outcomes. Each
+  still-in-play group gets a card with its remaining fixtures, the projected order
+  (advancers highlighted, third place flagged), and an "as it stands" R32 line per
+  qualifier; the third-place/opponent lines update across groups as more results
+  are set. Built on the existing qualification + projection engines (no new data),
+  with a note that goal-difference tie-breakers assume a one-goal margin. New
+  `utils/scenarios.js` + `components/ScenariosView.jsx`. +5 tests.
+
 ## 2026-06-25
 - **Locked Group A final standings.** All six Group A matches complete and
   cross-verified against two independent sources (OpenFootball + web search via
