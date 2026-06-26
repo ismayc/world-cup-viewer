@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Nav wraps to two rows on mobile; R32 Outlook is now an in-app tab.** The view
+  bar no longer scrolls horizontally on phones (which hid Bracket) — it wraps after
+  Groups into a second row: Schedule · Week · Groups / Scenarios · R32 Outlook ·
+  Bracket (desktop keeps one row). R32 Outlook moved from its standalone
+  `/outlook.html` page back into the app as a tab (`OutlookView`, same exact Web
+  Worker enumeration; re-runs only when group results change, not on every live
+  poll); the separate page and multi-page build were removed. Scenarios and R32
+  Outlook (group-stage tools) drop out of the nav a day after the last group game
+  via `groupStageArchived`. +4 tests.
 - **⚖️ marker when a placing is decided by cards / FIFA ranking.** A placing that
   comes down to a *soft* tie-breaker — fair-play conduct (cards) or FIFA ranking,
   once points, head-to-head, goal difference and goals are all level — now shows a

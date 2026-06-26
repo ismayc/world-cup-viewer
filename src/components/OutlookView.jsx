@@ -1,13 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import { MATCHES } from '../data/matches.js'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
-import { fetchResults, applyResults, RESULTS_SOURCE } from '../services/results.js'
 import { R32_SLOT_LABELS, countRemaining, totalOutcomes } from '../utils/outlookEnum.js'
 
-// Above this many remaining games, the outcome space (3^N) is too large to walk
-// exactly in a reasonable time — the page waits until the field narrows.
+// Above this many remaining games the outcome space (3^N) is too large to walk
+// exactly in reasonable time — wait until the field narrows.
 const MAX_REMAINING = 14 // 3^14 = 4,782,969
-
 const MAX_SHOWN = 6
 
 function Side({ dist, slotLabel }) {
@@ -51,36 +48,30 @@ function Side({ dist, slotLabel }) {
   )
 }
 
-export default function Outlook() {
-  const [matches, setMatches] = useState(null)
-  const [feedError, setFeedError] = useState(false)
-  const [phase, setPhase] = useState('loading') // loading | counting | enumerating | done | error | toomany
+export default function OutlookView({ matches }) {
+  const [phase, setPhase] = useState('idle') // idle | enumerating | done | error | toomany
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState(null)
   const [errMsg, setErrMsg] = useState('')
-  const [nonce, setNonce] = useState(0)
-  const workerRef = useRef(null)
+  const matchesRef = useRef(matches)
+  matchesRef.current = matches
 
-  // Load the current results so we know which group games are still open.
-  useEffect(() => {
-    let alive = true
-    setPhase('loading')
-    fetchResults()
-      .then((map) => alive && setMatches(applyResults(MATCHES, map)))
-      .catch(() => {
-        if (!alive) return
-        setFeedError(true)
-        setMatches(MATCHES) // schedule only; likely "too many" until results land
-      })
-    return () => {
-      alive = false
-    }
-  }, [nonce])
+  const remaining = countRemaining(matches)
+  const total = totalOutcomes(matches)
 
-  // Spawn the worker once we have a feasible number of remaining games.
+  // Signature of the final group results — the enumeration only depends on these,
+  // so a live-score poll that doesn't settle a group game won't restart it.
+  const resultsKey = useMemo(
+    () =>
+      matches
+        .filter((m) => m.stage === 'Group' && Array.isArray(m.score) && !m.live)
+        .map((m) => `${m.num}:${m.score.join('-')}`)
+        .sort()
+        .join('|'),
+    [matches],
+  )
+
   useEffect(() => {
-    if (!matches) return
-    const remaining = countRemaining(matches)
     if (remaining > MAX_REMAINING) {
       setPhase('toomany')
       return
@@ -89,7 +80,6 @@ export default function Outlook() {
     setProgress(0)
     setResult(null)
     const worker = new Worker(new URL('../workers/outlook.worker.js', import.meta.url), { type: 'module' })
-    workerRef.current = worker
     worker.onmessage = (e) => {
       const msg = e.data
       if (msg.type === 'progress') setProgress(msg.done / msg.total)
@@ -103,56 +93,38 @@ export default function Outlook() {
         worker.terminate()
       }
     }
-    worker.postMessage(matches)
+    worker.postMessage(matchesRef.current)
     return () => worker.terminate()
-  }, [matches])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultsKey])
 
-  const remaining = matches ? countRemaining(matches) : null
-  const total = matches ? totalOutcomes(matches) : null
   const nums = Object.keys(R32_SLOT_LABELS)
     .map(Number)
     .sort((a, b) => a - b)
+  const allLocked =
+    result && nums.every((n) => result.perMatch[n].every((s) => s.locked))
 
   return (
-    <div className="app outlook-page">
-      <header className="app-header">
-        <div className="title-block">
-          <h1><span className="trophy">🏆</span> R32 Outlook</h1>
-          <p className="subtitle">
-            Exact enumeration of every remaining group-stage outcome ·{' '}
-            <a href="./index.html">← back to the schedule</a>
-          </p>
-        </div>
-      </header>
-
+    <div className="bracket-odds">
       <div className="bo-intro">
         <p>
           For each open Round-of-32 spot, the share of the <strong>remaining outcomes</strong> that
           put each team there — computed by walking <strong>every</strong> still-possible win / draw /
-          loss combination of the group games (each weighted equally). This is not a forecast: it’s
-          the exact proportion of possible scenarios, not a prediction of who’s likely to win.
-          Goal-difference ties use a one-goal convention.
+          loss combination of the group games (each weighted equally). Not a forecast: it’s the exact
+          proportion of possible scenarios, not a prediction of who’s likely to win. Goal-difference
+          ties use a one-goal convention.
         </p>
-        {remaining != null && (
-          <p className="bo-count">
-            <strong>{remaining}</strong> group game{remaining === 1 ? '' : 's'} left ·{' '}
-            <strong>{total.toLocaleString()}</strong> possible outcome{total === 1 ? '' : 's'}
-            {phase === 'done' && ' · all enumerated'}
-          </p>
-        )}
-        {feedError && (
-          <p className="bo-note">
-            Couldn’t reach the results feed ({RESULTS_SOURCE.name}); showing the schedule only.
-          </p>
-        )}
+        <p className="bo-count">
+          <strong>{remaining}</strong> group game{remaining === 1 ? '' : 's'} left ·{' '}
+          <strong>{total.toLocaleString()}</strong> possible outcome{total === 1 ? '' : 's'}
+          {phase === 'done' && ' · all enumerated'}
+        </p>
       </div>
-
-      {phase === 'loading' && <p className="bo-note">Loading current results…</p>}
 
       {phase === 'toomany' && (
         <p className="bo-note">
           Too many games remain to enumerate exactly right now ({remaining} left → {total.toLocaleString()} outcomes).
-          This page becomes available once the field narrows toward the final matchday (≤ {MAX_REMAINING} games).
+          This view becomes available once the field narrows toward the final matchday (≤ {MAX_REMAINING} games).
         </p>
       )}
 
@@ -167,9 +139,9 @@ export default function Outlook() {
 
       {phase === 'done' && result && (
         <>
+          {allLocked && <p className="bo-note">✅ Every Round-of-32 matchup is now mathematically set.</p>}
           <div className="bo-bar-row">
             <span className="bo-runs">exact — all {result.total.toLocaleString()} outcomes enumerated</span>
-            <button className="bo-recompute" onClick={() => setNonce((n) => n + 1)}>⟳ Refresh results &amp; re-run</button>
           </div>
           <div className="bo-grid">
             {nums.map((n) => {

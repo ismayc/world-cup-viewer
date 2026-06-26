@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MATCHES } from './data/matches.js'
 import { VENUES } from './data/venues.js'
 import Filters from './components/Filters.jsx'
@@ -6,10 +6,12 @@ import MatchCard from './components/MatchCard.jsx'
 import Bracket from './components/Bracket.jsx'
 import Standings from './components/Standings.jsx'
 import ScenariosView from './components/ScenariosView.jsx'
+import OutlookView from './components/OutlookView.jsx'
 import WeekView from './components/WeekView.jsx'
 import NextMatch from './components/NextMatch.jsx'
 import MatchDetail from './components/MatchDetail.jsx'
 import CalendarModal from './components/CalendarModal.jsx'
+import { groupStageArchived } from './utils/scenarios.js'
 import { detectTimezone, formatDateLong, dayKey, liveState } from './utils/time.js'
 import { readState, writeState } from './utils/urlState.js'
 import { parseQuery, matchesSearch } from './utils/search.js'
@@ -31,7 +33,11 @@ const VIEWS = [
   { id: 'schedule', label: '📋 Schedule' },
   { id: 'week', label: '📆 Week' },
   { id: 'groups', label: '📊 Groups' },
-  { id: 'scenarios', label: '🧮 Scenarios' },
+  // Scenarios + R32 Outlook are group-stage tools; they're hidden once the group
+  // stage is in the rear-view (see `groupStageArchived`). The nav wraps to a
+  // second row on mobile after Groups.
+  { id: 'scenarios', label: '🧮 Scenarios', groupStageOnly: true },
+  { id: 'outlook', label: '🔮 R32 Outlook', groupStageOnly: true },
   { id: 'bracket', label: '🏆 Bracket' },
 ]
 
@@ -197,6 +203,19 @@ export default function App() {
   }, [results, live, history, backup])
   const finishedCount = useMemo(() => matches.filter((m) => m.score).length, [matches])
   const liveCount = useMemo(() => matches.filter((m) => m.live).length, [matches])
+  // The group-stage tools (Scenarios, R32 Outlook) drop out of the nav a day
+  // after the last group game, once the knockouts take over.
+  const archived = useMemo(() => groupStageArchived(matches), [matches])
+  const visibleViews = useMemo(
+    () => VIEWS.filter((v) => !(v.groupStageOnly && archived)),
+    [archived],
+  )
+  const showAnalysisTabs = !archived
+  // If the active view just got hidden (group stage archived while on it), fall
+  // back to the Bracket.
+  useEffect(() => {
+    if (!visibleViews.some((v) => v.id === view)) setView('bracket')
+  }, [visibleViews, view])
   // Guaranteed clinch/elimination status per team (see utils/clinch.js).
   const clinch = useMemo(() => computeClinch(matches), [matches])
   // Group → Round-of-32 slot each finishing position feeds into.
@@ -352,14 +371,18 @@ export default function App() {
         </div>
         <div className="view-bar">
           <div className="view-switch">
-            {VIEWS.map((v) => (
-              <button
-                key={v.id}
-                className={`view-btn${view === v.id ? ' active' : ''}`}
-                onClick={() => setView(v.id)}
-              >
-                {v.label}
-              </button>
+            {visibleViews.map((v) => (
+              <Fragment key={v.id}>
+                <button
+                  className={`view-btn${view === v.id ? ' active' : ''}`}
+                  onClick={() => setView(v.id)}
+                >
+                  {v.label}
+                </button>
+                {/* Force a second row after Groups on mobile (only when the
+                    analysis tabs are present). */}
+                {v.id === 'groups' && showAnalysisTabs && <span className="view-break" aria-hidden="true" />}
+              </Fragment>
             ))}
           </div>
           <div className="bar-actions">
@@ -570,6 +593,12 @@ export default function App() {
         </main>
       )}
 
+      {view === 'outlook' && (
+        <main className="outlook-view">
+          <OutlookView matches={matches} />
+        </main>
+      )}
+
       {view === 'bracket' && (
         <main className="bracket-view">
           <Bracket
@@ -583,10 +612,6 @@ export default function App() {
       )}
 
       <footer className="app-footer">
-        <p className="footer-links">
-          🔮 <a href="./outlook.html">R32 Outlook</a> — exact odds for each open bracket spot from
-          all remaining outcomes.
-        </p>
         <p>
           Kickoff times convert automatically to your selected timezone. Broadcast info is for the
           United States — FOX &amp; Telemundo are free over the air. Schedule per the FIFA Final

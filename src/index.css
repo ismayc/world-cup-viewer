@@ -815,6 +815,8 @@ select {
   color: var(--accent-ink);
   font-weight: 600;
 }
+/* Forces the nav onto a second row after Groups — only on mobile (below). */
+.view-break { display: none; }
 .spoiler-btn {
   background: var(--bg-soft);
   border: 1px solid var(--border);
@@ -1213,17 +1215,24 @@ select {
     align-items: stretch;
   }
   .view-switch {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    justify-content: flex-start;
-    max-width: 100%; /* cap to the bar so it scrolls internally, not the page */
+    display: flex;
+    flex-wrap: wrap; /* wrap onto a second row instead of scrolling horizontally */
+    justify-content: center;
+    max-width: 100%;
+    width: 100%;
   }
   .bar-actions {
     max-width: 100%;
   }
   .view-btn {
     white-space: nowrap;
-    flex: 0 0 auto;
+    flex: 1 1 auto; /* share the row width evenly */
+    text-align: center;
+  }
+  .view-break {
+    display: block;
+    flex-basis: 100%;
+    height: 0;
   }
   .spoiler-btn {
     align-self: flex-start;
@@ -1718,12 +1727,6 @@ select {
 .bo-intro > p { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 10px; }
 .bo-bar-row { display: flex; align-items: center; gap: 12px; }
 .bo-runs { font-size: 0.8rem; color: var(--text-faint); font-weight: 600; }
-.bo-recompute {
-  background: transparent; border: 1px solid var(--border); color: var(--text-dim);
-  padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
-}
-.bo-recompute:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
-.bo-recompute:disabled { opacity: 0.5; cursor: default; }
 .bo-note { font-size: 0.85rem; color: var(--text-dim); margin: 0 0 14px; }
 .bo-grid {
   display: grid; gap: 14px;
@@ -1755,9 +1758,6 @@ select {
 .bo-progress-label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 6px; }
 .bo-progress-track { height: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .bo-progress-fill { height: 100%; background: var(--accent); transition: width 0.2s ease; }
-.outlook-page .app-header { margin-bottom: 16px; }
-.footer-links { font-size: 0.9rem; }
-.footer-links a { color: var(--accent); }
 
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }
