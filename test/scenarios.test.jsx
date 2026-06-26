@@ -79,6 +79,17 @@ describe('ScenariosView', () => {
     expect(screen.getByText('14 games still open')).toBeInTheDocument()
   })
 
+  it('marks a projected R32 matchup "confirmed" once it is locked', () => {
+    // Live snapshot already locks USA (Group D winner) vs Bosnia. Group D shows
+    // its "1st" projected line confirmed without any picks needed.
+    render(<ScenariosView matches={snapshot} />)
+    const card = screen.getByText('Group D').closest('.sc-card')
+    expect(within(card).getByText(/Matchup confirmed/i)).toBeInTheDocument()
+    // A wide-open group shows no confirmed matchup yet.
+    const open = screen.getByText('Group G').closest('.sc-card')
+    expect(within(open).queryByText(/Matchup confirmed/i)).toBeNull()
+  })
+
   it('exposes goal steppers once a result is set, and they adjust the score', () => {
     render(<ScenariosView matches={snapshot} />)
     // Set the first fixture to a home win, which reveals the score steppers.

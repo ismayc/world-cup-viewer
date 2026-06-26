@@ -63,8 +63,9 @@ export function reachableThirdSets(matches) {
 }
 
 // The locked R32 opponent for `team`, or null if it isn't mathematically fixed
-// yet. `clinch` may be passed in to avoid recomputing it.
-export function lockedOpponent(matches, team, clinch = computeClinch(matches)) {
+// yet. `clinch` and `reachable` (the reachable third-place sets) may be passed in
+// to avoid recomputing them — useful when resolving many teams at once.
+export function lockedOpponent(matches, team, clinch = computeClinch(matches), reachable = null) {
   const status = clinch[team]
   // Only a fixed finishing slot gives a determinate matchup to resolve.
   if (status !== 'won-group' && status !== 'runner-up') return null
@@ -86,7 +87,7 @@ export function lockedOpponent(matches, team, clinch = computeClinch(matches)) {
   if (slot.type === 'third') {
     const wi = THIRD_WINNER_ORDER.indexOf(group)
     if (wi < 0) return null
-    const sets = reachableThirdSets(matches)
+    const sets = reachable || reachableThirdSets(matches)
     if (!sets.length) return null
     const assignedGroups = new Set(sets.map((key) => THIRD_PLACE_COMBINATIONS[key][wi]))
     if (assignedGroups.size !== 1) return null

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { computeQualification } from '../utils/qualification.js'
+import { computeClinch } from '../utils/clinch.js'
 import { projectKnockout } from '../utils/asItStands.js'
+import { lockedOpponent, reachableThirdSets } from '../utils/opponentClinch.js'
 import {
   remainingGroupMatches,
   applyScenarioPicks,
@@ -79,11 +81,12 @@ function ProjectedTable({ rows, decided }) {
   )
 }
 
-// "As it stands → R32" line for a projected qualifier.
-function R32Line({ label, dest }) {
+// "As it stands → R32" line for a projected qualifier. `confirmed` is true once
+// the matchup is mathematically locked given the results set so far.
+function R32Line({ label, dest, confirmed }) {
   if (!dest?.team) return null
   return (
-    <li className="sc-r32-row">
+    <li className={`sc-r32-row${confirmed ? ' sc-r32-confirmed' : ''}`}>
       <span className="sc-r32-pos">{label}</span>
       <span className="sc-r32-team">{FLAG_BY_TEAM[dest.team] || ''} {dest.team}</span>
       <span className="sc-r32-vs">vs</span>
@@ -91,6 +94,7 @@ function R32Line({ label, dest }) {
         {dest.opponent ? `${FLAG_BY_TEAM[dest.opponent] || ''} ${dest.opponent}` : 'TBD'}
       </span>
       {dest.matchNum && <span className="sc-r32-num">M{dest.matchNum}</span>}
+      {confirmed && <span className="sc-r32-lock" title="This matchup can no longer change">✓ Matchup confirmed</span>}
     </li>
   )
 }
@@ -120,6 +124,18 @@ export default function ScenariosView({ matches }) {
   const { perGroup } = projectKnockout(synthetic)
   const leftToPick = unpickedCount(matches, picks)
   const pickedAny = Object.keys(picks).length > 0
+
+  // A projected matchup is "confirmed" once it can no longer change given the
+  // results set so far. Compute the clinch once; only enumerate the (costlier)
+  // reachable third-place sets when a group winner is clinched, since that's the
+  // only case whose opponent is a third-place slot.
+  const clinch = computeClinch(synthetic)
+  const reachable = Object.values(clinch).includes('won-group') ? reachableThirdSets(synthetic) : []
+  const isConfirmed = (dest) => {
+    if (!dest?.team || !dest.opponent) return false
+    const locked = lockedOpponent(synthetic, dest.team, clinch, reachable)
+    return Boolean(locked) && locked.opponent === dest.opponent && locked.matchNum === dest.matchNum
+  }
 
   if (!groupsInPlay.length) {
     return (
@@ -177,10 +193,10 @@ export default function ScenariosView({ matches }) {
               <div className="sc-r32">
                 <div className="sc-r32-title">Projected Round of 32</div>
                 <ul className="sc-r32-list">
-                  <R32Line label="1st" dest={proj.first} />
-                  <R32Line label="2nd" dest={proj.second} />
+                  <R32Line label="1st" dest={proj.first} confirmed={isConfirmed(proj.first)} />
+                  <R32Line label="2nd" dest={proj.second} confirmed={isConfirmed(proj.second)} />
                   {proj.thirdQualifies ? (
-                    <R32Line label="3rd" dest={proj.third} />
+                    <R32Line label="3rd" dest={proj.third} confirmed={isConfirmed(proj.third)} />
                   ) : (
                     proj.thirdTeam && (
                       <li className="sc-r32-row sc-r32-out">

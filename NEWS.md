@@ -5,6 +5,11 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Scenarios: "✓ Matchup confirmed" on locked projected R32 ties.** As you set
+  results on the Scenarios tab, any "Projected Round of 32" line whose matchup can
+  no longer change (the opponent is mathematically locked given the picks so far)
+  now gets a green ✓ Matchup confirmed badge, reusing the exact `lockedOpponent`
+  logic. +1 test.
 - **New "R32 Outlook" tab — share of remaining outcomes per bracket spot.** For
   each open Round-of-32 slot, shows what proportion of the still-possible outcomes
   put each team there — every remaining group result weighted equally (a coin-flip
