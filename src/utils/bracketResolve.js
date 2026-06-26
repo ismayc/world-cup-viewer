@@ -13,11 +13,17 @@
 // live.
 
 import { TEAMS } from '../data/teams.js'
+import { MATCHES } from '../data/matches.js'
 import { resolveClinchedSlots, resolveRunnerUpSlots } from './clinch.js'
-import { lockedOpponent, reachableThirdSets } from './opponentClinch.js'
+import { reachableThirdSets } from './opponentClinch.js'
+import { groupComplete, rankGroup } from './qualification.js'
 import { projectKnockout } from './asItStands.js'
+import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
 
 const ALL_TEAMS = new Set(Object.values(TEAMS).flat().map((t) => t.name))
+// Static R32 slots (invariant labels), for resolving third-place ties.
+const R32_STATIC = MATCHES.filter((m) => m.stage === 'R32')
+const WINNER_GROUP = /^Winner Group ([A-L])$/
 const THIRD_SLOT = /^3rd [A-L/]+$/
 const WINNER_MATCH = /^Winner Match (\d+)$/
 const LOSER_MATCH = /^Loser Match (\d+)$/
@@ -70,21 +76,32 @@ export function resolveThirdPlaceSlots(matches) {
   })
 }
 
-// Fill a "3rd X/Y/Z" R32 slot the moment it's mathematically LOCKED — even before
-// the whole group stage is final. A clinched group winner whose third-place
-// opponent is the same across every remaining outcome (see opponentClinch) drops
-// that third in early, so e.g. USA vs Bosnia shows on the bracket as soon as it's
-// settled rather than waiting for the last group game.
-export function resolveLockedThirdSlots(matches, clinch) {
-  const winners = Object.keys(TEAMS).flatMap((g) =>
-    TEAMS[g].filter((t) => clinch?.[t.name] === 'won-group').map((t) => t.name),
-  )
-  if (!winners.length) return matches
+// Fill a "3rd X/Y/Z" R32 slot the moment its team is mathematically LOCKED — even
+// before the whole group stage is final, and independent of whether that slot's
+// WINNER side is decided yet. A third is locked when every still-reachable "8 best
+// thirds" combination (see opponentClinch) assigns the SAME group to this slot's
+// winner, and that group has finished (so its third is a single team). So e.g. USA
+// vs Bosnia shows on the bracket as soon as it's settled, not at the last game.
+export function resolveLockedThirdSlots(matches) {
+  // No group finished → no third can be locked yet (and skip the costly analysis).
+  if (!Object.keys(TEAMS).some((g) => groupComplete(g, matches))) return matches
   const reachable = reachableThirdSets(matches)
+  if (!reachable.length) return matches
   const fill = {} // R32 match number -> locked third-placed team
-  for (const name of winners) {
-    const locked = lockedOpponent(matches, name, clinch, reachable)
-    if (locked?.opponent && locked.matchNum) fill[locked.matchNum] = locked.opponent
+  for (const m of R32_STATIC) {
+    const sides = [m.t1, m.t2]
+    const ti = sides.findIndex((s) => THIRD_SLOT.test(s))
+    if (ti < 0) continue
+    const wm = WINNER_GROUP.exec(sides[1 - ti])
+    if (!wm) continue
+    const wi = THIRD_WINNER_ORDER.indexOf(wm[1])
+    if (wi < 0) continue
+    const groups = new Set(reachable.map((key) => THIRD_PLACE_COMBINATIONS[key][wi]))
+    if (groups.size !== 1) continue
+    const g = [...groups][0]
+    if (!groupComplete(g, matches)) continue
+    const third = rankGroup(g, matches)[2]
+    if (third) fill[m.num] = third.name
   }
   if (!Object.keys(fill).length) return matches
   return matches.map((m) => {
@@ -141,7 +158,6 @@ export function resolveKnockoutSlots(matches) {
 export function resolveBracket(matches, clinch) {
   const groupSlots = resolveLockedThirdSlots(
     resolveThirdPlaceSlots(resolveRunnerUpSlots(resolveClinchedSlots(matches, clinch))),
-    clinch,
   )
   return resolveKnockoutSlots(groupSlots)
 }

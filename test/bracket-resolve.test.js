@@ -149,7 +149,7 @@ describe('resolveBracket — full pipeline', () => {
     expect(THIRD_SLOT.test(m74.t2)).toBe(true)
   })
 
-  it('resolveLockedThirdSlots is a no-op before any group is won', () => {
-    expect(resolveLockedThirdSlots(MATCHES, {})).toBe(MATCHES)
+  it('resolveLockedThirdSlots is a no-op before any group is complete', () => {
+    expect(resolveLockedThirdSlots(MATCHES)).toBe(MATCHES)
   })
 })

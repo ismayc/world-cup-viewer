@@ -10,8 +10,12 @@ data/source updates, deployment). Newest day on top.
   was final — so e.g. USA vs Bosnia stayed half-resolved (USA shown, opponent a
   placeholder) even though Bosnia was already mathematically locked. New
   `resolveLockedThirdSlots` fills any third slot whose team is locked across every
-  remaining outcome (reusing the exact `lockedOpponent` logic), while leaving
-  genuinely-undecided thirds as placeholders. +2 tests.
+  still-reachable outcome (same exact analysis as the team pop-up's clinch check),
+  independent of whether that slot's winner side is decided yet, while leaving
+  genuinely-undecided thirds as placeholders. Audited the other completion gates:
+  all in-app views flow through `resolveBracket` (consistent); the remaining
+  `allComplete`/`completion` uses are honest *provisional labels* backstopped by
+  the exact clinch badges, not under-claiming resolution. +2 tests.
 - **R32 Outlook lists every possible team per spot.** Removed the top-6 cap and the
   "+N more" roll-up — each open Round-of-32 slot now shows the full set of teams
   that can fill it, each with its exact share.
