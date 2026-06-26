@@ -42,6 +42,31 @@ export const FINAL_GROUP_RESULTS = {
     scores: { 6: [1, 1], 7: [0, 1], 30: [0, 1], 31: [3, 0], 51: [0, 3], 52: [4, 2] },
     order: ['Brazil', 'Morocco', 'Scotland', 'Haiti'],
   },
+  // USA top the group (6 pts). Australia and Paraguay both finish on 4 with a 0–0
+  // head-to-head, so 2nd is decided on overall goal difference: Australia 0 vs
+  // Paraguay −2 → Australia 2nd, Paraguay 3rd. Türkiye 4th (3 pts).
+  D: {
+    verifiedOn: '2026-06-26',
+    sources: ['OpenFootball', 'independent points/GD/head-to-head recomputation'],
+    scores: { 4: [4, 1], 8: [2, 0], 29: [2, 0], 32: [0, 1], 59: [3, 2], 60: [0, 0] },
+    order: ['USA', 'Australia', 'Paraguay', 'Türkiye'],
+  },
+  // Germany and Ivory Coast both finish on 6 points; Germany top the group on the
+  // head-to-head (a 2–1 win). Ecuador 3rd (4 pts), Curaçao last (1 pt).
+  E: {
+    verifiedOn: '2026-06-26',
+    sources: ['OpenFootball', 'independent points/GD/head-to-head recomputation'],
+    scores: { 9: [7, 1], 11: [1, 0], 34: [2, 1], 35: [0, 0], 55: [0, 2], 56: [2, 1] },
+    order: ['Germany', 'Ivory Coast', 'Ecuador', 'Curaçao'],
+  },
+  // Netherlands win the group (7 pts). Japan 2nd (5), Sweden 3rd (4), Tunisia
+  // winless — no tie-breaker needed.
+  F: {
+    verifiedOn: '2026-06-26',
+    sources: ['OpenFootball', 'independent points/GD/head-to-head recomputation'],
+    scores: { 10: [2, 2], 12: [5, 1], 33: [5, 1], 36: [0, 4], 57: [1, 1], 58: [1, 3] },
+    order: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
+  },
 }
 
 // The official Round-of-32 draw, as published by FIFA once the group stage ends:

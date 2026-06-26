@@ -152,4 +152,38 @@ describe('resolveBracket — full pipeline', () => {
   it('resolveLockedThirdSlots is a no-op before any group is complete', () => {
     expect(resolveLockedThirdSlots(MATCHES)).toBe(MATCHES)
   })
+
+  it('plays a full bracket end-to-end (incl. a shootout) to a single champion', () => {
+    const ALL_TEAMS = new Set(Object.values(TEAMS).flat().map((t) => t.name))
+    const clinch = computeClinch(buildComplete())
+    let cur = resolveBracket(buildComplete(), clinch)
+
+    // Repeatedly: assign a result to every ready-but-unplayed knockout tie, then
+    // re-resolve so winners feed the next round. Match 73 goes to penalties; a
+    // semifinal (101) is drawn-then-shootout too, exercising the 3rd-place route.
+    for (let pass = 0; pass < 10; pass++) {
+      let changed = false
+      cur = cur.map((m) => {
+        if (m.stage === 'Group' || Array.isArray(m.score)) return m
+        if (!ALL_TEAMS.has(m.t1) || !ALL_TEAMS.has(m.t2)) return m
+        changed = true
+        if (m.num === 73 || m.num === 101) return { ...m, score: [1, 1], pens: [4, 2] }
+        return { ...m, score: [1, 0] } // home side advances
+      })
+      cur = resolveBracket(cur, clinch)
+      if (!changed) break
+    }
+
+    // Every knockout tie resolved to real teams, and the Final has a winner.
+    const ko = cur.filter((m) => m.stage !== 'Group')
+    for (const m of ko) {
+      expect(ALL_TEAMS.has(m.t1)).toBe(true)
+      expect(ALL_TEAMS.has(m.t2)).toBe(true)
+    }
+    const final = cur.find((m) => m.stage === 'Final')
+    expect(decideMatch(final)).not.toBeNull()
+    // The third-place play-off (fed by the semifinal losers) also fully resolved.
+    const third = cur.find((m) => m.stage === '3rd')
+    expect(ALL_TEAMS.has(third.t1) && ALL_TEAMS.has(third.t2)).toBe(true)
+  })
 })

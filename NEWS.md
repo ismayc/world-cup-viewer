@@ -5,6 +5,14 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Knockout readiness.** Froze Groups D, E and F final results into
+  `final-group-results.js` (orders re-verified by hand against points/GD/head-to-head
+  — A–F now locked; G–L pending their final matchday). Ran the FIFA-anchored
+  schedule check: 0 drift / 0 venue mismatch across all 72 group + 32 knockout
+  matches. Added a full end-to-end bracket test that plays every knockout round to
+  a single champion — including penalty shootouts feeding the next round and the
+  semifinal losers routing to the third-place play-off — so the propagation is
+  proven before live games hit it.
 - **Old `/outlook.html` URL redirects to the in-app R32 Outlook tab.** A static
   `public/outlook.html` (copied verbatim, so it doesn't reintroduce the multi-page
   build) redirects to `./?view=outlook`, so existing links/bookmarks to the removed
