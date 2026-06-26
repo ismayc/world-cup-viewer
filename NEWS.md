@@ -10,16 +10,17 @@ data/source updates, deployment). Newest day on top.
   no longer change (the opponent is mathematically locked given the picks so far)
   now gets a green ✓ Matchup confirmed badge, reusing the exact `lockedOpponent`
   logic. +1 test.
-- **New "R32 Outlook" tab — share of remaining outcomes per bracket spot.** For
-  each open Round-of-32 slot, shows what proportion of the still-possible outcomes
-  put each team there — every remaining group result weighted equally (a coin-flip
-  among win/draw/loss), estimated by replaying ~10k equally-weighted completions.
-  Explicitly NOT a forecast: it's the proportion of possible scenarios, not a
-  prediction of who's likely to win. Mathematically locked spots (e.g. USA vs
-  Bosnia) show ✅ at 100%; open spots list candidate teams with % bars. Depth is
-  R32 only (where group results determine the bracket). New `utils/bracketOdds.js`
-  (`simulateR32` / `resolveR32Slots`, deterministic under a seeded RNG) +
-  `components/BracketOddsView.jsx`. +5 tests.
+- **"R32 Outlook" moved to its own page with EXACT enumeration (Web Worker).**
+  Replaced the in-app tab (and its Monte-Carlo estimate) with a standalone page at
+  `/outlook.html`, linked from the footer. It now walks **every** remaining
+  win/draw/loss combination of the group games — at a full final matchday that's
+  3¹⁴ = 4,782,969 outcomes — in a Web Worker (progress bar, ~20–40s), so the
+  percentages are the exact share of scenarios, not a sample. Each open R32 slot
+  lists its candidate teams with % bars; mathematically locked spots show ✅ 100%.
+  Guarded to only run when the field has narrowed enough to enumerate (≤ 14 games
+  left); otherwise it reports the (astronomical) outcome count and waits. New
+  `utils/outlookEnum.js` + `workers/outlook.worker.js` + `outlook/` page, Vite
+  multi-page build. Replaces the removed `bracketOdds`/`BracketOddsView`. +5 tests.
 - **Scenarios tab: exact scorelines + "possible orders" count.** Two upgrades to
   the what-if tab. (1) Each picked game now has − / + goal steppers (the W/D/W
   buttons set a one-goal default), so goal-difference tie-breakers resolve exactly

@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -6,6 +7,15 @@ export default defineConfig({
   // under a sub-path (GitHub Pages: /world-cup-viewer/).
   base: './',
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      input: {
+        // Multi-page: the main app + the standalone R32 Outlook page.
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        outlook: fileURLToPath(new URL('./outlook.html', import.meta.url)),
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

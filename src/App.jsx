@@ -583,6 +583,10 @@ export default function App() {
       )}
 
       <footer className="app-footer">
+        <p className="footer-links">
+          🔮 <a href="./outlook.html">R32 Outlook</a> — exact odds for each open bracket spot from
+          all remaining outcomes.
+        </p>
         <p>
           Kickoff times convert automatically to your selected timezone. Broadcast info is for the
           United States — FOX &amp; Telemundo are free over the air. Schedule per the FIFA Final

@@ -1751,6 +1751,15 @@ select {
 .bo-pct { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-dim); }
 .bo-rest { color: var(--text-faint); font-style: italic; }
 .bo-tbd { color: var(--text-faint); font-style: italic; padding: 3px 6px; }
+.bo-count { font-size: 0.9rem; color: var(--text); font-weight: 600; }
+.bo-count strong { color: var(--accent); }
+.bo-progress { margin: 20px 0; }
+.bo-progress-label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 6px; }
+.bo-progress-track { height: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.bo-progress-fill { height: 100%; background: var(--accent); transition: width 0.2s ease; }
+.outlook-page .app-header { margin-bottom: 16px; }
+.footer-links { font-size: 0.9rem; }
+.footer-links a { color: var(--accent); }
 
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>R32 Outlook — World Cup 2026</title>
+    <meta name="description" content="Exact enumeration of every remaining group-stage outcome — the share of scenarios placing each team in each Round-of-32 spot." />
+    <meta name="theme-color" content="#0f1420" />
+    <meta name="robots" content="noindex" />
+    <script>
+      // Set the theme before paint to avoid a flash of the wrong palette.
+      (function () {
+        try {
+          var t = localStorage.getItem('wc2026:theme')
+          if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+          document.documentElement.dataset.theme = t
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark'
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/outlook/main.jsx"></script>
+  </body>
+</html>
