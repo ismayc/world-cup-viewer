@@ -83,13 +83,17 @@ function KnockoutSection({ team, knockout }) {
           ? 'with a top-two finish'
           : 'as one of the best third-placed teams'
   const badge = clinchBadge(knockout.status)
+  const confirmed = knockout.settled && knockout.opponent
   return (
     <div className="md-section gg-knockout">
       <h4>
         Round of 32
         {badge && <span className={`gg-ko-badge ${badge.cls}`} title={badge.title}>{badge.label} {badge.text}</span>}
       </h4>
-      <p className="gg-ko-sub">{team} qualified for the knockout round {how}.</p>
+      <p className="gg-ko-sub">
+        {team} qualified for the knockout round {how} and{' '}
+        {confirmed ? 'will play:' : 'are currently projected to play:'}
+      </p>
       <div className="gg-ko-match">
         <span className="gg-ko-side gg-team-sel">
           <span className="gg-flag">{FLAG_BY_TEAM[team] || '•'}</span>
@@ -101,6 +105,7 @@ function KnockoutSection({ team, knockout }) {
             <>
               <span className="gg-flag">{FLAG_BY_TEAM[knockout.opponent] || '•'}</span>
               <span className="gg-name">{knockout.opponent}</span>
+              {confirmed && <span className="gg-ko-confirmed" title="Mathematically locked — cannot change">✅ confirmed</span>}
             </>
           ) : (
             <span className="gg-name gg-ko-tbd">To be determined</span>
@@ -108,7 +113,7 @@ function KnockoutSection({ team, knockout }) {
         </span>
         {knockout.matchNum && <span className="gg-ko-num">Match {knockout.matchNum}</span>}
       </div>
-      {!knockout.settled && (
+      {!confirmed && (
         <p className="gg-ko-note">
           Projected matchup — the opponent can still change as the remaining group games finish.
         </p>

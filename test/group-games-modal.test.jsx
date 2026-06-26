@@ -4,6 +4,8 @@ import { FollowProvider } from '../src/context/follow.jsx'
 import { DetailContext } from '../src/context/detail.js'
 import Standings from '../src/components/Standings.jsx'
 import { MATCHES } from '../src/data/matches.js'
+import { computeClinch } from '../src/utils/clinch.js'
+import { GROUP_STAGE_MD3 } from './fixtures/group-stage-md3.js'
 
 const renderStandings = (matches, opener = () => {}, clinch = {}) =>
   render(
@@ -18,11 +20,11 @@ const renderStandings = (matches, opener = () => {}, clinch = {}) =>
 const withGroupAResult = () =>
   MATCHES.map((m) => (m.num === 1 ? { ...m, score: [2, 1] } : m))
 
-// Complete every match in Groups A and B (any scores — completion is by count),
-// so a Runner-up A vs Runner-up B (R32 match 73) tie is fully locked.
-const GROUP_AB_NUMS = new Set([1, 2, 25, 28, 53, 54, 3, 5, 26, 27, 49, 50])
-const completeGroupsAB = () =>
-  MATCHES.map((m) => (GROUP_AB_NUMS.has(m.num) ? { ...m, score: [2, 0] } : m))
+// A real group-stage snapshot (Groups A/B/C/E/F done, the rest on matchday 3),
+// where USA vs Bosnia is mathematically locked. Used for the settled-matchup case.
+const snapshot = MATCHES.map((m) =>
+  m.stage === 'Group' && GROUP_STAGE_MD3[m.num] ? { ...m, score: GROUP_STAGE_MD3[m.num] } : m,
+)
 
 describe('Group games pop-up', () => {
   it('shows only the selected team’s three matches when a team is clicked', () => {
@@ -84,24 +86,26 @@ describe('Group games pop-up', () => {
     expect(ko.querySelector('.gg-ko-match')).toHaveTextContent('Mexico')
   })
 
-  it('drops the "provisional" note once both sides of the R32 tie are locked', () => {
-    // Groups A & B complete + Canada clinched runner-up → the Runner-up A v
-    // Runner-up B tie (match 73) is settled, not provisional.
-    renderStandings(completeGroupsAB(), () => {}, { Canada: 'runner-up' })
+  it('shows a confirmed (non-provisional) matchup when the opponent is locked', () => {
+    // Live snapshot: USA's Round-of-32 opponent (Bosnia) is mathematically locked
+    // even though other groups are still playing.
+    renderStandings(snapshot, () => {}, computeClinch(snapshot))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Canada' }))
+    fireEvent.click(screen.getByRole('button', { name: 'USA' }))
     const ko = document.querySelector('.gg-knockout')
     expect(ko).toBeInTheDocument()
-    expect(ko.querySelector('.gg-ko-match')).toHaveTextContent('Canada')
+    expect(ko.querySelector('.gg-ko-match')).toHaveTextContent('Bosnia & Herzegovina')
+    expect(ko.querySelector('.gg-ko-confirmed')).toBeInTheDocument()
     expect(ko.querySelector('.gg-ko-note')).toBeNull()
   })
 
-  it('keeps the "provisional" note while the feeding groups are unfinished', () => {
-    renderStandings(MATCHES, () => {}, { Canada: 'runner-up' })
+  it('keeps the "provisional" note while the opponent can still change', () => {
+    renderStandings(MATCHES, () => {}, { Mexico: 'won-group' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Canada' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mexico' }))
     const ko = document.querySelector('.gg-knockout')
     expect(ko).toBeInTheDocument()
+    expect(ko.querySelector('.gg-ko-confirmed')).toBeNull()
     expect(ko.querySelector('.gg-ko-note')).toBeInTheDocument()
   })
 

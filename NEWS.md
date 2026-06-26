@@ -21,6 +21,20 @@ data/source updates, deployment). Newest day on top.
   `test/fixtures/final-group-results.js`.
 
 ## 2026-06-24
+- **Exact knockout-opponent clinch (no longer over-conservative).** The team
+  pop-up previously only ever called a Round-of-32 matchup "confirmed" once *all*
+  groups had finished — which wrongly kept real locks (e.g. USA vs Bosnia) labeled
+  "provisional" while other groups were still playing. New `utils/opponentClinch.js`
+  resolves the opponent exactly: for a clinched group winner/runner-up it checks
+  the *other* side of the R32 tie across **every still-reachable outcome**. A
+  winner/runner-up slot locks when that group's winner/runner-up is itself
+  clinched; a third-place slot enumerates the still-reachable FIFA Annexe C
+  combinations (using the clinch engine's exact per-group third-place bounds) and
+  locks only if every one assigns the same finished group. The pop-up now shows
+  "✅ confirmed" for a locked opponent and drops the provisional note. Grounded
+  in the live case where USA winning Group D + the frozen profiles of completed
+  groups pin Bosnia as the opponent regardless of the 14 remaining group games.
+  +5 unit tests (incl. a frozen live snapshot) + 2 UI tests.
 - **Knockout matchup in the team pop-up.** Once a team has *clinched* a Round-of-32
   place (group winner, runner-up, top-two, or a best third-placed team — from the
   same `computeClinch` verdict the standings badges use), its team pop-up now shows

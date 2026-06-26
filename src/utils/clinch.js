@@ -23,7 +23,7 @@ const SCENARIO_BUDGET = 500000
 
 // Compare two third-place profiles by criteria 1–3 (no cross-group head-to-head
 // exists). Positive => a ranks ahead of b.
-const cmpThird = (a, b) => a.Pts - b.Pts || a.GD - b.GD || a.GF - b.GF
+export const cmpThird = (a, b) => a.Pts - b.Pts || a.GD - b.GD || a.GF - b.GF
 const profile = (r) => ({ name: r.name, group: r.group, Pts: r.Pts, GD: r.GD, GF: r.GF })
 
 // A goal cap comfortably larger than any margin that could flip a tie-breaker
@@ -244,6 +244,26 @@ export function computeClinch(matches) {
     }
   }
   return status
+}
+
+// Per-group best/worst reachable third-place profile, using the same exact
+// scoreline enumeration (when feasible) or sound points-only bounds as the
+// clinch engine. Exposed so the knockout-opponent logic can decide which
+// cross-group "8 best thirds" combinations are still reachable. Returns
+// { [group]: { best, worst, complete } } where best/worst are {Pts,GD,GF}.
+export function thirdProfileBounds(matches) {
+  const PLUS = (Pts) => ({ Pts, GD: Infinity, GF: Infinity })
+  const MINUS = (Pts) => ({ Pts, GD: -Infinity, GF: -Infinity })
+  const out = {}
+  for (const g of GROUPS) {
+    const sa = analyzeGroup(g, matches)
+    const pa = pointsAnalysis(g, matches)
+    out[g] = {
+      best: sa.feasible ? sa.groupThirdBest : PLUS(pa.maxThirdPts),
+      worst: sa.feasible ? sa.groupThirdWorst : MINUS(pa.minThirdPts),
+    }
+  }
+  return out
 }
 
 // group letter -> the team that has clinched winning it (if any).

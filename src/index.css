@@ -1642,6 +1642,7 @@ select {
   margin-left: auto; font-size: 0.66rem; font-weight: 700; color: var(--text-faint);
   background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px;
 }
+.gg-ko-confirmed { font-size: 0.64rem; font-weight: 700; color: var(--accent); margin-left: 4px; white-space: nowrap; }
 .gg-ko-note { font-size: 0.74rem; color: var(--text-faint); margin: 8px 0 0; font-style: italic; }
 
 /* ---------- Calendar modal ---------- */

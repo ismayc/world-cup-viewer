@@ -1,18 +1,12 @@
 import { useState } from 'react'
 import { TEAMS } from '../data/teams.js'
-import { MATCHES } from '../data/matches.js'
 import { computeQualification, rowStatus } from '../utils/qualification.js'
 import { clinchBadge } from '../utils/clinch.js'
 import { projectKnockout } from '../utils/asItStands.js'
+import { lockedOpponent } from '../utils/opponentClinch.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { useFollow } from '../context/follow.jsx'
 import GroupGamesModal from './GroupGamesModal.jsx'
-
-// R32 slot labels are invariant, so read them from the static schedule by match
-// number (the live `matches` may have resolved some to real team names).
-const R32_SLOTS = new Map(
-  MATCHES.filter((m) => m.stage === 'R32').map((m) => [m.num, [m.t1, m.t2]]),
-)
 
 const GROUPS = Object.keys(TEAMS)
 
@@ -283,19 +277,6 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
   // matchup (opponent + match number), pulled from the same projection that
   // powers "As it stands". null unless the team is mathematically through —
   // we only promise a knockout opponent once a team has actually made it.
-  // Is one side of a R32 tie locked to a single team? A group-winner / runner-up
-  // slot locks once that group is complete (or the slot is clinched outright); a
-  // third-place slot ("3rd C/E/F/H/I") only locks once ALL groups finish, because
-  // which thirds qualify and where they land (Annexe C) needs the full picture.
-  const slotLocked = (label) => {
-    let m = /^Winner Group ([A-L])$/.exec(label)
-    if (m) return qual.completion[m[1]] || (qual.groups[m[1]] || []).some((r) => clinch?.[r.name] === 'won-group')
-    m = /^Runner-up Group ([A-L])$/.exec(label)
-    if (m) return qual.completion[m[1]] || (qual.groups[m[1]] || []).some((r) => clinch?.[r.name] === 'runner-up')
-    if (/^3rd /.test(label)) return qual.allComplete
-    return false
-  }
-
   const teamKnockout = (group, team) => {
     if (!team) return null
     const status = clinch?.[team]
@@ -307,7 +288,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
     const proj = perGroup[group] || {}
     // A 'won-group'/'runner-up' verdict pins the exact finishing position, so use
     // it directly; otherwise (top2 not yet split, or a best third) fall back to
-    // the current standings position.
+    // the current standings position for the provisional projection.
     const dest =
       status === 'won-group'
         ? proj.first
@@ -320,17 +301,15 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
               : row.rank === 3
                 ? proj.third
                 : null
-    const opponent = dest?.opponent || null
-    // The matchup is settled (not provisional) once BOTH sides of its R32 tie are
-    // locked — e.g. a Runner-up A vs Runner-up B tie locks as soon as Groups A & B
-    // finish, with no dependence on the cross-group third-place race.
-    const slots = dest?.matchNum ? R32_SLOTS.get(dest.matchNum) : null
-    const settled = Boolean(opponent) && Boolean(slots) && slots.every(slotLocked)
+    // A mathematically locked opponent (invariant across every remaining outcome)
+    // is authoritative; otherwise fall back to the provisional "as it stands"
+    // projection. `settled` drives whether the pop-up drops the provisional note.
+    const locked = lockedOpponent(matches, team, clinch)
     return {
       status,
-      opponent,
-      matchNum: dest?.matchNum || null,
-      settled,
+      opponent: locked?.opponent || dest?.opponent || null,
+      matchNum: locked?.matchNum || dest?.matchNum || null,
+      settled: Boolean(locked),
     }
   }
 
