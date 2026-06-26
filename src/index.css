@@ -1710,6 +1710,43 @@ select {
 .sc-r32-note { font-size: 0.72rem; color: var(--text-faint); font-style: italic; }
 .sc-foot { font-size: 0.74rem; color: var(--text-faint); margin: 16px 0 0; font-style: italic; }
 
+/* ---------- R32 Outlook (bracket odds) ---------- */
+.bo-intro { margin-bottom: 16px; }
+.bo-intro > p { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 10px; }
+.bo-bar-row { display: flex; align-items: center; gap: 12px; }
+.bo-runs { font-size: 0.8rem; color: var(--text-faint); font-weight: 600; }
+.bo-recompute {
+  background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+  padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
+}
+.bo-recompute:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.bo-recompute:disabled { opacity: 0.5; cursor: default; }
+.bo-note { font-size: 0.85rem; color: var(--text-dim); margin: 0 0 14px; }
+.bo-grid {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.bo-match { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.bo-match-head { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); margin-bottom: 8px; }
+.bo-vs { text-align: center; font-size: 0.72rem; font-style: italic; color: var(--text-faint); margin: 6px 0; }
+.bo-side { }
+.bo-locked { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(0, 194, 168, 0.08); border-radius: 8px; }
+.bo-flag { font-size: 1.2rem; }
+.bo-team { font-weight: 700; font-size: 0.92rem; }
+.bo-confirmed { margin-left: auto; font-size: 0.8rem; }
+.bo-slot-label { font-size: 0.66rem; color: var(--text-faint); font-weight: 600; margin-bottom: 4px; }
+.bo-cands { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.bo-cand {
+  position: relative; display: flex; align-items: center; gap: 6px;
+  padding: 3px 6px; border-radius: 6px; overflow: hidden; font-size: 0.8rem;
+}
+.bo-bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0, 194, 168, 0.16); z-index: 0; }
+.bo-cand-flag, .bo-cand-name, .bo-pct { position: relative; z-index: 1; }
+.bo-cand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bo-pct { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-dim); }
+.bo-rest { color: var(--text-faint); font-style: italic; }
+.bo-tbd { color: var(--text-faint); font-style: italic; padding: 3px 6px; }
+
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }
 .cal-hint { font-size: 0.7rem; font-weight: 400; color: var(--text-faint); text-transform: none; letter-spacing: 0; }

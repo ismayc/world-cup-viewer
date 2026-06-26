@@ -5,6 +5,16 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **New "R32 Outlook" tab — share of remaining outcomes per bracket spot.** For
+  each open Round-of-32 slot, shows what proportion of the still-possible outcomes
+  put each team there — every remaining group result weighted equally (a coin-flip
+  among win/draw/loss), estimated by replaying ~10k equally-weighted completions.
+  Explicitly NOT a forecast: it's the proportion of possible scenarios, not a
+  prediction of who's likely to win. Mathematically locked spots (e.g. USA vs
+  Bosnia) show ✅ at 100%; open spots list candidate teams with % bars. Depth is
+  R32 only (where group results determine the bracket). New `utils/bracketOdds.js`
+  (`simulateR32` / `resolveR32Slots`, deterministic under a seeded RNG) +
+  `components/BracketOddsView.jsx`. +5 tests.
 - **Scenarios tab: exact scorelines + "possible orders" count.** Two upgrades to
   the what-if tab. (1) Each picked game now has − / + goal steppers (the W/D/W
   buttons set a one-goal default), so goal-difference tie-breakers resolve exactly

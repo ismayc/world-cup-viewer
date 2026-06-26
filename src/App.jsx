@@ -6,6 +6,7 @@ import MatchCard from './components/MatchCard.jsx'
 import Bracket from './components/Bracket.jsx'
 import Standings from './components/Standings.jsx'
 import ScenariosView from './components/ScenariosView.jsx'
+import BracketOddsView from './components/BracketOddsView.jsx'
 import WeekView from './components/WeekView.jsx'
 import NextMatch from './components/NextMatch.jsx'
 import MatchDetail from './components/MatchDetail.jsx'
@@ -32,6 +33,7 @@ const VIEWS = [
   { id: 'week', label: '📆 Week' },
   { id: 'groups', label: '📊 Groups' },
   { id: 'scenarios', label: '🧮 Scenarios' },
+  { id: 'odds', label: '📊 R32 Outlook' },
   { id: 'bracket', label: '🏆 Bracket' },
 ]
 
@@ -567,6 +569,12 @@ export default function App() {
       {view === 'scenarios' && (
         <main className="scenarios-view">
           <ScenariosView matches={matches} />
+        </main>
+      )}
+
+      {view === 'odds' && (
+        <main className="odds-view">
+          <BracketOddsView matches={matches} />
         </main>
       )}
 
