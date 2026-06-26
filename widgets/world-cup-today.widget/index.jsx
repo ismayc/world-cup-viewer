@@ -107,6 +107,10 @@ export const className = `
   top: 60px;
   right: 30px;
   width: 330px;
+  /* Don't let a ⌘-drag turn into a text selection — lets you move the widget. */
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
   font-family: -apple-system, 'SF Pro Text', Helvetica, Arial, sans-serif;
   color: #e8edf6;
   background: rgba(18, 22, 32, 0.82);
