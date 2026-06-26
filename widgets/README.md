@@ -1,42 +1,59 @@
 # Desktop widgets
 
-## World Cup Today (Übersicht)
+Two ways to put **today's** 2026 World Cup matches on your Mac, both showing
+kickoffs in **Arizona MST** and both driven by the same maintained calendar feed
+(`https://world-cup-viewer.netlify.app/calendar.ics`), so they show resolved
+knockout teams and final scores as they land.
 
-A macOS desktop widget that lists **today's** 2026 World Cup matches with
-**Mountain-time** kickoffs, read live from this project's calendar feed (so it
-shows resolved knockout teams and final scores as they land).
+| | [Übersicht](#1-übersicht-drop-in) | [Native WidgetKit](#2-native-widgetkit) |
+|---|---|---|
+| **Folder** | `world-cup-today.widget/` | `native-macos/` |
+| **Setup** | Drop a folder in, done | Build once in Xcode (~10 min) |
+| **Needs** | The free [Übersicht](https://tracesof.net/uebersicht/) app | Xcode 15+, macOS 14+ |
+| **Lives** | On the desktop wallpaper | System widget gallery (desktop / Notification Center) |
+| **Looks** | Custom card (full CSS control) | Native macOS widget styling |
 
-![what it shows: a translucent card titled "World Cup — Today" listing each match's kickoff time, teams, stage and venue]
+Pick whichever you prefer — they read the same data.
+
+---
+
+## 1. Übersicht (drop-in)
+
+`world-cup-today.widget/index.jsx` — a desktop card listing today's matches.
 
 ### Install
+1. Install [Übersicht](https://tracesof.net/uebersicht/) (free) and launch it
+   (it's a menu-bar app — no window opens).
+2. Übersicht menu-bar icon → **Open Widgets Folder** (or set a custom folder in
+   **Preferences**).
+3. Copy the `world-cup-today.widget` folder into it.
+4. Übersicht picks it up automatically (or menu → **Refresh all widgets**).
 
-1. Install [Übersicht](https://tracesof.net/uebersicht/) (free) and launch it.
-2. Click the Übersicht menu-bar icon → **Open Widgets Folder**.
-3. Copy the `world-cup-today.widget` folder (the one next to this README) into
-   that folder.
-4. Übersicht picks it up automatically (or menu → **Refresh All Widgets**).
+### Position & options
+- **Move it:** Übersicht widgets can't be dragged — set the `POSITION = { … }`
+  constant near the top of `index.jsx`, save, then **Refresh all widgets**.
+- **One screen only:** choose the display from the Übersicht menu-bar menu.
+- **Time zone:** `America/Phoenix` (Arizona, fixed MST). For Mountain Time *with*
+  daylight saving (reads MDT in summer), change `const TZ` to `'America/Denver'`.
+- Refreshes every 10 min; in-progress games get a `● LIVE` tag.
 
-Drag the widget anywhere on the desktop; position is also set in the CSS at the
-bottom of `index.jsx` (`top` / `right`).
+---
 
-### Notes
+## 2. Native WidgetKit
 
-- **Time zone.** It uses `America/Phoenix` — **Arizona, fixed MST year-round**
-  (no daylight saving), so kickoffs show as **MST**. For Mountain Time *with*
-  daylight saving (Denver etc., which reads **MDT** in summer), change
-  `const TZ = 'America/Phoenix'` to `'America/Denver'` near the top of
-  `index.jsx`. The header label updates automatically.
-- **Data source.** It `curl`s `https://world-cup-viewer.netlify.app/calendar.ics`
-  every 10 minutes — the same maintained feed the site's calendar subscription
-  uses. No API key, nothing to configure.
-- **Today** is the Mountain calendar day, so a late kickoff that falls on the
-  next UTC day is still listed under the correct local date.
-- Games in progress get a small `● LIVE` tag (best-effort, based on kickoff +
-  ~2¼ hours).
+`native-macos/` — a real SwiftUI widget you add from the system widget gallery
+(right-click desktop → **Edit Widgets**), in Medium / Large / Extra-Large sizes.
 
-### Want a native widget instead?
+It can't be dropped in like the Übersicht one — WidgetKit widgets ship inside an
+app you build once in Xcode. Full numbered walkthrough and the Swift sources are
+in **[`native-macos/README.md`](native-macos/README.md)**.
 
-A true Notification-Center/desktop WidgetKit widget is also possible, but it
-needs a small SwiftUI app built and signed in Xcode on your Mac (it can't be
-dropped in like this one). Happy to provide that project if you'd prefer it —
-the same feed drives it.
+- **Time zone:** Arizona MST (swap to `America/Denver` in `WorldCupFeed.swift`).
+- Heads-up: the widget target needs **App Sandbox → Outgoing Connections
+  (Client)** or the network fetch is blocked; a free Apple ID signs it (renew with
+  ⌘R every 7 days). Both are covered in that README.
+
+---
+
+Both are companion artifacts of the [World Cup 2026 viewer](../README.md) and use
+its public calendar feed — no API key, nothing to configure.
