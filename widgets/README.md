@@ -21,11 +21,11 @@ bottom of `index.jsx` (`top` / `right`).
 
 ### Notes
 
-- **Time zone.** It uses `America/Denver` (Mountain Time), so kickoffs show as
-  **MDT** during the tournament (June–July is daylight-saving season — "MST"
-  proper is the winter abbreviation). For **fixed MST year-round** (Arizona, no
-  DST), change `const TZ = 'America/Denver'` to `'America/Phoenix'` near the top
-  of `index.jsx`. The header label updates automatically.
+- **Time zone.** It uses `America/Phoenix` — **Arizona, fixed MST year-round**
+  (no daylight saving), so kickoffs show as **MST**. For Mountain Time *with*
+  daylight saving (Denver etc., which reads **MDT** in summer), change
+  `const TZ = 'America/Phoenix'` to `'America/Denver'` near the top of
+  `index.jsx`. The header label updates automatically.
 - **Data source.** It `curl`s `https://world-cup-viewer.netlify.app/calendar.ics`
   every 10 minutes — the same maintained feed the site's calendar subscription
   uses. No API key, nothing to configure.

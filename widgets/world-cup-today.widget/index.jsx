@@ -12,9 +12,10 @@ export const refreshFrequency = 10 * 60 * 1000 // 10 minutes
 export const command =
   "curl -s --max-time 15 'https://world-cup-viewer.netlify.app/calendar.ics'"
 
-// Mountain Time. The feed stores kickoffs in UTC, so this localizes them.
-// For fixed MST year-round (Arizona, no daylight saving), use 'America/Phoenix'.
-const TZ = 'America/Denver'
+// Arizona Mountain Time — fixed MST year-round (no daylight saving). The feed
+// stores kickoffs in UTC, so this localizes them. For Mountain Time WITH daylight
+// saving (Denver etc., shows MDT in summer), use 'America/Denver' instead.
+const TZ = 'America/Phoenix'
 
 const fmtTime = new Intl.DateTimeFormat('en-US', {
   timeZone: TZ,
