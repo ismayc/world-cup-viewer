@@ -934,6 +934,7 @@ select {
 }
 .rank { color: var(--text-faint); margin-right: 7px; font-size: 0.75rem; }
 .row-team { color: var(--text); font-weight: 500; margin-left: 6px; }
+.tiebreak-mark { margin-left: 5px; font-size: 0.78rem; cursor: help; vertical-align: middle; }
 .row-team-btn {
   background: none;
   border: none;

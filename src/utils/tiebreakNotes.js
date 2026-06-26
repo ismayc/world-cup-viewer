@@ -70,6 +70,24 @@ export function softTiebreaks(group, matches) {
   return notes
 }
 
+// The cross-group "best third-placed teams" race has no head-to-head (those
+// teams never met), so it's ranked by points, GD, goals, then conduct, then FIFA
+// ranking. Flag any third separated from an adjacent third only by conduct/FIFA.
+// `thirds` is the already-ranked array (qual.thirds).
+export function softThirdTiebreaks(thirds) {
+  const notes = new Map()
+  for (let k = 0; k + 1 < thirds.length; k++) {
+    const a = thirds[k]
+    const b = thirds[k + 1]
+    if (a.Pts === b.Pts && a.GD === b.GD && a.GF === b.GF) {
+      const reason = a.conduct !== b.conduct ? 'conduct' : 'fifa'
+      notes.set(a.name, { reason, vs: b.name })
+      notes.set(b.name, { reason, vs: a.name })
+    }
+  }
+  return notes
+}
+
 export const TIEBREAK_LABEL = {
   conduct: 'fair-play points (cards)',
   fifa: 'FIFA ranking',

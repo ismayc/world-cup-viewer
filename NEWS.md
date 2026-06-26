@@ -5,13 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
-- **Scenarios: ⚖️ marker when a placing is decided by cards / FIFA ranking.** A
-  group placing that comes down to a *soft* tie-breaker — fair-play conduct (cards)
-  or FIFA ranking, once points, head-to-head, goal difference and goals are all
-  level — now shows a ⚖️ next to the team, with a tooltip naming the decider (and
-  noting card data is best-effort). New `utils/tiebreakNotes.js` mirrors the exact
-  clustering in the qualification engine so it only flags genuine 7th/8th-criterion
-  splits (not head-to-head or goal-difference ones). +4 tests.
+- **⚖️ marker when a placing is decided by cards / FIFA ranking.** A placing that
+  comes down to a *soft* tie-breaker — fair-play conduct (cards) or FIFA ranking,
+  once points, head-to-head, goal difference and goals are all level — now shows a
+  ⚖️ next to the team, with a tooltip naming the decider (and noting card data is
+  best-effort). Shown on the **Groups standings** tables, the **Best third-placed
+  teams** table (cross-group, no head-to-head), and the **Scenarios** projected
+  tables. New `utils/tiebreakNotes.js` (`softTiebreaks` mirrors the qualification
+  engine's exact clustering so it flags only genuine 7th/8th-criterion splits;
+  `softThirdTiebreaks` for the thirds race). +5 tests.
 - **Scenarios: clearer confirmed-matchup mark + confirm all once fully set.** The
   "Projected Round of 32" lines now use a bare ✔️ (with an accessible label) instead
   of the "✓ Matchup confirmed" text, which was ambiguous about which side was fixed.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { softTiebreaks } from '../src/utils/tiebreakNotes.js'
+import { softTiebreaks, softThirdTiebreaks } from '../src/utils/tiebreakNotes.js'
 
 // Group A teams: Mexico, South Africa, South Korea, Czechia. Build a full
 // round-robin so we can force exact ties down to the soft criteria.
@@ -51,6 +51,22 @@ describe('softTiebreaks', () => {
     ]
     const notes = softTiebreaks('A', groupA(scores))
     expect(notes.size).toBe(0)
+  })
+
+  it('flags cross-group best-thirds split by conduct or FIFA ranking', () => {
+    const thirds = [
+      { name: 'Alpha', group: 'A', Pts: 3, GD: 1, GF: 3, conduct: 0 },
+      { name: 'Bravo', group: 'B', Pts: 3, GD: 1, GF: 3, conduct: 0 }, // level with Alpha → FIFA
+      { name: 'Charlie', group: 'C', Pts: 3, GD: 0, GF: 2, conduct: 0 }, // lower GD, clear vs Bravo
+      { name: 'Delta', group: 'D', Pts: 3, GD: 0, GF: 2, conduct: -1 }, // level with Charlie, worse conduct
+      { name: 'Echo', group: 'E', Pts: 1, GD: -2, GF: 1, conduct: 0 }, // clear on points
+    ]
+    const notes = softThirdTiebreaks(thirds)
+    expect(notes.get('Alpha').reason).toBe('fifa')
+    expect(notes.get('Bravo').reason).toBe('fifa')
+    expect(notes.get('Charlie').reason).toBe('conduct')
+    expect(notes.get('Delta').reason).toBe('conduct')
+    expect(notes.has('Echo')).toBe(false)
   })
 
   it('does not flag teams that are clear on head-to-head', () => {

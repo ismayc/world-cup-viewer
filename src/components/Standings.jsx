@@ -4,6 +4,7 @@ import { computeQualification, rowStatus } from '../utils/qualification.js'
 import { clinchBadge } from '../utils/clinch.js'
 import { projectKnockout } from '../utils/asItStands.js'
 import { lockedOpponent } from '../utils/opponentClinch.js'
+import { softTiebreaks, softThirdTiebreaks, TIEBREAK_LABEL } from '../utils/tiebreakNotes.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { useFollow } from '../context/follow.jsx'
 import GroupGamesModal from './GroupGamesModal.jsx'
@@ -82,7 +83,21 @@ function AsItStands({ proj, onGoToMatch }) {
   )
 }
 
-function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSelectTeam, liveTeams, pausedTeams }) {
+// ⚖️ shown when a placing was decided by a soft tie-breaker (cards / FIFA rank).
+function TieMark({ tie }) {
+  if (!tie) return null
+  return (
+    <span
+      className="tiebreak-mark"
+      title={`Level with ${tie.vs} on points, goal difference and goals — separated by ${TIEBREAK_LABEL[tie.reason]}${tie.reason === 'conduct' ? ' (best-effort card data)' : ''}`}
+      aria-label={`Separated from ${tie.vs} by ${TIEBREAK_LABEL[tie.reason]}`}
+    >
+      ⚖️
+    </span>
+  )
+}
+
+function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSelectTeam, ties, liveTeams, pausedTeams }) {
   const { isFollowed } = useFollow()
   const played = qual.completion[group] || rows.some((r) => r.P > 0)
   const groupLive = rows.some((r) => liveTeams.has(r.name))
@@ -146,6 +161,7 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
                   >
                     {r.name}
                   </button>
+                  <TieMark tie={ties?.get(r.name)} />
                   {liveTeams.has(r.name) && (
                     <span
                       className={`row-live-dot${pausedTeams.has(r.name) ? ' delayed' : ''}`}
@@ -190,6 +206,7 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
 function BestThirds({ qual, clinch }) {
   const anyPlayed = qual.thirds.some((t) => t.P > 0)
   if (!anyPlayed) return null
+  const ties = softThirdTiebreaks(qual.thirds)
   return (
     <div className="thirds-card">
       <h3 className="group-title">Best third-placed teams</h3>
@@ -221,6 +238,7 @@ function BestThirds({ qual, clinch }) {
                 <span className="rank">{i + 1}</span>
                 <span className="team-flag">{r.flag}</span>
                 <span className="row-team">{r.name}</span>
+                <TieMark tie={ties.get(r.name)} />
               </td>
               <td>{r.group}</td>
               <td>{r.P}</td>
@@ -374,6 +392,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
             asItStands={showProjection ? perGroup[g] : null}
             onGoToMatch={onGoToMatch}
             onSelectTeam={onSelectTeam}
+            ties={softTiebreaks(g, matches)}
             liveTeams={liveTeams}
             pausedTeams={pausedTeams}
           />
