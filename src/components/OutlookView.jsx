@@ -5,7 +5,6 @@ import { R32_SLOT_LABELS, countRemaining, totalOutcomes } from '../utils/outlook
 // Above this many remaining games the outcome space (3^N) is too large to walk
 // exactly in reasonable time — wait until the field narrows.
 const MAX_REMAINING = 14 // 3^14 = 4,782,969
-const MAX_SHOWN = 6
 
 function Side({ dist, slotLabel }) {
   if (dist.locked) {
@@ -17,9 +16,6 @@ function Side({ dist, slotLabel }) {
       </div>
     )
   }
-  const shown = dist.candidates.slice(0, MAX_SHOWN)
-  const rest = dist.candidates.slice(MAX_SHOWN)
-  const restPct = rest.reduce((s, c) => s + c.pct, 0)
   const fmt = (p) => (p >= 0.995 ? '>99' : p < 0.005 ? '<1' : Math.round(p * 100))
   return (
     <div className="bo-side">
@@ -28,7 +24,8 @@ function Side({ dist, slotLabel }) {
         <div className="bo-cand bo-tbd">To be determined</div>
       ) : (
         <ul className="bo-cands">
-          {shown.map((c) => (
+          {/* Every team that can fill this spot, with its exact share. */}
+          {dist.candidates.map((c) => (
             <li className="bo-cand" key={c.team}>
               <span className="bo-bar" style={{ width: `${Math.max(3, c.pct * 100)}%` }} aria-hidden="true" />
               <span className="bo-cand-flag">{FLAG_BY_TEAM[c.team] || '•'}</span>
@@ -36,12 +33,6 @@ function Side({ dist, slotLabel }) {
               <span className="bo-pct">{fmt(c.pct)}%</span>
             </li>
           ))}
-          {restPct > 0.005 && (
-            <li className="bo-cand bo-rest">
-              <span className="bo-cand-name">+{rest.length} more</span>
-              <span className="bo-pct">{fmt(restPct)}%</span>
-            </li>
-          )}
         </ul>
       )}
     </div>

@@ -1750,7 +1750,6 @@ select {
 .bo-cand-flag, .bo-cand-name, .bo-pct { position: relative; z-index: 1; }
 .bo-cand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bo-pct { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-dim); }
-.bo-rest { color: var(--text-faint); font-style: italic; }
 .bo-tbd { color: var(--text-faint); font-style: italic; padding: 3px 6px; }
 .bo-count { font-size: 0.9rem; color: var(--text); font-weight: 600; }
 .bo-count strong { color: var(--accent); }

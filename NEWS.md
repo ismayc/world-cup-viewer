@@ -5,6 +5,9 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **R32 Outlook lists every possible team per spot.** Removed the top-6 cap and the
+  "+N more" roll-up — each open Round-of-32 slot now shows the full set of teams
+  that can fill it, each with its exact share.
 - **Nav wraps to two rows on mobile; R32 Outlook is now an in-app tab.** The view
   bar no longer scrolls horizontally on phones (which hid Bracket) — it wraps after
   Groups into a second row: Schedule · Week · Groups / Scenarios · R32 Outlook ·
