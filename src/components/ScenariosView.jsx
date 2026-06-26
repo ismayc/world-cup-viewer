@@ -94,7 +94,7 @@ function R32Line({ label, dest, confirmed }) {
         {dest.opponent ? `${FLAG_BY_TEAM[dest.opponent] || ''} ${dest.opponent}` : 'TBD'}
       </span>
       {dest.matchNum && <span className="sc-r32-num">M{dest.matchNum}</span>}
-      {confirmed && <span className="sc-r32-lock" title="This matchup can no longer change">✓ Matchup confirmed</span>}
+      {confirmed && <span className="sc-r32-lock" title="This matchup is confirmed — it can no longer change" aria-label="Matchup confirmed">✔️</span>}
     </li>
   )
 }
@@ -130,11 +130,23 @@ export default function ScenariosView({ matches }) {
   // reachable third-place sets when a group winner is clinched, since that's the
   // only case whose opponent is a third-place slot.
   const clinch = computeClinch(synthetic)
-  const reachable = Object.values(clinch).includes('won-group') ? reachableThirdSets(synthetic) : []
+  // Once every group is decided the whole bracket is fixed, so every matchup is
+  // confirmed. Before then, fall back to the exact per-matchup lock check.
+  const allComplete = qual.allComplete
+  const reachable =
+    !allComplete && Object.values(clinch).includes('won-group') ? reachableThirdSets(synthetic) : []
+  // `lockedOpponent` only resolves from a group winner / runner-up, so check BOTH
+  // sides of the tie — this also confirms a third-placed team's line (resolved via
+  // its winner opponent).
+  const lockedBetween = (a, b, matchNum) => {
+    const l = lockedOpponent(synthetic, a, clinch, reachable)
+    return Boolean(l) && l.opponent === b && l.matchNum === matchNum
+  }
   const isConfirmed = (dest) => {
     if (!dest?.team || !dest.opponent) return false
-    const locked = lockedOpponent(synthetic, dest.team, clinch, reachable)
-    return Boolean(locked) && locked.opponent === dest.opponent && locked.matchNum === dest.matchNum
+    if (allComplete) return true
+    return lockedBetween(dest.team, dest.opponent, dest.matchNum) ||
+      lockedBetween(dest.opponent, dest.team, dest.matchNum)
   }
 
   if (!groupsInPlay.length) {

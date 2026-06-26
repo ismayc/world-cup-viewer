@@ -79,15 +79,18 @@ describe('ScenariosView', () => {
     expect(screen.getByText('14 games still open')).toBeInTheDocument()
   })
 
-  it('marks a projected R32 matchup "confirmed" once it is locked', () => {
+  it('marks a locked projected R32 matchup with a confirmed checkmark', () => {
     // Live snapshot already locks USA (Group D winner) vs Bosnia. Group D shows
     // its "1st" projected line confirmed without any picks needed.
     render(<ScenariosView matches={snapshot} />)
     const card = screen.getByText('Group D').closest('.sc-card')
-    expect(within(card).getByText(/Matchup confirmed/i)).toBeInTheDocument()
+    expect(card.querySelector('.sc-r32-lock')).toBeInTheDocument()
+    // The bare checkmark carries an accessible label but no "Matchup confirmed" text.
+    expect(within(card).getByLabelText('Matchup confirmed')).toBeInTheDocument()
+    expect(within(card).queryByText(/Matchup confirmed/)).toBeNull()
     // A wide-open group shows no confirmed matchup yet.
     const open = screen.getByText('Group G').closest('.sc-card')
-    expect(within(open).queryByText(/Matchup confirmed/i)).toBeNull()
+    expect(open.querySelector('.sc-r32-lock')).toBeNull()
   })
 
   it('exposes goal steppers once a result is set, and they adjust the score', () => {

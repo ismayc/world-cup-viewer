@@ -5,6 +5,12 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Scenarios: clearer confirmed-matchup mark + confirm all once fully set.** The
+  "Projected Round of 32" lines now use a bare ✔️ (with an accessible label) instead
+  of the "✓ Matchup confirmed" text, which was ambiguous about which side was fixed.
+  Also fixed under-confirmation: a matchup is now confirmed from EITHER side of the
+  tie (so a third-placed team's line confirms via its winner opponent), and once
+  every group is decided the whole bracket is fixed so all matchups show confirmed.
 - **Fix: R32 Outlook third-place proportions were wrong (found by new tests).**
   Added an independent brute-force reference enumerator and cross-checked it
   against `enumerateOutlook` on small fixtures — which exposed two bugs in the
