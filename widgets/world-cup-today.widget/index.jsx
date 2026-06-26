@@ -103,11 +103,20 @@ export const render = ({ output }) => {
   )
 }
 
+// ─── WHERE IT SITS ON SCREEN ────────────────────────────────────────────────
+// Übersicht widgets can't be dragged — set the position here, save the file,
+// then (Übersicht menu-bar icon →) "Refresh all widgets". Use any two edges:
+//   top-right:     { top: '60px',  right: '30px' }
+//   top-left:      { top: '60px',  left: '30px' }
+//   bottom-right:  { bottom: '40px', right: '30px' }
+//   bottom-left:   { bottom: '40px', left: '30px' }
+// Percentages work too (e.g. right: '5%') if you want it to scale with the screen.
+const POSITION = { top: '60px', right: '30px' }
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const className = `
-  top: 60px;
-  right: 30px;
+  ${Object.entries(POSITION).map(([edge, val]) => `${edge}: ${val};`).join('\n  ')}
   width: 330px;
-  /* Don't let a ⌘-drag turn into a text selection — lets you move the widget. */
   -webkit-user-select: none;
   user-select: none;
   cursor: default;
