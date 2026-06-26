@@ -5,6 +5,11 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Old `/outlook.html` URL redirects to the in-app R32 Outlook tab.** A static
+  `public/outlook.html` (copied verbatim, so it doesn't reintroduce the multi-page
+  build) redirects to `./?view=outlook`, so existing links/bookmarks to the removed
+  standalone page land on the R32 Outlook view. Works at both the domain root
+  (Netlify) and the `/world-cup-viewer/` sub-path (GitHub Pages).
 - **Bracket fills a locked third-place opponent early.** The bracket only dropped
   third-placed teams into their "3rd X/Y/Z" R32 slots once the *entire* group stage
   was final — so e.g. USA vs Bosnia stayed half-resolved (USA shown, opponent a
