@@ -15,8 +15,15 @@
 import { MATCHES } from '../data/matches.js'
 import { TEAMS } from '../data/teams.js'
 import { rankGroup } from './qualification.js'
-import { cmpThird } from './clinch.js'
+import { byFifaRank } from '../data/fifaRanking.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
+
+// Cross-group third-place ranking — IDENTICAL to computeQualification's: points,
+// then goal difference, then goals, then conduct (cards), then FIFA ranking.
+// Returns negative when `a` should rank ABOVE `b` (a standard descending sort
+// comparator), unlike clinch's "positive = ahead" cmpThird helper.
+const compareThirds = (a, b) =>
+  b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF || b.conduct - a.conduct || byFifaRank(a.team, b.team)
 
 const GROUPS = Object.keys(TEAMS)
 const SCORE = { W: [1, 0], D: [1, 1], L: [0, 1] } // one-goal convention
@@ -70,7 +77,7 @@ function groupOutcomes(matches) {
         outs.push({
           w: o[0].name,
           r: o[1].name,
-          t: { team: o[2].name, Pts: o[2].Pts, GD: o[2].GD, GF: o[2].GF, group: g },
+          t: { team: o[2].name, Pts: o[2].Pts, GD: o[2].GD, GF: o[2].GF, conduct: o[2].conduct, group: g },
         })
         return
       }
@@ -117,7 +124,7 @@ export function enumerateOutlook(matches, onProgress) {
       T[g] = o.t.team
       thirds[gi] = o.t
     }
-    thirds.sort(cmpThird)
+    thirds.sort(compareThirds)
     const key = thirds.slice(0, 8).map((x) => x.group).sort().join('')
     const combo = THIRD_PLACE_COMBINATIONS[key]
     const w2t = {}

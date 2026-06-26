@@ -5,6 +5,16 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Fix: R32 Outlook third-place proportions were wrong (found by new tests).**
+  Added an independent brute-force reference enumerator and cross-checked it
+  against `enumerateOutlook` on small fixtures — which exposed two bugs in the
+  third-place ranking: it sorted thirds *ascending* (taking the worst 8 instead
+  of the best 8) and skipped the conduct/FIFA-ranking tie-breakers the
+  qualification engine uses. Winner/runner-up slots and the Groups/Scenarios tabs
+  were unaffected; only the standalone Outlook page's third-slot shares were off.
+  Now ranks thirds identically to `computeQualification` (verified: USA→Bosnia
+  locks at 100% over all 4,782,969 outcomes). +5 correctness tests (exact match
+  vs the reference, slot-eligibility invariants, rational-share checks).
 - **Scenarios: "✓ Matchup confirmed" on locked projected R32 ties.** As you set
   results on the Scenarios tab, any "Projected Round of 32" line whose matchup can
   no longer change (the opponent is mathematically locked given the picks so far)
