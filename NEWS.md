@@ -5,6 +5,13 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Bracket fills a locked third-place opponent early.** The bracket only dropped
+  third-placed teams into their "3rd X/Y/Z" R32 slots once the *entire* group stage
+  was final — so e.g. USA vs Bosnia stayed half-resolved (USA shown, opponent a
+  placeholder) even though Bosnia was already mathematically locked. New
+  `resolveLockedThirdSlots` fills any third slot whose team is locked across every
+  remaining outcome (reusing the exact `lockedOpponent` logic), while leaving
+  genuinely-undecided thirds as placeholders. +2 tests.
 - **R32 Outlook lists every possible team per spot.** Removed the top-6 cap and the
   "+N more" roll-up — each open Round-of-32 slot now shows the full set of teams
   that can fill it, each with its exact share.

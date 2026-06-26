@@ -14,6 +14,7 @@
 
 import { TEAMS } from '../data/teams.js'
 import { resolveClinchedSlots, resolveRunnerUpSlots } from './clinch.js'
+import { lockedOpponent, reachableThirdSets } from './opponentClinch.js'
 import { projectKnockout } from './asItStands.js'
 
 const ALL_TEAMS = new Set(Object.values(TEAMS).flat().map((t) => t.name))
@@ -69,6 +70,32 @@ export function resolveThirdPlaceSlots(matches) {
   })
 }
 
+// Fill a "3rd X/Y/Z" R32 slot the moment it's mathematically LOCKED — even before
+// the whole group stage is final. A clinched group winner whose third-place
+// opponent is the same across every remaining outcome (see opponentClinch) drops
+// that third in early, so e.g. USA vs Bosnia shows on the bracket as soon as it's
+// settled rather than waiting for the last group game.
+export function resolveLockedThirdSlots(matches, clinch) {
+  const winners = Object.keys(TEAMS).flatMap((g) =>
+    TEAMS[g].filter((t) => clinch?.[t.name] === 'won-group').map((t) => t.name),
+  )
+  if (!winners.length) return matches
+  const reachable = reachableThirdSets(matches)
+  const fill = {} // R32 match number -> locked third-placed team
+  for (const name of winners) {
+    const locked = lockedOpponent(matches, name, clinch, reachable)
+    if (locked?.opponent && locked.matchNum) fill[locked.matchNum] = locked.opponent
+  }
+  if (!Object.keys(fill).length) return matches
+  return matches.map((m) => {
+    const team = fill[m.num]
+    if (!team) return m
+    const t1 = THIRD_SLOT.test(m.t1) ? team : m.t1
+    const t2 = THIRD_SLOT.test(m.t2) ? team : m.t2
+    return t1 === m.t1 && t2 === m.t2 ? m : { ...m, t1, t2 }
+  })
+}
+
 // Fill "Winner Match N" / "Loser Match N" feed labels from finished ties,
 // propagating up the bracket (a round's winners feed the next). Bounded passes =
 // bracket depth. A slot resolves only when BOTH of the tie's teams are already
@@ -108,10 +135,13 @@ export function resolveKnockoutSlots(matches) {
 }
 
 // Full bracket resolution, in dependency order: group winners (clinch) → settled
-// runners-up → third-place qualifiers (group stage done) → knockout-match
-// winners/losers propagated up the rounds.
+// runners-up → third-place qualifiers (all once the group stage is done, plus any
+// already mathematically locked earlier) → knockout-match winners/losers
+// propagated up the rounds.
 export function resolveBracket(matches, clinch) {
-  return resolveKnockoutSlots(
+  const groupSlots = resolveLockedThirdSlots(
     resolveThirdPlaceSlots(resolveRunnerUpSlots(resolveClinchedSlots(matches, clinch))),
+    clinch,
   )
+  return resolveKnockoutSlots(groupSlots)
 }

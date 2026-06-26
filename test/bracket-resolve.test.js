@@ -5,9 +5,11 @@ import { computeClinch } from '../src/utils/clinch.js'
 import {
   decideMatch,
   resolveThirdPlaceSlots,
+  resolveLockedThirdSlots,
   resolveKnockoutSlots,
   resolveBracket,
 } from '../src/utils/bracketResolve.js'
+import { GROUP_STAGE_MD3 } from './fixtures/group-stage-md3.js'
 
 const GROUPS = Object.keys(TEAMS)
 const THIRD_SLOT = /^3rd [A-L/]+$/
@@ -128,5 +130,26 @@ describe('resolveBracket — full pipeline', () => {
       expect(ANY_PLACEHOLDER.test(m.t1)).toBe(false)
       expect(ANY_PLACEHOLDER.test(m.t2)).toBe(false)
     }
+  })
+
+  it('fills a LOCKED third-place opponent early, while groups are still in play', () => {
+    // Live snapshot: USA have won Group D and Bosnia is their mathematically
+    // locked third-place opponent (Match 81) — even though 7 groups are unfinished.
+    const snapshot = MATCHES.map((m) =>
+      m.stage === 'Group' && GROUP_STAGE_MD3[m.num] ? { ...m, score: GROUP_STAGE_MD3[m.num] } : m,
+    )
+    const clinch = computeClinch(snapshot)
+    const resolved = resolveBracket(snapshot, clinch)
+    const m81 = resolved.find((m) => m.num === 81)
+    expect(m81.t1).toBe('USA')
+    expect(m81.t2).toBe('Bosnia & Herzegovina')
+
+    // A third slot that is NOT yet locked stays a placeholder (no over-claiming).
+    const m74 = resolved.find((m) => m.num === 74)
+    expect(THIRD_SLOT.test(m74.t2)).toBe(true)
+  })
+
+  it('resolveLockedThirdSlots is a no-op before any group is won', () => {
+    expect(resolveLockedThirdSlots(MATCHES, {})).toBe(MATCHES)
   })
 })
