@@ -38,3 +38,9 @@ jobs:
       # continuous hourly backstop.
       - run: npm run check:schedule
         if: always()
+      # Bracket-consistency guard: once OpenFootball resolves a knockout fixture's
+      # real teams (from the official draw/results), fails (→ email) if OUR Annexe C
+      # + tie-breaker resolution produces a different matchup. Self-gating: it only
+      # compares already-resolved knockout sides, so it lights up as matches finish.
+      - run: npm run check:bracket
+        if: always()

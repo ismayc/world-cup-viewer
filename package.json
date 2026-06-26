@@ -18,7 +18,8 @@
     "of:edits": "node scripts/openfootball-edits.mjs",
     "of:autofill": "node scripts/openfootball-autofill.mjs",
     "check:sync": "node scripts/check-sync-readiness.mjs",
-    "check:schedule": "node scripts/check-schedule-drift.mjs"
+    "check:schedule": "node scripts/check-schedule-drift.mjs",
+    "check:bracket": "node scripts/check-bracket-consistency.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

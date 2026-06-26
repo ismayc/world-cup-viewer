@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Durable bracket-consistency guard (GitHub Actions, not a session job).** New
+  `scripts/check-bracket-consistency.mjs` (`npm run check:bracket`) compares OUR
+  Annexe-C/tie-breaker `resolveBracket` against the knockout teams OpenFootball has
+  resolved from the official draw/results — and fails (→ the hourly `feed-freshness`
+  workflow emails the maintainer) on any divergence. Self-gating: it only checks
+  already-resolved knockout sides, so it does nothing before the draw and lights up
+  as matches finish (the "end of match" trigger). Wired into `feed-freshness.yml`
+  alongside the existing check:sync/feed/schedule guards. Currently: 3 resolved R32
+  matchups checked, 0 divergences. (Replaces the fragile session-only self-check.)
 - **Knockout readiness.** Froze Groups D, E and F final results into
   `final-group-results.js` (orders re-verified by hand against points/GD/head-to-head
   — A–F now locked; G–L pending their final matchday). Ran the FIFA-anchored
