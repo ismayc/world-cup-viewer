@@ -5,6 +5,11 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-26
+- **Locked final group results for Groups D, E, F** (verified 2026-06-26 against OpenFootball + web search / Wikipedia).
+  - Group D: **USA** · Australia · Paraguay · Türkiye (USA 6 pts; Australia edges Paraguay on overall GD after 0–0 draw)
+  - Group E: **Germany** · Ivory Coast · Ecuador · Curaçao (Germany & IC tied 6 pts; Germany wins H2H 2–1; Ecuador advances as best 3rd)
+  - Group F: **Netherlands** · Japan · Sweden · Tunisia (Netherlands 7 pts; Tunisia winless)
+  - ESPN API blocked by network policy (403); cross-check sourced from Wikipedia match articles, Yahoo Sports, NBC Sports, Fox Sports, Bolavip. Groups G–L still in progress (final matchdays June 26–27).
 - **Old `/outlook.html` URL redirects to the in-app R32 Outlook tab.** A static
   `public/outlook.html` (copied verbatim, so it doesn't reintroduce the multi-page
   build) redirects to `./?view=outlook`, so existing links/bookmarks to the removed
