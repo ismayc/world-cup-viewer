@@ -4,6 +4,7 @@ import { computeQualification } from '../utils/qualification.js'
 import { computeClinch } from '../utils/clinch.js'
 import { projectKnockout } from '../utils/asItStands.js'
 import { lockedOpponent, reachableThirdSets } from '../utils/opponentClinch.js'
+import { softTiebreaks, TIEBREAK_LABEL } from '../utils/tiebreakNotes.js'
 import {
   remainingGroupMatches,
   applyScenarioPicks,
@@ -52,7 +53,7 @@ function FixturePicker({ match, pick, onQuick, onScore }) {
   )
 }
 
-function ProjectedTable({ rows, decided }) {
+function ProjectedTable({ rows, decided, ties }) {
   return (
     <table className="sc-table">
       <thead>
@@ -62,20 +63,32 @@ function ProjectedTable({ rows, decided }) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((r) => (
-          <tr key={r.name} className={r.rank <= 2 ? 'qualifies' : ''}>
-            <td className="col-team">
-              <span className="rank">{r.rank}</span>
-              <span className="team-flag">{r.flag}</span>
-              <span className="row-team">{r.name}</span>
-              {r.rank <= 2 && <span className="sc-tag sc-adv">advances</span>}
-              {r.rank === 3 && <span className="sc-tag sc-third">3rd</span>}
-            </td>
-            <td>{r.P}</td>
-            <td>{r.GD > 0 ? `+${r.GD}` : r.GD}</td>
-            <td className="col-pts">{r.Pts}</td>
-          </tr>
-        ))}
+        {rows.map((r) => {
+          const tie = ties.get(r.name)
+          return (
+            <tr key={r.name} className={r.rank <= 2 ? 'qualifies' : ''}>
+              <td className="col-team">
+                <span className="rank">{r.rank}</span>
+                <span className="team-flag">{r.flag}</span>
+                <span className="row-team">{r.name}</span>
+                {tie && (
+                  <span
+                    className="sc-tiebreak"
+                    title={`Level with ${tie.vs} on points, head-to-head, goal difference and goals — separated by ${TIEBREAK_LABEL[tie.reason]}${tie.reason === 'conduct' ? ' (best-effort card data)' : ''}`}
+                    aria-label={`Separated from ${tie.vs} by ${TIEBREAK_LABEL[tie.reason]}`}
+                  >
+                    ⚖️
+                  </span>
+                )}
+                {r.rank <= 2 && <span className="sc-tag sc-adv">advances</span>}
+                {r.rank === 3 && <span className="sc-tag sc-third">3rd</span>}
+              </td>
+              <td>{r.P}</td>
+              <td>{r.GD > 0 ? `+${r.GD}` : r.GD}</td>
+              <td className="col-pts">{r.Pts}</td>
+            </tr>
+          )
+        })}
       </tbody>
     </table>
   )
@@ -181,6 +194,8 @@ export default function ScenariosView({ matches }) {
           const proj = perGroup[g] || {}
           // Distinct final standings still reachable given the results set so far.
           const { count, decided } = possibleOrderings(g, synthetic)
+          // Placings decided by a soft tie-breaker (cards / FIFA ranking).
+          const ties = softTiebreaks(g, synthetic)
           return (
             <div className="sc-card" key={g}>
               <h3 className="group-title">
@@ -200,7 +215,7 @@ export default function ScenariosView({ matches }) {
                 ))}
               </div>
 
-              <ProjectedTable rows={qual.groups[g]} decided={allPicked} />
+              <ProjectedTable rows={qual.groups[g]} decided={allPicked} ties={ties} />
 
               <div className="sc-r32">
                 <div className="sc-r32-title">Projected Round of 32</div>
@@ -230,7 +245,9 @@ export default function ScenariosView({ matches }) {
         score so goal-difference tie-breakers resolve precisely. “Possible orders” counts the
         distinct final standings still reachable for a group given the results you’ve set.
         Third-place qualification and exact opponents depend on all groups together, so they update
-        as you set more results.
+        as you set more results. A ⚖️ marks a placing decided by a soft tie-breaker — fair-play
+        points (cards) or FIFA ranking — once points, head-to-head, goal difference and goals are
+        all level (hover it for the decider; card data is best-effort).
       </p>
     </div>
   )

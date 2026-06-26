@@ -64,7 +64,7 @@ function baseStats(group, matches) {
 }
 
 // Head-to-head sub-table among exactly the given (tied) team names.
-function headToHead(names, group, matches) {
+export function headToHead(names, group, matches) {
   const set = new Set(names)
   const sub = {}
   for (const n of names) sub[n] = { Pts: 0, GD: 0, GF: 0 }
