@@ -18,22 +18,30 @@ import {
   aliveR32Slots,
   allAdvancementRequirements,
 } from '../src/utils/eliminationCheck.js'
-import { GROUP_STAGE_MD3 } from '../test/fixtures/group-stage-md3.js'
 
-// Fill Groups D, H, I, G final so only J/K/L remain (6 games), mirroring the
-// current last-day situation. NOTE: these are ILLUSTRATIVE results — the build
-// environment can't reach the live feed, so edit this map with the real scores
-// (matchNum -> [home, away]) to get a snapshot of the actual standings.
-const FILL = {
-  59: [2, 1], 60: [0, 0], // D matchday 3
-  63: [1, 1], 64: [0, 2], // H matchday 3
-  61: [3, 0], 62: [1, 1], // I matchday 3
-  65: [1, 1], 66: [0, 2], // G matchday 3 (Egypt–Iran, NZ–Belgium)
+// Pull the LIVE source-of-record (OpenFootball) and overlay final group scores
+// onto our fixtures, so the snapshot reflects the real current standings.
+const OF_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
+const NAME = { Turkey: 'Türkiye', 'Czech Republic': 'Czechia' } // OpenFootball → our spelling
+const norm = (n) => NAME[n] || n
+
+const ofData = await (await fetch(OF_URL)).json()
+const ofMap = new Map()
+for (const m of ofData.matches) {
+  if (!String(m.group || '').startsWith('Group') || !m.score?.ft) continue
+  const g = m.group.replace('Group ', '').trim()
+  ofMap.set(`${g}|${[norm(m.team1), norm(m.team2)].sort().join('~')}`, { t1: norm(m.team1), ft: m.score.ft })
 }
-const scored = { ...GROUP_STAGE_MD3, ...FILL }
-const matches = MATCHES.map((m) =>
-  m.stage === 'Group' && scored[m.num] ? { ...m, score: scored[m.num] } : m,
-)
+let applied = 0
+const matches = MATCHES.map((m) => {
+  if (m.stage !== 'Group') return m
+  const of = ofMap.get(`${m.group}|${[m.t1, m.t2].sort().join('~')}`)
+  if (!of) return m // still to play
+  applied++
+  const score = of.t1 === m.t1 ? of.ft : [of.ft[1], of.ft[0]] // orient to our t1/t2
+  return { ...m, score }
+})
+console.log(`OpenFootball: applied ${applied}/72 group results (${ofMap.size} finals in feed)`)
 
 const result = enumerateOutlook(matches)
 const survivors = survivingTeams(matches)
@@ -187,7 +195,7 @@ h1{font-size:1.5rem;margin:0 0 4px}
 .cont{color:var(--faint)}
 </style></head><body><div class="wrap">
 <h1>🔮 R32 Outlook — goal-difference enumeration</h1>
-<div class="caveat"><b>Preview / illustrative data.</b> The build environment can't reach the live feed, so this uses a representative late-stage snapshot (Groups A–F final, D/H/I filled, G/J/K/L still to play). Every percentage below is the exact enumeration for THIS dataset — it shows how the feature behaves, not the live standings.</div>
+<div class="caveat"><b>Live data</b> — group results overlaid from OpenFootball (source of record), the same feed the app reads. ${result.remaining} group games still to play. Every percentage is the exact goal-difference enumeration for the current standings.</div>
 <p class="intro">For each open Round-of-32 spot, the share of remaining outcomes that put each team there — walking every still-possible group result and enumerating each remaining game's goal difference (each margin weighted equally). Not a forecast.</p>
 <p class="count"><b>${result.remaining}</b> group games left · <b>${result.total.toLocaleString()}</b> scorelines enumerated · margins to ±${result.cap}</p>
 <div class="grid">${matchesHtml}</div>
