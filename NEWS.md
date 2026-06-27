@@ -4,6 +4,26 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-27
+- **Exact "still alive" check + R32 Outlook panel.** The Outlook enumerates
+  outcomes under a one-goal convention (every remaining game modelled 1–0/1–1/0–1,
+  since goals are unbounded), which silently drops a bubble third-placed team whose
+  only survival paths need real goal-difference swings — so a team like Scotland
+  (3 pts, −3 GD) showed 0% and vanished even though it is **not** eliminated. New
+  `src/utils/eliminationCheck.js` answers elimination objectively instead of by
+  proportion: it enumerates each group's remaining **scorelines** (not just W/D/L)
+  up to a generous goal cap — reusing clinch.js's exact engine — and applies the
+  full FIFA third-place comparator (points → GD → goals → conduct → FIFA ranking).
+  Groups being independent, a team's best path is found by optimising each group on
+  its own, so it's exact and cheap. The Outlook worker now also returns the exact
+  survivors, and `OutlookView` shows a **"Still mathematically alive — but
+  margin-dependent"** panel listing any non-eliminated team the one-goal model
+  omits, with an explanation. Reuses the goal-cap/scoreline helpers from clinch.js
+  (now exported). New `test/elimination-check.test.js` (7 tests): a frozen
+  "Scotland alive" scenario proving the exact check and the one-goal enumeration
+  disagree, a flip-to-eliminated case, and a full-stage cross-check against
+  `computeQualification`'s best-8. All 713 tests green.
+
 ## 2026-06-26
 - **Durable bracket-consistency guard (GitHub Actions, not a session job).** New
   `scripts/check-bracket-consistency.mjs` (`npm run check:bracket`) compares OUR

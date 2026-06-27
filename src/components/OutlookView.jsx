@@ -43,6 +43,7 @@ export default function OutlookView({ matches }) {
   const [phase, setPhase] = useState('idle') // idle | enumerating | done | error | toomany
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState(null)
+  const [survivors, setSurvivors] = useState(null)
   const [errMsg, setErrMsg] = useState('')
   const matchesRef = useRef(matches)
   matchesRef.current = matches
@@ -76,6 +77,7 @@ export default function OutlookView({ matches }) {
       if (msg.type === 'progress') setProgress(msg.done / msg.total)
       else if (msg.type === 'done') {
         setResult(msg.result)
+        setSurvivors(msg.survivors || [])
         setPhase('done')
         worker.terminate()
       } else if (msg.type === 'error') {
@@ -94,6 +96,23 @@ export default function OutlookView({ matches }) {
     .sort((a, b) => a - b)
   const allLocked =
     result && nums.every((n) => result.perMatch[n].every((s) => s.locked))
+
+  // Teams that are mathematically still alive (exact check) yet never appear in
+  // the one-goal enumeration above — their only paths to the Round of 32 hinge on
+  // goal-difference swings the one-goal convention can't represent, so they read
+  // as 0% and would otherwise vanish. Surface them explicitly.
+  const hiddenAlive = useMemo(() => {
+    if (!result || !survivors) return []
+    const shown = new Set()
+    for (const n of nums) {
+      for (const side of result.perMatch[n]) {
+        if (side.locked) shown.add(side.locked)
+        for (const c of side.candidates) shown.add(c.team)
+      }
+    }
+    return survivors.filter((t) => !shown.has(t))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, survivors])
 
   return (
     <div className="bracket-odds">
@@ -148,6 +167,27 @@ export default function OutlookView({ matches }) {
               )
             })}
           </div>
+
+          {hiddenAlive.length > 0 && (
+            <div className="bo-alive">
+              <div className="bo-alive-head">Still mathematically alive — but margin-dependent</div>
+              <p className="bo-alive-note">
+                These teams can still reach the Round of 32, but only through goal-difference swings
+                (a rival third-placed team finishing well below them via a heavy result). The
+                percentages above model each remaining game at a one-goal margin, so those paths
+                aren’t counted there and these teams show 0% — they are <strong>not</strong>{' '}
+                eliminated.
+              </p>
+              <ul className="bo-alive-list">
+                {hiddenAlive.map((team) => (
+                  <li className="bo-alive-team" key={team}>
+                    <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
+                    <span className="bo-cand-name">{team}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       )}
     </div>

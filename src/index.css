@@ -1757,6 +1757,19 @@ select {
 .bo-progress-label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 6px; }
 .bo-progress-track { height: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .bo-progress-fill { height: 100%; background: var(--accent); transition: width 0.2s ease; }
+.bo-alive {
+  margin-top: 18px; padding: 12px 14px;
+  background: rgba(255, 176, 32, 0.07); border: 1px solid rgba(255, 176, 32, 0.35);
+  border-radius: var(--radius);
+}
+.bo-alive-head { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #d99100; margin-bottom: 6px; }
+.bo-alive-note { font-size: 0.82rem; color: var(--text-dim); margin: 0 0 10px; line-height: 1.5; }
+.bo-alive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.bo-alive-team {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 999px; font-size: 0.84rem; font-weight: 600;
+}
 
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }

@@ -3,6 +3,7 @@
 // progress updates and a final result.
 
 import { enumerateOutlook } from '../utils/outlookEnum.js'
+import { survivingTeams } from '../utils/eliminationCheck.js'
 
 self.onmessage = (e) => {
   const matches = e.data
@@ -10,7 +11,11 @@ self.onmessage = (e) => {
     const result = enumerateOutlook(matches, (done, total) => {
       self.postMessage({ type: 'progress', done, total })
     })
-    self.postMessage({ type: 'done', result })
+    // Exact "still alive" set — separate from the one-goal enumeration, so a
+    // bubble team whose survival needs goal-difference swings (and thus shows 0%
+    // above) is still reported rather than silently vanishing.
+    const survivors = survivingTeams(matches)
+    self.postMessage({ type: 'done', result, survivors })
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err?.message || err) })
   }

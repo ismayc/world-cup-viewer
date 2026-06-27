@@ -30,13 +30,13 @@ const profile = (r) => ({ name: r.name, group: r.group, Pts: r.Pts, GD: r.GD, GF
 // in a 4-team group: it must exceed the worst current GD gap a team might need
 // to overturn, with headroom. Being generous keeps enumeration EXACT (an under-
 // sized cap could miss a counterexample and falsely claim a clinch).
-function goalCap(rows) {
+export function goalCap(rows) {
   let maxAbsGD = 0
   for (const r of rows) maxAbsGD = Math.max(maxAbsGD, Math.abs(r.GD))
   return Math.max(8, maxAbsGD + 6)
 }
 
-function scorelinesUpTo(cap) {
+export function scorelinesUpTo(cap) {
   const out = []
   for (let a = 0; a <= cap; a++) for (let b = 0; b <= cap; b++) out.push([a, b])
   return out
