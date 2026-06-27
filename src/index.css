@@ -1771,8 +1771,9 @@ select {
 .bo-alive-dest { color: var(--text-dim); font-weight: 400; font-size: 0.8rem; }
 .bo-alive-dest strong { color: var(--text); font-weight: 600; }
 .bo-req { margin: 4px 0 0 22px; font-size: 0.8rem; }
-.bo-req-own { color: var(--text-dim); margin-bottom: 3px; }
-.bo-req-head { color: var(--text); font-weight: 600; margin-bottom: 3px; }
+.bo-req-head { color: var(--text); margin-bottom: 3px; }
+.bo-req-head strong { color: var(--accent); }
+.bo-req-thresh { color: var(--text-dim); font-weight: 400; }
 .bo-req-list { list-style: disc; margin: 0; padding-left: 18px; color: var(--text-dim); display: flex; flex-direction: column; gap: 2px; }
 .bo-req-cont { color: var(--text-faint); }
 /* "<1%" margin-dependent candidate rows in the bracket grid. */

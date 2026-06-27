@@ -264,6 +264,13 @@ export default function OutlookView({ matches }) {
                 {hiddenAlive.map((team) => {
                   const slots = aliveSlots?.[team] || []
                   const req = requirements?.[team]
+                  const p = req?.profile
+                  const fmtGD = (v) => (v > 0 ? `+${v}` : `${v}`)
+                  // The "below them" threshold, stated once per team rather than
+                  // repeated on every rival line.
+                  const threshold = p
+                    ? `under ${p.Pts} pt${p.Pts === 1 ? '' : 's'}, or ${p.Pts} with GD below ${fmtGD(p.GD)}`
+                    : null
                   return (
                     <li className="bo-alive-team" key={team}>
                       <div className="bo-alive-row">
@@ -271,13 +278,13 @@ export default function OutlookView({ matches }) {
                         <span className="bo-cand-name">{team}</span>
                         {slots.length > 0 && (
                           <span className="bo-alive-dest">
-                            → if they advance, they’d play{' '}
+                            · would play{' '}
                             {slots.map((s, i) => {
                               const w = winnerInfo(s.matchNum)
                               return (
                                 <span key={s.matchNum}>
-                                  {i > 0 && ' or '}
-                                  <strong>{w.team || w.label}</strong> (Match {s.matchNum})
+                                  {i > 0 && ' / '}
+                                  <strong>{w.team || w.label}</strong> (M{s.matchNum})
                                 </span>
                               )
                             })}
@@ -286,20 +293,19 @@ export default function OutlookView({ matches }) {
                       </div>
                       {req && req.variable.length > 0 && (
                         <div className="bo-req">
-                          {!req.ownGroupComplete && (
-                            <div className="bo-req-own">
-                              First, <strong>{team}</strong> must finish 3rd in Group {req.ownGroup}{' '}
-                              (the bigger the win, the better their goal difference) — then:
-                            </div>
-                          )}
                           <div className="bo-req-head">
-                            Needs at least <strong>{req.needAtLeast}</strong> of these{' '}
-                            {req.variable.length} to go their way:
+                            {!req.ownGroupComplete && <>Win Group {req.ownGroup} (finish 3rd), then </>}
+                            {req.ownGroupComplete ? 'Needs ' : 'needs '}
+                            <strong>
+                              {req.needAtLeast} of {req.variable.length}
+                            </strong>{' '}
+                            rival third{req.variable.length === 1 ? '' : 's'} to finish below them
+                            {threshold && <span className="bo-req-thresh"> ({threshold})</span>}:
                           </div>
                           <ul className="bo-req-list">
                             {req.variable.map((v) => (
                               <li key={v.group}>
-                                {v.condition}{' '}
+                                Group {v.group}{' '}
                                 <span className="bo-req-cont">({v.contenders.join(' / ')})</span>
                               </li>
                             ))}
