@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **Best third-placed teams table: completion markers + in-contention teams.**
+  Each row now carries a "final" (all group games played → line locked) or "to
+  play" (group still in progress → provisional) marker, so it's clear at a glance
+  which thirds are settled. Added a "Still in contention" section listing teams
+  currently 4th in a group that's still playing and not yet eliminated — they can
+  still climb into 3rd but the static 12-row table of *current* thirds would
+  otherwise hide them (e.g. Uzbekistan). Contenders are gated on the group having
+  kicked off and `clinch !== 'eliminated'`, shown unranked and visually distinct.
+  Two new tests in `standings.test.jsx`.
 - **Exact "still alive" check + R32 Outlook panel.** The Outlook enumerates
   outcomes under a one-goal convention (every remaining game modelled 1–0/1–1/0–1,
   since goals are unbounded), which silently drops a bubble third-placed team whose

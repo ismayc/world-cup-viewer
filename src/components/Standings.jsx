@@ -203,17 +203,54 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
   )
 }
 
+// A small marker showing whether a third-placed line is settled (the group has
+// played all its games) or still provisional (the group is mid-stage).
+function ThirdStatus({ complete }) {
+  return complete ? (
+    <span className="third-status third-final" title="All group games played — this third-place line is final">
+      final
+    </span>
+  ) : (
+    <span className="third-status third-toplay" title="Group still playing — this position is provisional and can still change">
+      to play
+    </span>
+  )
+}
+
 function BestThirds({ qual, clinch }) {
   const anyPlayed = qual.thirds.some((t) => t.P > 0)
   if (!anyPlayed) return null
   const ties = softThirdTiebreaks(qual.thirds)
+
+  // Teams not currently 3rd but still able to climb into a third-place spot: the
+  // current 4th-placed team of any group that's still playing, as long as it's
+  // not yet mathematically eliminated. The static 12-row table shows only the
+  // CURRENT thirds, so a side sitting 4th with a live shot (Uzbekistan-type)
+  // would otherwise be invisible here.
+  const shown = new Set(qual.thirds.map((t) => t.name))
+  const contenders = []
+  for (const g of GROUPS) {
+    if (qual.completion[g]) continue // group done → its third is settled
+    const rows = qual.groups[g] || []
+    if (!rows.some((r) => r.P > 0)) continue // group hasn't kicked off → not meaningful yet
+    const fourth = rows[3]
+    if (fourth && !shown.has(fourth.name) && clinch?.[fourth.name] !== 'eliminated') {
+      contenders.push(fourth)
+    }
+  }
+
+  const gd = (v) => (v > 0 ? `+${v}` : v)
+
   return (
     <div className="thirds-card">
       <h3 className="group-title">Best third-placed teams</h3>
       <p className="thirds-note">
         The 8 best of the 12 third-placed teams advance (ranked by points, then goal difference,
         then goals scored, then fair play, then FIFA ranking).{' '}
-        {qual.allComplete ? '' : 'Provisional — group stage still in progress.'}
+        {qual.allComplete ? '' : 'Provisional — group stage still in progress. '}
+        {!qual.allComplete && (
+          <>“final” = all group games played; “to play” = group still in progress.</>
+        )}
       </p>
       <table className="standings-table">
         <thead>
@@ -238,16 +275,39 @@ function BestThirds({ qual, clinch }) {
                 <span className="rank">{i + 1}</span>
                 <span className="team-flag">{r.flag}</span>
                 <span className="row-team">{r.name}</span>
+                <ThirdStatus complete={qual.completion[r.group]} />
                 <TieMark tie={ties.get(r.name)} />
               </td>
               <td>{r.group}</td>
               <td>{r.P}</td>
-              <td>{r.GD > 0 ? `+${r.GD}` : r.GD}</td>
+              <td>{gd(r.GD)}</td>
               <td>{r.GF}</td>
               <td className="col-pts">{r.Pts}</td>
             </tr>
             )
           })}
+          {contenders.length > 0 && (
+            <>
+              <tr className="thirds-divider">
+                <td colSpan={6}>Still in contention — currently 4th but can still climb into 3rd</td>
+              </tr>
+              {contenders.map((r) => (
+                <tr key={r.name} className="contender">
+                  <td className="col-team">
+                    <span className="rank rank-dash" aria-hidden="true">–</span>
+                    <span className="team-flag">{r.flag}</span>
+                    <span className="row-team">{r.name}</span>
+                    <ThirdStatus complete={false} />
+                  </td>
+                  <td>{r.group}</td>
+                  <td>{r.P}</td>
+                  <td>{gd(r.GD)}</td>
+                  <td>{r.GF}</td>
+                  <td className="col-pts">{r.Pts}</td>
+                </tr>
+              ))}
+            </>
+          )}
         </tbody>
       </table>
     </div>

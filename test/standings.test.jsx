@@ -186,6 +186,59 @@ describe('Standings', () => {
     expect(screen.getByText('Best third-placed teams')).toBeInTheDocument()
   })
 
+  it('marks each best-third row final (group done) or "to play" (still in progress)', () => {
+    // Group A complete (Czechia 3rd, final); every other group has matchday 1
+    // played, so their provisional thirds are still "to play".
+    const fixture = MATCHES.map((m) => {
+      if (m.stage !== 'Group') return m
+      if (m.group === 'A') {
+        const s = { 1: [2, 0], 2: [2, 0], 25: [2, 0], 28: [1, 0], 53: [0, 2], 54: [0, 1] }[m.num]
+        return s ? { ...m, score: s } : m
+      }
+      // One match per other group (matchday 1) → started but not complete.
+      return [3, 9, 14, 17, 19, 21, 22, 6, 4, 10, 13].includes(m.num) ? { ...m, score: [1, 0] } : m
+    })
+    const { container } = render(
+      <FollowProvider>
+        <Standings matches={fixture} hideScores={false} />
+      </FollowProvider>,
+    )
+    const rowFor = (team) =>
+      [...container.querySelectorAll('.thirds-card tbody tr')].find(
+        (tr) => tr.querySelector('.row-team')?.textContent === team,
+      )
+    // Czechia's group (A) is complete → "final".
+    expect(rowFor('Czechia')?.querySelector('.third-final')).toBeTruthy()
+    expect(rowFor('Czechia')?.querySelector('.third-toplay')).toBeFalsy()
+    // At least one third from an unfinished group is flagged "to play".
+    expect(container.querySelectorAll('.thirds-card .third-toplay').length).toBeGreaterThan(0)
+  })
+
+  it('lists a currently-4th, not-yet-eliminated team as an in-contention third', () => {
+    // Group A complete; Group B has only matchday 1 played, so it has a current
+    // 4th place that is nowhere near eliminated → shown as a contender.
+    const fixture = MATCHES.map((m) => {
+      if (m.stage !== 'Group') return m
+      if (m.group === 'A') {
+        const s = { 1: [2, 0], 2: [2, 0], 25: [2, 0], 28: [1, 0], 53: [0, 2], 54: [0, 1] }[m.num]
+        return s ? { ...m, score: s } : m
+      }
+      // Group B matchday 1 only: matches 3 and 5.
+      return m.group === 'B' && (m.num === 3 || m.num === 5) ? { ...m, score: [1, 0] } : m
+    })
+    const { container } = render(
+      <FollowProvider>
+        <Standings matches={fixture} hideScores={false} />
+      </FollowProvider>,
+    )
+    // The contention divider renders and there is at least one contender row.
+    expect(screen.getByText(/Still in contention/)).toBeInTheDocument()
+    const contenderRows = container.querySelectorAll('.thirds-card tbody tr.contender')
+    expect(contenderRows.length).toBeGreaterThan(0)
+    // A contender is not in the numbered list (dash instead of a rank).
+    expect(contenderRows[0].querySelector('.rank-dash')).toBeTruthy()
+  })
+
   it('shows the "outside the best 8" note for a non-qualifying third place', () => {
     // Every group plays -> some thirds fall outside the best 8.
     const allPlayed = MATCHES.map((m) =>

@@ -1843,6 +1843,20 @@ select {
   margin-top: 16px;
 }
 .thirds-note { font-size: 0.78rem; color: var(--text-dim); margin: 0 0 10px; line-height: 1.5; }
+.third-status {
+  margin-left: 6px; font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; padding: 1px 6px; border-radius: 999px; vertical-align: middle;
+  white-space: nowrap;
+}
+.third-final { background: rgba(0, 194, 168, 0.14); color: var(--accent); }
+.third-toplay { background: rgba(245, 166, 35, 0.16); color: var(--delay); }
+.thirds-divider td {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-faint); padding: 12px 8px 4px; border-bottom: 1px solid var(--border);
+}
+.standings-table tr.contender { color: var(--text-dim); }
+.standings-table tr.contender .row-team { font-weight: 600; }
+.rank-dash { color: var(--text-faint); }
 
 .legend-tb {
   text-decoration: underline dotted;
