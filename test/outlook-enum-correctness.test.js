@@ -22,9 +22,14 @@ function fixtureKeepingOpen(keepOpen) {
 }
 
 // ---- Independent reference enumerator (deliberately different code path) ----
-// Recurses over the remaining games, builds the full synthetic match list, runs
-// the production computeQualification, and resolves each R32 slot from scratch.
-const SCORE = { W: [1, 0], D: [1, 1], L: [0, 1] }
+// Recurses over the remaining games, enumerating each one's MARGIN over the same
+// ±CAP range, builds the full synthetic match list (goals = margin), runs the
+// production computeQualification, and resolves each R32 slot from scratch — every
+// margin combination weighted equally. The production enumerator's weighted
+// per-group dedup must reproduce these counts exactly.
+const CAP = 2 // small, so the brute force stays tiny but still varies goal difference
+const MARGINS = Array.from({ length: 2 * CAP + 1 }, (_, i) => i - CAP)
+const scoreForMargin = (d) => (d > 0 ? [d, 0] : d < 0 ? [0, -d] : [0, 0])
 const R32_STATIC = MATCHES.filter((m) => m.stage === 'R32')
 function parse(label) {
   let m = /^Winner Group ([A-L])$/.exec(label)
@@ -42,14 +47,13 @@ function referenceEnumerate(matches) {
   const remNums = remaining.map((m) => m.num)
   const counts = {}
   for (const m of R32_STATIC) counts[m.num] = [{}, {}]
-  const patterns = ['W', 'D', 'L']
   const choice = new Array(remaining.length)
   let total = 0
 
   const tally = () => {
     total++
     const override = {}
-    remNums.forEach((num, i) => (override[num] = SCORE[choice[i]]))
+    remNums.forEach((num, i) => (override[num] = scoreForMargin(choice[i])))
     const syn = matches.map((m) => (override[m.num] ? { ...m, score: override[m.num] } : m))
     const q = computeQualification(syn)
     const W = {}
@@ -82,8 +86,8 @@ function referenceEnumerate(matches) {
 
   const rec = (i) => {
     if (i === remaining.length) return tally()
-    for (const p of patterns) {
-      choice[i] = p
+    for (const d of MARGINS) {
+      choice[i] = d
       rec(i + 1)
     }
   }
@@ -106,7 +110,7 @@ describe('outlook enumeration — exact correctness vs an independent reference'
   for (const keepOpen of [['D', 'G'], ['D', 'G', 'H'], ['H', 'K']]) {
     it(`matches the brute-force reference with groups ${keepOpen.join(',')} open`, () => {
       const fx = fixtureKeepingOpen(keepOpen)
-      const mine = enumerateOutlook(fx)
+      const mine = enumerateOutlook(fx, null, CAP)
       const ref = referenceEnumerate(fx)
       expect(mine.total).toBe(ref.total)
       expect(toCounts(mine)).toEqual(ref.counts)
@@ -115,7 +119,7 @@ describe('outlook enumeration — exact correctness vs an independent reference'
 
   it('only ever places a team in a slot its group is allowed to fill', () => {
     const fx = fixtureKeepingOpen(['D', 'G', 'H'])
-    const { perMatch } = enumerateOutlook(fx)
+    const { perMatch } = enumerateOutlook(fx, null, CAP)
     const groupOf = (team) =>
       Object.keys(TEAMS).find((g) => TEAMS[g].some((t) => t.name === team))
     for (const m of R32_STATIC) {
@@ -138,7 +142,7 @@ describe('outlook enumeration — exact correctness vs an independent reference'
 
   it('produces exact rational shares (every count is an integer out of the total)', () => {
     const fx = fixtureKeepingOpen(['D', 'G', 'H'])
-    const { total, perMatch } = enumerateOutlook(fx)
+    const { total, perMatch } = enumerateOutlook(fx, null, CAP)
     for (const num of Object.keys(perMatch)) {
       for (const side of perMatch[num]) {
         for (const c of side.candidates) {

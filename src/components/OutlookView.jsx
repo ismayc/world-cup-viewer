@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
-import { R32_SLOT_LABELS, countRemaining, totalOutcomes } from '../utils/outlookEnum.js'
+import { R32_SLOT_LABELS, countRemaining } from '../utils/outlookEnum.js'
 
 // Above this many remaining games the outcome space (3^N) is too large to walk
 // exactly in reasonable time — wait until the field narrows.
@@ -90,7 +90,7 @@ function Side({ dist, slotLabel, extra = [], locked }) {
               <a
                 className="bo-pct bo-pct-alive"
                 href="#bo-alive-note"
-                title="Possible via a goal-difference swing the one-goal model can't show — see the note below"
+                title="Possible only via a goal-difference swing beyond the enumerated range — see the note below"
               >
                 &lt;1%
               </a>
@@ -114,7 +114,6 @@ export default function OutlookView({ matches }) {
   matchesRef.current = matches
 
   const remaining = countRemaining(matches)
-  const total = totalOutcomes(matches)
 
   // Signature of the final group results — the enumeration only depends on these,
   // so a live-score poll that doesn't settle a group game won't restart it.
@@ -219,22 +218,26 @@ export default function OutlookView({ matches }) {
       <div className="bo-intro">
         <p>
           For each open Round-of-32 spot, the share of the <strong>remaining outcomes</strong> that
-          put each team there — computed by walking <strong>every</strong> still-possible win / draw /
-          loss combination of the group games (each weighted equally). Not a forecast: it’s the exact
-          proportion of possible scenarios, not a prediction of who’s likely to win. Goal-difference
-          ties use a one-goal convention.
+          put each team there — computed by walking <strong>every</strong> still-possible group result,
+          enumerating each remaining game’s <strong>goal difference</strong> (each margin weighted
+          equally). Not a forecast: it’s the exact proportion of possible scorelines, not a prediction
+          of who’s likely to win.
         </p>
         <p className="bo-count">
-          <strong>{remaining}</strong> group game{remaining === 1 ? '' : 's'} left ·{' '}
-          <strong>{total.toLocaleString()}</strong> possible outcome{total === 1 ? '' : 's'}
-          {phase === 'done' && ' · all enumerated'}
+          <strong>{remaining}</strong> group game{remaining === 1 ? '' : 's'} left
+          {phase === 'done' && result && (
+            <>
+              {' '}· <strong>{result.total.toLocaleString()}</strong> scoreline
+              {result.total === 1 ? '' : 's'} enumerated · margins to ±{result.cap}
+            </>
+          )}
         </p>
       </div>
 
       {phase === 'toomany' && (
         <p className="bo-note">
-          Too many games remain to enumerate exactly right now ({remaining} left → {total.toLocaleString()} outcomes).
-          This view becomes available once the field narrows toward the final matchday (≤ {MAX_REMAINING} games).
+          Too many games remain to enumerate exactly right now ({remaining} left). This view becomes
+          available once the field narrows toward the final matchday (≤ {MAX_REMAINING} games).
         </p>
       )}
 
@@ -242,7 +245,7 @@ export default function OutlookView({ matches }) {
 
       {phase === 'enumerating' && (
         <div className="bo-progress">
-          <div className="bo-progress-label">Enumerating {total.toLocaleString()} outcomes… {Math.round(progress * 100)}%</div>
+          <div className="bo-progress-label">Enumerating goal-difference outcomes… {Math.round(progress * 100)}%</div>
           <div className="bo-progress-track"><div className="bo-progress-fill" style={{ width: `${progress * 100}%` }} /></div>
         </div>
       )}
@@ -251,7 +254,9 @@ export default function OutlookView({ matches }) {
         <>
           {allLocked && <p className="bo-note">✅ Every Round-of-32 matchup is now mathematically set.</p>}
           <div className="bo-bar-row">
-            <span className="bo-runs">exact — all {result.total.toLocaleString()} outcomes enumerated</span>
+            <span className="bo-runs">
+              exact — every group goal-difference outcome enumerated (margins to ±{result.cap})
+            </span>
           </div>
           <div className="bo-grid">
             {nums.map((n) => {
@@ -275,17 +280,18 @@ export default function OutlookView({ matches }) {
 
           {(hiddenAlive.length > 0 || shiftable.length > 0) && (
             <div className="bo-alive" id="bo-alive-note">
-              <div className="bo-alive-head">Beyond the one-goal model</div>
+              <div className="bo-alive-head">Beyond the enumerated margins</div>
               <p className="bo-alive-note">
-                The percentages model every remaining game at a one-goal margin. Two things it can’t
-                capture — both flagged “&lt;1%” in the bracket above:
+                The percentages enumerate goal differences up to <strong>±{result.cap}</strong> per
+                game. A couple of things that need a bigger swing than that — flagged “&lt;1%” in the
+                bracket above:
               </p>
               {hiddenAlive.length > 0 && (
                 <>
-                  <div className="bo-alive-sub">Still mathematically alive (margin-dependent)</div>
+                  <div className="bo-alive-sub">Still mathematically alive</div>
                   <p className="bo-alive-subnote">
-                    Can still reach the Round of 32, but only through goal-difference swings — so they
-                    read 0% above. <strong>Not</strong> eliminated.
+                    Can still reach the Round of 32, but only via a goal-difference swing larger than
+                    ±{result.cap} — so they don’t register above. <strong>Not</strong> eliminated.
                   </p>
                   <ul className="bo-alive-list">
                 {hiddenAlive.map((team) => {

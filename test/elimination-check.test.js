@@ -131,20 +131,27 @@ describe('eliminationStatus — Scotland is alive but margin-dependent (the one-
     expect(survivingTeams(matches)).toContain('Scotland')
   })
 
-  it('but the one-goal enumeration omits Scotland entirely — the gap this fills', () => {
+  it('the goal-difference enumeration now SURFACES Scotland with a real share', () => {
+    // Under the old one-goal model Scotland tallied 0% and vanished. The margin
+    // enumeration walks the heavy-defeat paths (Group G third dropping below −3),
+    // so Scotland now appears as a real (small) candidate in its reachable slot.
     const matches = scenario(STRONG_7, WEAK_3)
-    const { perMatch } = enumerateOutlook(matches)
+    const { perMatch, total } = enumerateOutlook(matches)
+    let scotlandCount = 0
     const shown = new Set()
     for (const sides of Object.values(perMatch)) {
       for (const s of sides) {
         if (s.locked) shown.add(s.locked)
-        for (const c of s.candidates) shown.add(c.team)
+        for (const c of s.candidates) {
+          shown.add(c.team)
+          if (c.team === 'Scotland') scotlandCount += c.count
+        }
       }
     }
-    // Scotland never appears in any one-goal outcome…
-    expect(shown.has('Scotland')).toBe(false)
-    // …yet it is in the exact survivors set — exactly the discrepancy the
-    // "still alive" panel surfaces.
+    expect(shown.has('Scotland')).toBe(true)
+    expect(scotlandCount).toBeGreaterThan(0)
+    // It's a long shot, not a lock — a tiny share of the space.
+    expect(scotlandCount / total).toBeLessThan(0.5)
     expect(survivingTeams(matches)).toContain('Scotland')
   })
 
