@@ -5,6 +5,17 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **R32 Outlook: drop the bounds-based "<1%" tags (they over-claimed).** The "<1%"
+  margin extras came from `reachableThirdSets`, a SAFE over-approximation for
+  *demoting* a lock but one that *over-claims* when used to *add* a candidate — it
+  surfaced e.g. "Austria <1% vs Switzerland (M85)" even though the exact margin
+  enumeration never places Austria there at ANY goal difference (checked to ±14).
+  It also left a dead "<1%" link after the panel was removed. Now the exact
+  goal-difference grid is the sole source of truth for who can fill each slot; the
+  bottom panel keeps only the exact-`eliminationCheck` "still alive beyond the
+  enumerated ±cap" net (with its goal-difference "needs N of these" requirements),
+  which is empty under current standings. Removed `reconcileLocks` and the unused
+  `aliveSlots` plumbing from the worker/component/snapshot.
 - **R32 Outlook: drop the redundant "Matchup not yet fixed" box.** Now that the
   bracket grid shows each team's real goal-difference-resolved percentage in every
   slot it can reach (e.g. Ecuador 94% vs Mexico / 6% vs the Group K winner, both

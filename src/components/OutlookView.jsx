@@ -6,61 +6,13 @@ import { R32_SLOT_LABELS, countRemaining } from '../utils/outlookEnum.js'
 // exactly in reasonable time — wait until the field narrows.
 const MAX_REMAINING = 14 // 3^14 = 4,782,969
 
-// Reconcile the one-goal enumeration's per-slot "locked" flags with the EXACT
-// margin-aware reachability (`aliveSlots`: team -> reachable R32 third slots). The
-// enumeration walks only one-goal scorelines, so it both (a) misses margin-
-// dependent survivors (Scotland-type, shown 0%) and (b) can pin an already-
-// qualified third to a single winner (Ecuador-type) when its Annexe C matchup
-// could still shift if the set of qualifying thirds changes. For every team and
-// every third slot it can REACHABLY fill but isn't already shown in, we add it as
-// a margin-only "<1%" extra; any third slot that gains such an extra is no longer
-// truly locked. Winner/runner-up slots are unaffected. Exported for testing.
-export function reconcileLocks(result, slotLabels, aliveSlots) {
-  const byMatch = {}
-  if (result && aliveSlots) {
-    for (const team of Object.keys(aliveSlots)) {
-      for (const s of aliveSlots[team]) {
-        const num = s.matchNum
-        const sides = result.perMatch[num]
-        const labels = slotLabels[num]
-        if (!sides || !labels) continue
-        const idx = labels.findIndex((l) => /^3rd/.test(l))
-        if (idx < 0) continue
-        const side = sides[idx]
-        const shown = side.locked
-          ? new Set([side.locked])
-          : new Set(side.candidates.map((c) => c.team))
-        if (!shown.has(team)) (byMatch[num] ||= []).push(team)
-      }
-    }
-  }
-  const locked = {}
-  if (result) {
-    for (const numStr of Object.keys(slotLabels)) {
-      const num = Number(numStr)
-      const sides = result.perMatch[num]
-      if (!sides) {
-        locked[num] = []
-        continue
-      }
-      const labels = slotLabels[num]
-      locked[num] = sides.map((side, i) => {
-        const extras = /^3rd/.test(labels[i]) ? byMatch[num] || [] : []
-        return Boolean(side.locked) && extras.length === 0
-      })
-    }
-  }
-  return { byMatch, locked }
-}
-
-function Side({ dist, slotLabel, extra = [], locked }) {
-  const isLocked = locked ?? Boolean(dist.locked)
-  if (isLocked) {
+function Side({ dist, slotLabel }) {
+  if (dist.locked) {
     return (
       <div className="bo-side bo-locked">
         <span className="bo-flag">{FLAG_BY_TEAM[dist.locked] || '•'}</span>
         <span className="bo-team">{dist.locked}</span>
-        <span className="bo-confirmed" title="Fills this spot in every still-possible outcome">✅</span>
+        <span className="bo-confirmed" title="Fills this spot in every enumerated outcome (margins to ±cap)">✅</span>
       </div>
     )
   }
@@ -68,7 +20,7 @@ function Side({ dist, slotLabel, extra = [], locked }) {
   return (
     <div className="bo-side">
       <div className="bo-slot-label">{slotLabel}</div>
-      {dist.candidates.length === 0 && extra.length === 0 ? (
+      {dist.candidates.length === 0 ? (
         <div className="bo-cand bo-tbd">To be determined</div>
       ) : (
         <ul className="bo-cands">
@@ -79,21 +31,6 @@ function Side({ dist, slotLabel, extra = [], locked }) {
               <span className="bo-cand-flag">{FLAG_BY_TEAM[c.team] || '•'}</span>
               <span className="bo-cand-name">{c.team}</span>
               <span className="bo-pct">{fmt(c.pct)}%</span>
-            </li>
-          ))}
-          {/* Margin-dependent contenders the one-goal model scores at 0% but that
-              are NOT eliminated — shown as "<1%" linking to the note below. */}
-          {extra.map((team) => (
-            <li className="bo-cand bo-cand-alive" key={`alive-${team}`}>
-              <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
-              <span className="bo-cand-name">{team}</span>
-              <a
-                className="bo-pct bo-pct-alive"
-                href="#bo-alive-note"
-                title="Possible only via a goal-difference swing beyond the enumerated range — see the note below"
-              >
-                &lt;1%
-              </a>
             </li>
           ))}
         </ul>
@@ -107,7 +44,6 @@ export default function OutlookView({ matches }) {
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState(null)
   const [survivors, setSurvivors] = useState(null)
-  const [aliveSlots, setAliveSlots] = useState(null)
   const [requirements, setRequirements] = useState(null)
   const [errMsg, setErrMsg] = useState('')
   const matchesRef = useRef(matches)
@@ -142,7 +78,6 @@ export default function OutlookView({ matches }) {
       else if (msg.type === 'done') {
         setResult(msg.result)
         setSurvivors(msg.survivors || [])
-        setAliveSlots(msg.aliveSlots || {})
         setRequirements(msg.requirements || {})
         setPhase('done')
         worker.terminate()
@@ -161,10 +96,10 @@ export default function OutlookView({ matches }) {
     .map(Number)
     .sort((a, b) => a - b)
 
-  // Teams that are mathematically still alive (exact check) yet never appear in
-  // the one-goal enumeration above — their only paths to the Round of 32 hinge on
-  // goal-difference swings the one-goal convention can't represent, so they read
-  // as 0% and would otherwise vanish. Surface them explicitly.
+  // Teams the EXACT check (eliminationCheck) says are still alive, yet that never
+  // appear in the enumeration above — i.e. their only surviving paths need a goal-
+  // difference swing larger than the enumerated ±cap, so they don't register in
+  // the grid. Surfaced as a small "still alive beyond the margins" net.
   const hiddenAlive = useMemo(() => {
     if (!result || !survivors) return []
     const shown = new Set()
@@ -178,28 +113,10 @@ export default function OutlookView({ matches }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, survivors])
 
-  // The group-winner side of a third-place match, resolved to a real team when
-  // it's already locked, else the "Winner Group X" placeholder.
-  const winnerInfo = (matchNum) => {
-    const labels = R32_SLOT_LABELS[matchNum] || []
-    const idx = labels.findIndex((l) => /^Winner Group/.test(l))
-    if (idx < 0) return { label: `Match ${matchNum}` }
-    const dist = result?.perMatch?.[matchNum]?.[idx]
-    return { team: dist?.locked || null, label: labels[idx] }
-  }
-
-  // Reconcile the one-goal "locked" flags with exact reachability: byMatch maps a
-  // match to teams that could fill its third slot but aren't shown there, and
-  // `effLocked` is the TRUE clinch status. See reconcileLocks above.
-  const { byMatch: aliveByMatch, locked: effLocked } = useMemo(
-    () => reconcileLocks(result, R32_SLOT_LABELS, aliveSlots),
-    [result, aliveSlots],
-  )
-
-  // The bracket is fully set only if every slot is TRULY locked and nobody is
-  // still alive-but-hidden.
+  // The bracket is fully set only if every slot is locked and nobody is alive but
+  // unshown (needs a swing beyond the enumerated margins).
   const allLocked =
-    result && hiddenAlive.length === 0 && nums.every((n) => (effLocked[n] || []).every(Boolean))
+    result && hiddenAlive.length === 0 && nums.every((n) => result.perMatch[n].every((s) => s.locked))
 
   return (
     <div className="bracket-odds">
@@ -250,17 +167,12 @@ export default function OutlookView({ matches }) {
             {nums.map((n) => {
               const [s1, s2] = result.perMatch[n]
               const labels = R32_SLOT_LABELS[n]
-              // Margin-dependent teams attach to the third-place side of the match.
-              const aliveHere = aliveByMatch[n] || []
-              const extra1 = /^3rd/.test(labels[0]) ? aliveHere : []
-              const extra2 = /^3rd/.test(labels[1]) ? aliveHere : []
-              const lk = effLocked[n] || []
               return (
                 <div className="bo-match" key={n}>
                   <div className="bo-match-head">Match {n}</div>
-                  <Side dist={s1} slotLabel={labels[0]} extra={extra1} locked={lk[0]} />
+                  <Side dist={s1} slotLabel={labels[0]} />
                   <div className="bo-vs">vs</div>
-                  <Side dist={s2} slotLabel={labels[1]} extra={extra2} locked={lk[1]} />
+                  <Side dist={s2} slotLabel={labels[1]} />
                 </div>
               )
             })}
@@ -272,14 +184,11 @@ export default function OutlookView({ matches }) {
               <p className="bo-alive-note">
                 The percentages enumerate goal differences up to <strong>±{result.cap}</strong> per
                 game. These teams can still reach the Round of 32, but only via a swing larger than
-                that — so they don’t register above (flagged “&lt;1%” in the bracket). They are{' '}
-                <strong>not</strong> eliminated.
+                that — so they don’t appear in the bracket above. They are <strong>not</strong>{' '}
+                eliminated.
               </p>
-              {hiddenAlive.length > 0 && (
-                <>
-                  <ul className="bo-alive-list">
+              <ul className="bo-alive-list">
                 {hiddenAlive.map((team) => {
-                  const slots = aliveSlots?.[team] || []
                   const req = requirements?.[team]
                   const p = req?.profile
                   const fmtGD = (v) => (v > 0 ? `+${v}` : `${v}`)
@@ -293,20 +202,6 @@ export default function OutlookView({ matches }) {
                       <div className="bo-alive-row">
                         <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
                         <span className="bo-cand-name">{team}</span>
-                        {slots.length > 0 && (
-                          <span className="bo-alive-dest">
-                            · would play{' '}
-                            {slots.map((s, i) => {
-                              const w = winnerInfo(s.matchNum)
-                              return (
-                                <span key={s.matchNum}>
-                                  {i > 0 && ' / '}
-                                  <strong>{w.team || w.label}</strong> (M{s.matchNum})
-                                </span>
-                              )
-                            })}
-                          </span>
-                        )}
                       </div>
                       {/* Own group finished → exact "needs N of these" checklist. */}
                       {req && req.ownGroupComplete && req.variable.length > 0 && (
@@ -351,9 +246,7 @@ export default function OutlookView({ matches }) {
                     </li>
                   )
                 })}
-                  </ul>
-                </>
-              )}
+              </ul>
             </div>
           )}
         </>

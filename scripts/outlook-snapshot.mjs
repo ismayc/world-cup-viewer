@@ -4,20 +4,14 @@
 //
 //   node scripts/outlook-snapshot.mjs            -> writes outlook-snapshot.html
 //
-// The dataset is an ILLUSTRATIVE late-stage snapshot (Groups A–F final, D/H/I
-// filled, G/J/K/L still to play = 8 games left). The build environment can't
-// reach the live feed, so numbers are representative of the FEATURE, not the
-// live standings — but every percentage is the exact enumeration for this data.
+// Pulls the live OpenFootball source-of-record and overlays final group scores
+// onto our fixtures, so the percentages reflect the real current standings.
 
 import { writeFileSync } from 'node:fs'
 import { MATCHES } from '../src/data/matches.js'
 import { FLAG_BY_TEAM } from '../src/data/teams.js'
 import { enumerateOutlook, R32_SLOT_LABELS } from '../src/utils/outlookEnum.js'
-import {
-  survivingTeams,
-  aliveR32Slots,
-  allAdvancementRequirements,
-} from '../src/utils/eliminationCheck.js'
+import { survivingTeams, allAdvancementRequirements } from '../src/utils/eliminationCheck.js'
 
 // Pull the LIVE source-of-record (OpenFootball) and overlay final group scores
 // onto our fixtures, so the snapshot reflects the real current standings.
@@ -45,12 +39,12 @@ console.log(`OpenFootball: applied ${applied}/72 group results (${ofMap.size} fi
 
 const result = enumerateOutlook(matches)
 const survivors = survivingTeams(matches)
-const aliveSlots = aliveR32Slots(matches, survivors)
 const requirements = allAdvancementRequirements(matches, survivors)
 
 const nums = Object.keys(R32_SLOT_LABELS).map(Number).sort((a, b) => a - b)
 
-// --- reconcile (mirror of OutlookView.reconcileLocks) -----------------------
+// Teams the exact check says are alive but that don't appear in the enumeration
+// (need a swing beyond ±cap).
 const shownEverywhere = new Set()
 for (const n of nums) for (const side of result.perMatch[n]) {
   if (side.locked) shownEverywhere.add(side.locked)
@@ -58,61 +52,28 @@ for (const n of nums) for (const side of result.perMatch[n]) {
 }
 const hiddenAlive = survivors.filter((t) => !shownEverywhere.has(t))
 
-const byMatch = {}
-for (const team of Object.keys(aliveSlots)) {
-  for (const s of aliveSlots[team]) {
-    const labels = R32_SLOT_LABELS[s.matchNum]
-    const idx = labels.findIndex((l) => /^3rd/.test(l))
-    if (idx < 0) continue
-    const side = result.perMatch[s.matchNum][idx]
-    const shown = side.locked ? new Set([side.locked]) : new Set(side.candidates.map((c) => c.team))
-    if (!shown.has(team)) (byMatch[s.matchNum] ||= []).push(team)
-  }
-}
-const effLocked = {}
-for (const n of nums) {
-  const labels = R32_SLOT_LABELS[n]
-  effLocked[n] = result.perMatch[n].map((side, i) => {
-    const extras = /^3rd/.test(labels[i]) ? byMatch[n] || [] : []
-    return Boolean(side.locked) && extras.length === 0
-  })
-}
-const winnerInfo = (matchNum) => {
-  const labels = R32_SLOT_LABELS[matchNum] || []
-  const idx = labels.findIndex((l) => /^Winner Group/.test(l))
-  if (idx < 0) return { label: `Match ${matchNum}` }
-  const dist = result.perMatch[matchNum]?.[idx]
-  return { team: dist?.locked || null, label: labels[idx] }
-}
 // --- render -----------------------------------------------------------------
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const flag = (t) => FLAG_BY_TEAM[t] || '•'
 const fmt = (p) => (p >= 0.995 ? '>99' : p < 0.005 ? '<1' : Math.round(p * 100))
 const fmtGD = (v) => (v > 0 ? `+${v}` : `${v}`)
 
-function sideHtml(side, label, extras, locked) {
-  if (locked) {
+function sideHtml(side, label) {
+  if (side.locked) {
     return `<div class="side locked"><span class="flag">${flag(side.locked)}</span><span class="team">${esc(side.locked)}</span><span class="ok">✅</span></div>`
   }
   const cands = side.candidates
     .map((c) => `<li><span class="bar" style="width:${Math.max(3, c.pct * 100).toFixed(1)}%"></span><span class="flag">${flag(c.team)}</span><span class="cn">${esc(c.team)}</span><span class="pct">${fmt(c.pct)}%</span></li>`)
     .join('')
-  const ex = (extras || [])
-    .map((t) => `<li class="ext"><span class="flag">${flag(t)}</span><span class="cn">${esc(t)}</span><span class="pct alive">&lt;1%</span></li>`)
-    .join('')
-  if (!cands && !ex) return `<div class="side"><div class="sl">${esc(label)}</div><div class="tbd">To be determined</div></div>`
-  return `<div class="side"><div class="sl">${esc(label)}</div><ul class="cands">${cands}${ex}</ul></div>`
+  if (!cands) return `<div class="side"><div class="sl">${esc(label)}</div><div class="tbd">To be determined</div></div>`
+  return `<div class="side"><div class="sl">${esc(label)}</div><ul class="cands">${cands}</ul></div>`
 }
 
 const matchesHtml = nums
   .map((n) => {
     const [s1, s2] = result.perMatch[n]
     const labels = R32_SLOT_LABELS[n]
-    const aliveHere = byMatch[n] || []
-    const e1 = /^3rd/.test(labels[0]) ? aliveHere : []
-    const e2 = /^3rd/.test(labels[1]) ? aliveHere : []
-    const lk = effLocked[n]
-    return `<div class="match"><div class="mh">Match ${n}</div>${sideHtml(s1, labels[0], e1, lk[0])}<div class="vs">vs</div>${sideHtml(s2, labels[1], e2, lk[1])}</div>`
+    return `<div class="match"><div class="mh">Match ${n}</div>${sideHtml(s1, labels[0])}<div class="vs">vs</div>${sideHtml(s2, labels[1])}</div>`
   })
   .join('')
 
@@ -133,19 +94,13 @@ function reqHtml(team) {
 }
 
 const hiddenHtml = hiddenAlive.length
-  ? `<div class="sub">Still mathematically alive</div><p class="subnote">Can still reach the Round of 32, but only via a goal-difference swing larger than ±${result.cap} — so they don't register above. <b>Not</b> eliminated.</p><ul class="alist">${hiddenAlive
-      .map((t) => {
-        const slots = aliveSlots[t] || []
-        const dest = slots.length
-          ? ` · would play ${slots.map((s) => { const w = winnerInfo(s.matchNum); return `<b>${esc(w.team || w.label)}</b> (M${s.matchNum})` }).join(' / ')}`
-          : ''
-        return `<li><div class="arow"><span class="flag">${flag(t)}</span><b>${esc(t)}</b><span class="dest">${dest}</span></div>${reqHtml(t)}</li>`
-      })
+  ? `<ul class="alist">${hiddenAlive
+      .map((t) => `<li><div class="arow"><span class="flag">${flag(t)}</span><b>${esc(t)}</b></div>${reqHtml(t)}</li>`)
       .join('')}</ul>`
   : ''
 
 const panel = hiddenHtml
-  ? `<div class="panel"><div class="ph">Still mathematically alive — beyond the enumerated margins</div><p class="pn">The percentages enumerate goal differences up to <b>±${result.cap}</b> per game. These teams need a bigger swing than that — flagged "&lt;1%" above — and are NOT eliminated.</p>${hiddenHtml}</div>`
+  ? `<div class="panel"><div class="ph">Still mathematically alive — beyond the enumerated margins</div><p class="pn">The percentages enumerate goal differences up to <b>±${result.cap}</b> per game. These teams can still reach the Round of 32 only via a bigger swing than that — so they don't appear above — and are NOT eliminated.</p>${hiddenHtml}</div>`
   : ''
 
 const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
