@@ -84,11 +84,6 @@ const winnerInfo = (matchNum) => {
   const dist = result.perMatch[matchNum]?.[idx]
   return { team: dist?.locked || null, label: labels[idx] }
 }
-const hidden = new Set(hiddenAlive)
-const shiftable = Object.keys(aliveSlots)
-  .filter((t) => !hidden.has(t) && aliveSlots[t].length >= 2)
-  .map((t) => ({ team: t, opponents: aliveSlots[t].map((s) => ({ matchNum: s.matchNum, ...winnerInfo(s.matchNum) })) }))
-
 // --- render -----------------------------------------------------------------
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const flag = (t) => FLAG_BY_TEAM[t] || '•'
@@ -149,14 +144,8 @@ const hiddenHtml = hiddenAlive.length
       .join('')}</ul>`
   : ''
 
-const shiftableHtml = shiftable.length
-  ? `<div class="sub">Matchup not yet fixed</div><p class="subnote">On course to qualify, but which group winner they meet depends on the full set of eight best thirds (FIFA Annexe C) — so they could still face more than the one winner shown above.</p><ul class="alist">${shiftable
-      .map(({ team, opponents }) => `<li><div class="arow"><span class="flag">${flag(team)}</span><b>${esc(team)}</b><span class="dest"> · could face ${opponents.map((o) => `<b>${esc(o.team || o.label)}</b> (M${o.matchNum})`).join(' / ')}</span></div></li>`)
-      .join('')}</ul>`
-  : ''
-
-const panel = hiddenHtml || shiftableHtml
-  ? `<div class="panel"><div class="ph">Beyond the enumerated margins</div><p class="pn">The percentages enumerate goal differences up to <b>±${result.cap}</b> per game. Anything needing a bigger swing than that is flagged "&lt;1%" above.</p>${hiddenHtml}${shiftableHtml}</div>`
+const panel = hiddenHtml
+  ? `<div class="panel"><div class="ph">Still mathematically alive — beyond the enumerated margins</div><p class="pn">The percentages enumerate goal differences up to <b>±${result.cap}</b> per game. These teams need a bigger swing than that — flagged "&lt;1%" above — and are NOT eliminated.</p>${hiddenHtml}</div>`
   : ''
 
 const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -205,4 +194,3 @@ ${panel}
 writeFileSync(new URL('../outlook-snapshot.html', import.meta.url), html)
 console.log(`Wrote outlook-snapshot.html — ${result.remaining} games left, cap ±${result.cap}, ${result.total.toLocaleString()} scorelines`)
 console.log(`hidden-alive: ${hiddenAlive.join(', ') || '(none)'}`)
-console.log(`matchup-shiftable: ${shiftable.map((s) => s.team).join(', ') || '(none)'}`)

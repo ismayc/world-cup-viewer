@@ -196,18 +196,6 @@ export default function OutlookView({ matches }) {
     [result, aliveSlots],
   )
 
-  // Already-shown thirds whose Annexe C opponent isn't fixed yet — they can still
-  // face more than one group winner depending on which eight thirds qualify
-  // (Ecuador-type). Listed separately from the hidden survivors.
-  const shiftable = useMemo(() => {
-    if (!aliveSlots) return []
-    const hidden = new Set(hiddenAlive)
-    return Object.keys(aliveSlots)
-      .filter((t) => !hidden.has(t) && aliveSlots[t].length >= 2)
-      .map((t) => ({ team: t, opponents: aliveSlots[t].map((s) => ({ matchNum: s.matchNum, ...winnerInfo(s.matchNum) })) }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aliveSlots, hiddenAlive, result])
-
   // The bracket is fully set only if every slot is TRULY locked and nobody is
   // still alive-but-hidden.
   const allLocked =
@@ -278,21 +266,17 @@ export default function OutlookView({ matches }) {
             })}
           </div>
 
-          {(hiddenAlive.length > 0 || shiftable.length > 0) && (
+          {hiddenAlive.length > 0 && (
             <div className="bo-alive" id="bo-alive-note">
-              <div className="bo-alive-head">Beyond the enumerated margins</div>
+              <div className="bo-alive-head">Still mathematically alive — beyond the enumerated margins</div>
               <p className="bo-alive-note">
                 The percentages enumerate goal differences up to <strong>±{result.cap}</strong> per
-                game. A couple of things that need a bigger swing than that — flagged “&lt;1%” in the
-                bracket above:
+                game. These teams can still reach the Round of 32, but only via a swing larger than
+                that — so they don’t register above (flagged “&lt;1%” in the bracket). They are{' '}
+                <strong>not</strong> eliminated.
               </p>
               {hiddenAlive.length > 0 && (
                 <>
-                  <div className="bo-alive-sub">Still mathematically alive</div>
-                  <p className="bo-alive-subnote">
-                    Can still reach the Round of 32, but only via a goal-difference swing larger than
-                    ±{result.cap} — so they don’t register above. <strong>Not</strong> eliminated.
-                  </p>
                   <ul className="bo-alive-list">
                 {hiddenAlive.map((team) => {
                   const slots = aliveSlots?.[team] || []
@@ -367,35 +351,6 @@ export default function OutlookView({ matches }) {
                     </li>
                   )
                 })}
-                  </ul>
-                </>
-              )}
-              {shiftable.length > 0 && (
-                <>
-                  <div className="bo-alive-sub">Matchup not yet fixed</div>
-                  <p className="bo-alive-subnote">
-                    On course to qualify, but which group winner they meet depends on the full set of
-                    eight best thirds (FIFA Annexe C) — so they could still face more than the one
-                    winner shown above.
-                  </p>
-                  <ul className="bo-alive-list">
-                    {shiftable.map(({ team, opponents }) => (
-                      <li className="bo-alive-team" key={team}>
-                        <div className="bo-alive-row">
-                          <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
-                          <span className="bo-cand-name">{team}</span>
-                          <span className="bo-alive-dest">
-                            · could face{' '}
-                            {opponents.map((o, i) => (
-                              <span key={o.matchNum}>
-                                {i > 0 && ' / '}
-                                <strong>{o.team || o.label}</strong> (M{o.matchNum})
-                              </span>
-                            ))}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
                   </ul>
                 </>
               )}

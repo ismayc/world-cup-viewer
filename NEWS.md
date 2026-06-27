@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **R32 Outlook: drop the redundant "Matchup not yet fixed" box.** Now that the
+  bracket grid shows each team's real goal-difference-resolved percentage in every
+  slot it can reach (e.g. Ecuador 94% vs Mexico / 6% vs the Group K winner, both
+  visible in the grid), the bottom box duplicated a slice of that — and only an
+  arbitrary one: it listed solely third-placed teams whose Annexe C opponent maps
+  to ≥2 winners, while ignoring the many winners/runners-up with equally unfixed
+  matchups. Removed it; the panel now only appears for the rare "still alive beyond
+  the enumerated ±cap margins" case (a goal-difference net), which is otherwise
+  empty. Snapshot generator updated to match.
 - **R32 Outlook: enumerate goal differences for real GD-resolved percentages.**
   The Outlook enumerator no longer collapses every game to a one-goal scoreline;
   it now walks each remaining game's **goal-difference margin** over an adaptive
