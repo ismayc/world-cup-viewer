@@ -5,6 +5,18 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **R32 Outlook: surface alternative opponents for ALL thirds, not just Scotland.**
+  A qualified third (e.g. Ecuador) could be pinned by the one-goal model to a single
+  group winner even though its FIFA Annexe C matchup can still shift if the set of
+  eight qualifying thirds changes. Now the margin-aware reachability is applied to
+  every third: any third slot a team can reachably fill but isn't shown in gets the
+  team as a "<1%" tag (and that slot is no longer shown clinched), and a new
+  "Matchup not yet fixed" sub-section lists each on-course third with all the group
+  winners it could still face. `aliveR32Slots` now also gates on a team actually
+  being able to finish 3rd in its group (fixes a latent case where group winners
+  were attributed their group's third slots). The panel is reorganised under
+  "Beyond the one-goal model" with two sub-sections (still-alive vs matchup-not-
+  fixed). reconcileLocks generalised + tests updated.
 - **Fix: sensible requirements for a team whose own group is still playing.** The
   "needs N of these" checklist used a team's *best reachable* third-place profile,
   which for a team still mid-group meant a cap-inflated blowout — producing nonsense

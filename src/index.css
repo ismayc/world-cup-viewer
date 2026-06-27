@@ -1764,6 +1764,8 @@ select {
 }
 .bo-alive-head { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #d99100; margin-bottom: 6px; }
 .bo-alive-note { font-size: 0.82rem; color: var(--text-dim); margin: 0 0 10px; line-height: 1.5; }
+.bo-alive-sub { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #d99100; margin: 12px 0 2px; }
+.bo-alive-subnote { font-size: 0.78rem; color: var(--text-dim); margin: 0 0 8px; line-height: 1.5; }
 .bo-alive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .bo-alive-team { font-size: 0.84rem; }
 .bo-alive-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }

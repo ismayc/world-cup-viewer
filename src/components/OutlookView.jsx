@@ -7,19 +7,31 @@ import { R32_SLOT_LABELS, countRemaining, totalOutcomes } from '../utils/outlook
 const MAX_REMAINING = 14 // 3^14 = 4,782,969
 
 // Reconcile the one-goal enumeration's per-slot "locked" flags with the EXACT
-// margin-aware reachability. The enumeration walks only one-goal scorelines, so a
-// margin-dependent team (Scotland-type) shows 0% and a third-place slot can read
-// "100% / clinched" even though that team could still land there via a goal-swing
-// the one-goal model can't represent. Here we (a) map each match to the still-
-// alive teams that could fill its third slot, and (b) demote any third slot whose
-// one-goal "locked" would otherwise over-claim — so we NEVER show a slot clinched
-// while someone can still reach it. Winner/runner-up slots are unaffected (margin-
-// dependent survivors are third-placed teams). Exported for testing.
-export function reconcileLocks(result, slotLabels, hiddenAlive, aliveSlots) {
+// margin-aware reachability (`aliveSlots`: team -> reachable R32 third slots). The
+// enumeration walks only one-goal scorelines, so it both (a) misses margin-
+// dependent survivors (Scotland-type, shown 0%) and (b) can pin an already-
+// qualified third to a single winner (Ecuador-type) when its Annexe C matchup
+// could still shift if the set of qualifying thirds changes. For every team and
+// every third slot it can REACHABLY fill but isn't already shown in, we add it as
+// a margin-only "<1%" extra; any third slot that gains such an extra is no longer
+// truly locked. Winner/runner-up slots are unaffected. Exported for testing.
+export function reconcileLocks(result, slotLabels, aliveSlots) {
   const byMatch = {}
-  for (const team of hiddenAlive) {
-    for (const s of aliveSlots?.[team] || []) {
-      ;(byMatch[s.matchNum] ||= []).push(team)
+  if (result && aliveSlots) {
+    for (const team of Object.keys(aliveSlots)) {
+      for (const s of aliveSlots[team]) {
+        const num = s.matchNum
+        const sides = result.perMatch[num]
+        const labels = slotLabels[num]
+        if (!sides || !labels) continue
+        const idx = labels.findIndex((l) => /^3rd/.test(l))
+        if (idx < 0) continue
+        const side = sides[idx]
+        const shown = side.locked
+          ? new Set([side.locked])
+          : new Set(side.candidates.map((c) => c.team))
+        if (!shown.has(team)) (byMatch[num] ||= []).push(team)
+      }
     }
   }
   const locked = {}
@@ -78,7 +90,7 @@ function Side({ dist, slotLabel, extra = [], locked }) {
               <a
                 className="bo-pct bo-pct-alive"
                 href="#bo-alive-note"
-                title="Mathematically alive but margin-dependent — see the note below"
+                title="Possible via a goal-difference swing the one-goal model can't show — see the note below"
               >
                 &lt;1%
               </a>
@@ -167,20 +179,6 @@ export default function OutlookView({ matches }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, survivors])
 
-  // Reconcile the one-goal "locked" flags with exact reachability: byMatch maps a
-  // match to the still-alive teams that could fill its third slot, and `effLocked`
-  // is the TRUE clinch status (a third slot a margin-dependent team can still
-  // reach is no longer shown as clinched). See reconcileLocks above.
-  const { byMatch: aliveByMatch, locked: effLocked } = useMemo(
-    () => reconcileLocks(result, R32_SLOT_LABELS, hiddenAlive, aliveSlots),
-    [result, hiddenAlive, aliveSlots],
-  )
-
-  // The bracket is fully set only if every slot is TRULY locked and nobody is
-  // still alive-but-hidden.
-  const allLocked =
-    result && hiddenAlive.length === 0 && nums.every((n) => (effLocked[n] || []).every(Boolean))
-
   // The group-winner side of a third-place match, resolved to a real team when
   // it's already locked, else the "Winner Group X" placeholder.
   const winnerInfo = (matchNum) => {
@@ -190,6 +188,31 @@ export default function OutlookView({ matches }) {
     const dist = result?.perMatch?.[matchNum]?.[idx]
     return { team: dist?.locked || null, label: labels[idx] }
   }
+
+  // Reconcile the one-goal "locked" flags with exact reachability: byMatch maps a
+  // match to teams that could fill its third slot but aren't shown there, and
+  // `effLocked` is the TRUE clinch status. See reconcileLocks above.
+  const { byMatch: aliveByMatch, locked: effLocked } = useMemo(
+    () => reconcileLocks(result, R32_SLOT_LABELS, aliveSlots),
+    [result, aliveSlots],
+  )
+
+  // Already-shown thirds whose Annexe C opponent isn't fixed yet — they can still
+  // face more than one group winner depending on which eight thirds qualify
+  // (Ecuador-type). Listed separately from the hidden survivors.
+  const shiftable = useMemo(() => {
+    if (!aliveSlots) return []
+    const hidden = new Set(hiddenAlive)
+    return Object.keys(aliveSlots)
+      .filter((t) => !hidden.has(t) && aliveSlots[t].length >= 2)
+      .map((t) => ({ team: t, opponents: aliveSlots[t].map((s) => ({ matchNum: s.matchNum, ...winnerInfo(s.matchNum) })) }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aliveSlots, hiddenAlive, result])
+
+  // The bracket is fully set only if every slot is TRULY locked and nobody is
+  // still alive-but-hidden.
+  const allLocked =
+    result && hiddenAlive.length === 0 && nums.every((n) => (effLocked[n] || []).every(Boolean))
 
   return (
     <div className="bracket-odds">
@@ -250,17 +273,21 @@ export default function OutlookView({ matches }) {
             })}
           </div>
 
-          {hiddenAlive.length > 0 && (
+          {(hiddenAlive.length > 0 || shiftable.length > 0) && (
             <div className="bo-alive" id="bo-alive-note">
-              <div className="bo-alive-head">Still mathematically alive — but margin-dependent</div>
+              <div className="bo-alive-head">Beyond the one-goal model</div>
               <p className="bo-alive-note">
-                These teams can still reach the Round of 32, but only through goal-difference swings
-                (a rival third-placed team finishing well below them via a heavy result). The
-                percentages above model each remaining game at a one-goal margin, so those paths
-                aren’t counted there and these teams show 0% (tagged “&lt;1%” in the bracket) — they
-                are <strong>not</strong> eliminated.
+                The percentages model every remaining game at a one-goal margin. Two things it can’t
+                capture — both flagged “&lt;1%” in the bracket above:
               </p>
-              <ul className="bo-alive-list">
+              {hiddenAlive.length > 0 && (
+                <>
+                  <div className="bo-alive-sub">Still mathematically alive (margin-dependent)</div>
+                  <p className="bo-alive-subnote">
+                    Can still reach the Round of 32, but only through goal-difference swings — so they
+                    read 0% above. <strong>Not</strong> eliminated.
+                  </p>
+                  <ul className="bo-alive-list">
                 {hiddenAlive.map((team) => {
                   const slots = aliveSlots?.[team] || []
                   const req = requirements?.[team]
@@ -334,7 +361,38 @@ export default function OutlookView({ matches }) {
                     </li>
                   )
                 })}
-              </ul>
+                  </ul>
+                </>
+              )}
+              {shiftable.length > 0 && (
+                <>
+                  <div className="bo-alive-sub">Matchup not yet fixed</div>
+                  <p className="bo-alive-subnote">
+                    On course to qualify, but which group winner they meet depends on the full set of
+                    eight best thirds (FIFA Annexe C) — so they could still face more than the one
+                    winner shown above.
+                  </p>
+                  <ul className="bo-alive-list">
+                    {shiftable.map(({ team, opponents }) => (
+                      <li className="bo-alive-team" key={team}>
+                        <div className="bo-alive-row">
+                          <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
+                          <span className="bo-cand-name">{team}</span>
+                          <span className="bo-alive-dest">
+                            · could face{' '}
+                            {opponents.map((o, i) => (
+                              <span key={o.matchNum}>
+                                {i > 0 && ' / '}
+                                <strong>{o.team || o.label}</strong> (M{o.matchNum})
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
         </>

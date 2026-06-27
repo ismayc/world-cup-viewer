@@ -203,11 +203,18 @@ export function thirdPlaceR32Slots(matches, team, reachable = null) {
 }
 
 // Batch form: { team -> slots[] } for the given teams, computing the reachable
-// Annexe C sets once. Teams that can't land in a third-place slot are omitted.
+// Annexe C sets once. Only teams that can actually finish 3rd in their group are
+// considered (a group winner/runner-up never lands in a third-place slot — this
+// also avoids attributing their group's third's slots to them). Teams with no
+// reachable third-place slot are omitted.
 export function aliveR32Slots(matches, teams) {
   const reachable = reachableThirdSets(matches)
+  const reach = reachAll(matches)
   const out = {}
   for (const t of teams) {
+    const g = GROUPS.find((x) => TEAMS[x].some((tm) => tm.name === t))
+    if (!g || !reach[g]?.feasible) continue
+    if (!reach[g].thirds.some((th) => th.name === t)) continue // can't be its group's third
     const slots = thirdPlaceR32Slots(matches, t, reachable)
     if (slots.length) out[t] = slots
   }

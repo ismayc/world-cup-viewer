@@ -14,41 +14,50 @@ describe('OutlookView', () => {
   })
 })
 
-describe('reconcileLocks — never clinch a slot a still-alive team can reach', () => {
+describe('reconcileLocks — never clinch a slot a team can still reach', () => {
   const slotLabels = {
     79: ['Winner Group A', '3rd C/E/F/H/I'],
+    85: ['Winner Group B', '3rd E/F/G/I/J'],
     74: ['Winner Group E', '3rd A/B/C/D/F'],
   }
   const lockedSide = (team) => ({ locked: team, candidates: [{ team, count: 10, pct: 1 }] })
 
-  it('demotes a one-goal-locked third slot when a margin-dependent team can reach it', () => {
+  it('demotes a one-goal-locked third slot a margin-dependent team can still reach', () => {
     const result = {
       perMatch: {
         79: [lockedSide('Mexico'), lockedSide('Ecuador')], // Mexico vs Ecuador, both "locked"
+        85: [lockedSide('Switzerland'), lockedSide('Senegal')],
         74: [lockedSide('Germany'), lockedSide('Paraguay')],
       },
     }
-    // Scotland is still mathematically alive and could land in Match 79's 3rd slot.
-    const { byMatch, locked } = reconcileLocks(result, slotLabels, ['Scotland'], {
+    // Scotland (still alive) can reach Match 79's 3rd slot; Ecuador is already
+    // shown at 79 but could ALSO reach Match 85's 3rd slot (Annexe C shift).
+    const { byMatch, locked } = reconcileLocks(result, slotLabels, {
       Scotland: [{ matchNum: 79, winnerGroup: 'A' }],
+      Ecuador: [{ matchNum: 79, winnerGroup: 'A' }, { matchNum: 85, winnerGroup: 'B' }],
     })
-    // Match 79: winner side stays locked, but the third side is NO LONGER clinched
-    // (Scotland can still take it) — so Ecuador won't show a false ✅.
+    // Match 79 third side no longer clinched (Scotland can take it). Ecuador is
+    // NOT re-added at 79 (already shown there), but IS added at 85.
     expect(locked[79]).toEqual([true, false])
     expect(byMatch[79]).toContain('Scotland')
-    // Match 74 has no alive reacher → stays fully locked.
+    expect(byMatch[79] || []).not.toContain('Ecuador')
+    expect(byMatch[85]).toContain('Ecuador')
+    expect(locked[85]).toEqual([true, false])
+    // Match 74 has no reacher → stays fully locked.
     expect(locked[74]).toEqual([true, true])
   })
 
-  it('leaves slots locked when nobody margin-dependent is alive', () => {
+  it('leaves slots locked when no team can reach them', () => {
     const result = {
       perMatch: {
         79: [lockedSide('Mexico'), lockedSide('Ecuador')],
+        85: [lockedSide('Switzerland'), lockedSide('Senegal')],
         74: [lockedSide('Germany'), lockedSide('Paraguay')],
       },
     }
-    const { locked } = reconcileLocks(result, slotLabels, [], {})
+    const { locked } = reconcileLocks(result, slotLabels, {})
     expect(locked[79]).toEqual([true, true])
+    expect(locked[85]).toEqual([true, true])
     expect(locked[74]).toEqual([true, true])
   })
 })
