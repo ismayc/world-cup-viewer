@@ -5,6 +5,21 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **R32 Outlook: enumerate goal differences for real GD-resolved percentages.**
+  The Outlook enumerator no longer collapses every game to a one-goal scoreline;
+  it now walks each remaining game's **goal-difference margin** over an adaptive
+  range (±8 by default), so goal-difference tie-breakers resolve with actual
+  proportions. Bubble teams that the one-goal model showed at 0%/"<1%" (Scotland,
+  Ecuador) now get **real percentages** in every slot they can reach. Made
+  tractable by per-group **weighted dedup**: each group's games are enumerated
+  locally and margin combinations producing identical (winner, runner-up, third
+  profile) collapse into one weighted outcome; the cross-group step walks the
+  distinct cartesian (≈1.5M here) accumulating weights. Adaptive cap auto-lowers
+  if the cartesian gets too big; goals-scored follows a goals=margin convention
+  (tiny residual blind spot only on GD ties). The exact "still alive" net still
+  catches anything needing a swing beyond the cap, flagged "<1%". Correctness test
+  rewritten to brute-force the margin space independently and match exactly.
+  Repro: `node scripts/outlook-snapshot.mjs` writes a self-contained preview HTML.
 - **R32 Outlook: surface alternative opponents for ALL thirds, not just Scotland.**
   A qualified third (e.g. Ecuador) could be pinned by the one-goal model to a single
   group winner even though its FIFA Annexe C matchup can still shift if the set of

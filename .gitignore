@@ -11,3 +11,6 @@ public/coverage.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Generated preview artifact (reproduce with scripts/outlook-snapshot.mjs)
+outlook-snapshot.html

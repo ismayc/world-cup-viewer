@@ -1,16 +1,30 @@
-// EXACT Round-of-32 outlook by full enumeration. Unlike a Monte-Carlo estimate,
-// this walks EVERY remaining win/draw/loss combination of the group games and
-// tallies, for each open bracket slot, the share that put each team there.
+// EXACT Round-of-32 outlook by full enumeration of remaining GOAL DIFFERENCES.
 //
-// The discrete outcome space is 3^(remaining games) — at a full final matchday
-// (14 games left) that's 3^14 = 4,782,969 combinations, which is heavy but
-// enumerable (run it in a Web Worker). Goals can't be enumerated (unbounded), so
-// a one-goal margin is used as the convention for goal-difference tie-breakers.
+// Earlier this walked only win/draw/loss (a single one-goal scoreline per game),
+// which collapses goal difference and so couldn't tell, say, whether a third-
+// placed team finishes above or below a rival on GD. We now enumerate each
+// remaining game's MARGIN over an adaptive range (±cap), so goal-difference tie-
+// breakers resolve with real proportions — Scotland/Ecuador-type bubble cases get
+// actual percentages instead of a 0%/"<1%" blind spot.
 //
-// Decomposition for speed: each group's contribution (its winner / runner-up /
-// third-place profile for a given W/D/L pattern) is precomputed once, then we
-// iterate the cartesian product of the groups' patterns — each step is just table
-// lookups, a 12-way third-place sort, an Annexe C lookup, and 16 slot writes.
+// Tractability: enumerating every margin combination directly is (2·cap+1)^games
+// (e.g. 17^8 ≈ 7 billion). Instead we decompose per group — each group's two
+// games are enumerated locally, and the many margin combinations that yield the
+// SAME (winner, runner-up, third-place profile) are collapsed into one weighted
+// outcome. The cross-group step then iterates the cartesian product of those
+// DISTINCT per-group outcomes (a few million at most), accumulating the product
+// of weights. The reported percentage for a slot is weighted-count / total, where
+// total = Π (2·cap+1)^(remaining games in group) — i.e. every margin combination
+// counts equally (a combinatorial proportion, NOT a forecast).
+//
+// Conventions:
+//  • Goals are taken to equal the margin (win by k → k–0, draw → 0–0). Goal
+//    DIFFERENCE is therefore exact; goals-SCORED (a lower tie-breaker) follows
+//    this convention — a small residual approximation only when teams are level
+//    on points AND goal difference.
+//  • cap is adaptive: large enough to cover any tie-breaker-relevant margin
+//    (≥8, like the clinch engine), but lowered automatically if the distinct-
+//    outcome cartesian would be too large to walk.
 
 import { MATCHES } from '../data/matches.js'
 import { TEAMS } from '../data/teams.js'
@@ -19,15 +33,15 @@ import { byFifaRank } from '../data/fifaRanking.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
 
 // Cross-group third-place ranking — IDENTICAL to computeQualification's: points,
-// then goal difference, then goals, then conduct (cards), then FIFA ranking.
-// Returns negative when `a` should rank ABOVE `b` (a standard descending sort
-// comparator), unlike clinch's "positive = ahead" cmpThird helper.
+// goal difference, goals, conduct (cards), then FIFA ranking. Descending (< 0
+// when `a` outranks `b`).
 const compareThirds = (a, b) =>
   b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF || b.conduct - a.conduct || byFifaRank(a.team, b.team)
 
 const GROUPS = Object.keys(TEAMS)
-const SCORE = { W: [1, 0], D: [1, 1], L: [0, 1] } // one-goal convention
-const PATTERNS = ['W', 'D', 'L']
+
+// Largest distinct-outcome cartesian we'll walk before lowering the cap.
+const MAX_ITERS = 12_000_000
 
 function parseSlot(label) {
   let m = /^Winner Group ([A-L])$/.exec(label)
@@ -38,8 +52,6 @@ function parseSlot(label) {
   return { type: 'other' }
 }
 
-// Static R32 slot structure (invariant; the live feed may resolve labels to real
-// teams, so we always read from the static schedule).
 const R32 = MATCHES.filter((m) => m.stage === 'R32').map((m) => ({
   num: m.num,
   sides: [parseSlot(m.t1), parseSlot(m.t2)],
@@ -51,56 +63,105 @@ export const R32_SLOT_LABELS = Object.fromEntries(
 
 const isRemaining = (m) => m.stage === 'Group' && !m.voided && !(Array.isArray(m.score) && !m.live)
 
-// Number of remaining group games and the size of the outcome space (3^that).
 export function countRemaining(matches) {
   return matches.filter(isRemaining).length
 }
-export function totalOutcomes(matches) {
-  return 3 ** countRemaining(matches)
+
+// A scoreline realising a given margin under the goals=margin convention.
+const scoreForMargin = (d) => (d > 0 ? [d, 0] : d < 0 ? [0, -d] : [0, 0])
+
+// Margin range to enumerate per game for the PERCENTAGES. A moderate ±8 keeps the
+// proportions meaningful (a huge cap would dilute every share with unrealistic
+// blow-outs) while still covering the goal-difference swings that decide almost
+// every realistic third-place cut. The rare path that needs a bigger swing than
+// this isn't lost: the exact "still alive" net (eliminationCheck, which uses a
+// clinch-sized cap) catches it and flags it "<1%". chooseCaps lowers this only if
+// the distinct-outcome cartesian would be too large to walk.
+const BASE_CAP = 8
+function baseCap() {
+  return BASE_CAP
 }
 
-// Precompute every group's possible (winner, runner-up, third profile) keyed by
-// the W/D/L pattern of its remaining games (one-goal scorelines). A completed
-// group yields a single fixed outcome.
-function groupOutcomes(matches) {
+// Precompute every group's possible (winner, runner-up, third profile) at the
+// given margin cap, COLLAPSING margin combinations that produce identical results
+// into a single weighted outcome. Completed groups yield one outcome (weight 1).
+function groupOutcomes(matches, cap) {
+  const margins = []
+  for (let d = -cap; d <= cap; d++) margins.push(d)
   const out = {}
   for (const g of GROUPS) {
     const all = matches.filter((m) => m.stage === 'Group' && m.group === g)
     const played = all.filter((m) => !isRemaining(m) && Array.isArray(m.score))
     const remaining = all.filter(isRemaining)
-    const outs = []
+    const map = new Map()
     const pat = new Array(remaining.length)
     const visit = (i) => {
       if (i === remaining.length) {
-        const synthetic = played.concat(remaining.map((m, ix) => ({ ...m, score: SCORE[pat[ix]] })))
+        const synthetic = played.concat(remaining.map((m, ix) => ({ ...m, score: scoreForMargin(pat[ix]) })))
         const o = rankGroup(g, synthetic)
-        outs.push({
-          w: o[0].name,
-          r: o[1].name,
-          t: { team: o[2].name, Pts: o[2].Pts, GD: o[2].GD, GF: o[2].GF, conduct: o[2].conduct, group: g },
-        })
+        const t = o[2]
+        const key = `${o[0].name}|${o[1].name}|${t.name}|${t.Pts}|${t.GD}|${t.GF}|${t.conduct}`
+        const e = map.get(key)
+        if (e) e.weight++
+        else
+          map.set(key, {
+            w: o[0].name,
+            r: o[1].name,
+            t: { team: t.name, Pts: t.Pts, GD: t.GD, GF: t.GF, conduct: t.conduct, group: g },
+            weight: 1,
+          })
         return
       }
-      for (const p of PATTERNS) {
-        pat[i] = p
+      for (const d of margins) {
+        pat[i] = d
         visit(i + 1)
       }
     }
     visit(0)
-    out[g] = outs
+    out[g] = [...map.values()]
   }
   return out
 }
 
-// Enumerate all remaining W/D/L combinations and tally each R32 slot. Calls
-// onProgress(done, total) periodically. Returns { total, remaining, perMatch }
-// where perMatch[num] = [sideDist, sideDist] and a sideDist is
-// { locked: team|null, candidates: [{ team, count, pct }] (desc) }.
-export function enumerateOutlook(matches, onProgress) {
+// Tally the distinct-outcome cartesian size and the weighted total for a cap.
+function atCap(matches, cap) {
+  const go = groupOutcomes(matches, cap)
+  let iters = 1
+  let total = 1
+  for (const g of GROUPS) {
+    iters *= go[g].length
+    total *= go[g].reduce((s, o) => s + o.weight, 0)
+  }
+  return { cap, go, iters, total }
+}
+
+// Use fixedCap verbatim (tests), else pick the largest adaptive cap whose
+// distinct-outcome cartesian stays within MAX_ITERS (floor of 3).
+function chooseCaps(matches, fixedCap) {
+  if (fixedCap != null) return atCap(matches, fixedCap)
+  let last = null
+  for (let cap = baseCap(matches); cap >= 3; cap--) {
+    last = atCap(matches, cap)
+    if (last.iters <= MAX_ITERS) return last
+  }
+  return last
+}
+
+// Size of the distinct-outcome cartesian we actually walk, at the adaptive cap —
+// for the progress display / "too big" gate.
+export function countIterations(matches) {
+  return chooseCaps(matches).iters
+}
+
+// Enumerate all distinct per-group outcome combinations and tally each R32 slot,
+// weighted by how many margin combinations each represents. Returns
+// { total, remaining, cap, perMatch } where perMatch[num] = [sideDist, sideDist],
+// a sideDist = { locked: team|null, candidates: [{team, count, pct}] (desc) }.
+// `fixedCap` forces a specific cap (used by the correctness tests).
+export function enumerateOutlook(matches, onProgress, fixedCap) {
   const remaining = countRemaining(matches)
-  const total = 3 ** remaining
-  const perGroup = groupOutcomes(matches)
-  const order = GROUPS // iterate all 12; completed groups have length 1
+  const { cap, go, iters, total } = chooseCaps(matches, fixedCap)
+  const order = GROUPS
 
   const counts = {}
   for (const m of R32) counts[m.num] = [new Map(), new Map()]
@@ -113,16 +174,15 @@ export function enumerateOutlook(matches, onProgress) {
   let done = 0
   const STEP = 50000
 
-  // Odometer over the per-group pattern choices.
   for (;;) {
-    // Assemble this combination.
+    let weight = 1
     for (let gi = 0; gi < order.length; gi++) {
-      const g = order[gi]
-      const o = perGroup[g][idx[gi]]
-      W[g] = o.w
-      R[g] = o.r
-      T[g] = o.t.team
+      const o = go[order[gi]][idx[gi]]
+      W[order[gi]] = o.w
+      R[order[gi]] = o.r
+      T[order[gi]] = o.t.team
       thirds[gi] = o.t
+      weight *= o.weight
     }
     thirds.sort(compareThirds)
     const key = thirds.slice(0, 8).map((x) => x.group).sort().join('')
@@ -144,36 +204,35 @@ export function enumerateOutlook(matches, onProgress) {
           }
         }
         if (team) {
-          const map = counts[m.num][side]
-          map.set(team, (map.get(team) || 0) + 1)
+          const mp = counts[m.num][side]
+          mp.set(team, (mp.get(team) || 0) + weight)
         }
       }
     }
 
     done++
-    if (onProgress && done % STEP === 0) onProgress(done, total)
+    if (onProgress && done % STEP === 0) onProgress(done, iters)
 
-    // Increment odometer.
     let k = order.length - 1
     while (k >= 0) {
       idx[k]++
-      if (idx[k] < perGroup[order[k]].length) break
+      if (idx[k] < go[order[k]].length) break
       idx[k] = 0
       k--
     }
     if (k < 0) break
   }
-  if (onProgress) onProgress(total, total)
+  if (onProgress) onProgress(iters, iters)
 
   const perMatch = {}
   for (const m of R32) {
-    perMatch[m.num] = counts[m.num].map((map) => {
-      const candidates = [...map.entries()]
+    perMatch[m.num] = counts[m.num].map((mp) => {
+      const candidates = [...mp.entries()]
         .map(([team, count]) => ({ team, count, pct: count / total }))
         .sort((a, b) => b.count - a.count)
       const locked = candidates.length === 1 && candidates[0].count === total ? candidates[0].team : null
       return { locked, candidates }
     })
   }
-  return { total, remaining, perMatch }
+  return { total, remaining, cap, perMatch }
 }
