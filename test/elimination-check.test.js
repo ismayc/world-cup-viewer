@@ -180,6 +180,22 @@ describe('eliminationStatus — Scotland is alive but margin-dependent (the one-
     expect(req.variable[0].condition).toMatch(/worse than -3/)
   })
 
+  it('frames a team whose own group is still playing as the GD race (no fixed checklist)', () => {
+    // Iran's Group G still has a game to play, so its points/GD as a third aren't
+    // settled — the requirements must NOT be a fixed "needs N (GD threshold)"
+    // checklist, but the two-step "finish 3rd, then win the GD race" framing.
+    const matches = scenario(STRONG_7, WEAK_3)
+    const req = advancementRequirements(matches, 'Iran')
+    expect(req).toBeTruthy()
+    expect(req.ownGroupComplete).toBe(false)
+    expect(req.ownGroup).toBe('G')
+    expect(typeof req.thirdPts).toBe('number')
+    expect(Array.isArray(req.unresolvedGroups)).toBe(true)
+    // The fixed-checklist fields are absent in this mode.
+    expect(req.variable).toBeUndefined()
+    expect(req.needAtLeast).toBeUndefined()
+  })
+
   it('flips to eliminated once an eighth group is forced above Scotland', () => {
     // Promote group J from weak to strong → 8 thirds always above Scotland.
     const matches = scenario(['A', 'B', 'D', 'E', 'F', 'H', 'I', 'J'], ['K', 'L'])

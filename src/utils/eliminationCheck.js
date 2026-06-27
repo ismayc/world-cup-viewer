@@ -237,6 +237,20 @@ export function advancementRequirements(matches, team, reach = null) {
   if (!rT.feasible) return null
   const mine = rT.thirds.filter((t) => t.name === team)
   if (!mine.length) return null // can't finish 3rd → not a third-place case
+
+  // If the team's own group is STILL PLAYING, its points and goal difference as a
+  // third aren't settled, so a fixed "below them (GD threshold)" checklist would
+  // be meaningless (it'd assume an unrealistic cap-margin win). Instead frame it
+  // as: finish 3rd first, then win the goal-difference race among same-point
+  // thirds — the bigger the win, the better.
+  if (!rT.complete) {
+    const thirdPts = Math.max(...mine.map((t) => t.Pts))
+    const unresolvedGroups = GROUPS.filter(
+      (g) => g !== gT && reach[g].feasible && !reach[g].complete,
+    )
+    return { team, ownGroup: gT, ownGroupComplete: false, thirdPts, unresolvedGroups }
+  }
+
   let P = mine[0]
   for (const t of mine) if (thirdRanksAbove(t, P)) P = t
 

@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **Fix: sensible requirements for a team whose own group is still playing.** The
+  "needs N of these" checklist used a team's *best reachable* third-place profile,
+  which for a team still mid-group meant a cap-inflated blowout — producing nonsense
+  like "needs 0 of 3 … GD below +6" for Uzbekistan. Now the fixed checklist is used
+  only when the team's group is FINISHED (profile settled — e.g. Scotland). When the
+  group is still live, points/GD aren't fixed, so it's framed as the two-step goal-
+  difference race instead: "finish 3rd in Group K, then — as a 3-point third — win
+  the GD race with the other 3-point thirds; the bigger the win, the better," plus
+  the still-unresolved groups that can shift the cut. New test.
 - **R32 Outlook: "needs N of these" goal-difference checklist for live teams.**
   Under each still-alive (margin-dependent) team, the panel now spells out what it
   needs to advance: if its own group is still playing, finish 3rd there first; then

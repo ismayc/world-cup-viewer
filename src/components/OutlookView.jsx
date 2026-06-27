@@ -291,11 +291,11 @@ export default function OutlookView({ matches }) {
                           </span>
                         )}
                       </div>
-                      {req && req.variable.length > 0 && (
+                      {/* Own group finished → exact "needs N of these" checklist. */}
+                      {req && req.ownGroupComplete && req.variable.length > 0 && (
                         <div className="bo-req">
                           <div className="bo-req-head">
-                            {!req.ownGroupComplete && <>Win Group {req.ownGroup} (finish 3rd), then </>}
-                            {req.ownGroupComplete ? 'Needs ' : 'needs '}
+                            Needs{' '}
                             <strong>
                               {req.needAtLeast} of {req.variable.length}
                             </strong>{' '}
@@ -310,6 +310,25 @@ export default function OutlookView({ matches }) {
                               </li>
                             ))}
                           </ul>
+                        </div>
+                      )}
+                      {/* Own group still playing → points/GD aren't fixed yet, so
+                          frame it as the two-step goal-difference race. */}
+                      {req && !req.ownGroupComplete && (
+                        <div className="bo-req">
+                          <div className="bo-req-head">
+                            Must finish <strong>3rd in Group {req.ownGroup}</strong>, then — as a{' '}
+                            {req.thirdPts}-point third — win the goal-difference race with the other{' '}
+                            {req.thirdPts}-point thirds for the last spot(s); the bigger the win, the
+                            better.
+                            {req.unresolvedGroups.length > 0 && (
+                              <>
+                                {' '}
+                                Groups still unresolved that can shift the cut:{' '}
+                                <span className="bo-req-cont">{req.unresolvedGroups.join(', ')}</span>.
+                              </>
+                            )}
+                          </div>
                         </div>
                       )}
                     </li>
