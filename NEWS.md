@@ -5,6 +5,16 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **R32 Outlook fix: don't show a slot "clinched" while a live team can reach it.**
+  The Outlook's ✅ "locked" badge came from the one-goal enumeration, which
+  excludes margin-dependent survivors — so a third-place slot could read 100% /
+  clinched (e.g. Ecuador vs Mexico) even though a still-alive team (Scotland)
+  could mathematically still land there. New `reconcileLocks` cross-checks each
+  one-goal lock against the exact margin-aware reachability (`reachableThirdSets`
+  via the worker's `aliveSlots`) and demotes any third slot a still-alive team can
+  reach to ">99% / <1%" instead of a false ✅. Winner/runner-up slots unaffected.
+  "Every matchup set" now also requires nobody left alive-but-hidden. (The Bracket
+  page already used the margin-aware lock, so it was already correct.) New tests.
 - **R32 Outlook: show where margin-dependent teams would play + "<1%" tags.**
   The "Still mathematically alive — but margin-dependent" panel now lists, for
   each team, the Round-of-32 matchup(s) it would land in if it advanced —
