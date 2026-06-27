@@ -5,6 +5,16 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **Lock final group results: G, H, I.** Groups G, H, and I verified against
+  OpenFootball and independent web sources (Yahoo Sports, CBS Sports, FOX Sports,
+  ESPN, FIFA.com, Al Jazeera) and locked into `test/fixtures/final-group-results.js`.
+  Final finishing orders:
+  - **Group G:** Belgium, Egypt, Iran, New Zealand (Belgium and Egypt both 5 pts;
+    head-to-head 1–1, Belgium wins on overall GD +4 vs +2)
+  - **Group H:** Spain, Cape Verde, Uruguay, Saudi Arabia (Spain 7 pts; Cape Verde 2nd
+    on 3 pts from three draws; Uruguay 3rd GD −1 ahead of Saudi Arabia GD −4)
+  - **Group I:** France, Norway, Senegal, Iraq (France perfect 9 pts; Norway 6 pts;
+    Senegal 3rd on 3 pts; Iraq winless)
 - **R32 Outlook: surface alternative opponents for ALL thirds, not just Scotland.**
   A qualified third (e.g. Ecuador) could be pinned by the one-goal model to a single
   group winner even though its FIFA Annexe C matchup can still shift if the set of

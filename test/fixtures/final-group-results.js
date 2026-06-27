@@ -67,6 +67,32 @@ export const FINAL_GROUP_RESULTS = {
     scores: { 10: [2, 2], 12: [5, 1], 33: [5, 1], 36: [0, 4], 57: [1, 1], 58: [1, 3] },
     order: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
   },
+  // Belgium and Egypt both finish on 5 pts; head-to-head was 1–1 (all tied), so
+  // 1st is decided on overall goal difference: Belgium +4 vs Egypt +2 → Belgium
+  // top. Iran 3rd (3 pts, all draws). New Zealand 4th (1 pt).
+  G: {
+    verifiedOn: '2026-06-27',
+    sources: ['OpenFootball', 'Web search (Yahoo Sports, CBS Sports, FOX Sports)'],
+    scores: { 14: [1, 1], 16: [2, 2], 38: [0, 0], 40: [1, 3], 65: [1, 1], 66: [1, 5] },
+    order: ['Belgium', 'Egypt', 'Iran', 'New Zealand'],
+  },
+  // Spain win the group (7 pts). Cape Verde qualify as runners-up on 3 pts
+  // (three draws). Uruguay 3rd (2 pts, GD −1) ahead of Saudi Arabia (2 pts,
+  // GD −4).
+  H: {
+    verifiedOn: '2026-06-27',
+    sources: ['OpenFootball', 'Web search (NBC News, Yahoo Sports, FOX Sports)'],
+    scores: { 13: [0, 0], 15: [1, 1], 37: [4, 0], 39: [2, 2], 63: [0, 0], 64: [0, 1] },
+    order: ['Spain', 'Cape Verde', 'Uruguay', 'Saudi Arabia'],
+  },
+  // France win all three matches (9 pts, GD +8). Norway 2nd (6 pts). Senegal
+  // 3rd (3 pts, GD +2). Iraq eliminated without a point (GD −11).
+  I: {
+    verifiedOn: '2026-06-27',
+    sources: ['OpenFootball', 'Web search (ESPN, FIFA.com, Al Jazeera, FOX Sports)'],
+    scores: { 17: [3, 1], 18: [1, 4], 42: [3, 0], 43: [3, 2], 61: [1, 4], 62: [5, 0] },
+    order: ['France', 'Norway', 'Senegal', 'Iraq'],
+  },
 }
 
 // The official Round-of-32 draw, as published by FIFA once the group stage ends:
