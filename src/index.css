@@ -1764,12 +1764,22 @@ select {
 }
 .bo-alive-head { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #d99100; margin-bottom: 6px; }
 .bo-alive-note { font-size: 0.82rem; color: var(--text-dim); margin: 0 0 10px; line-height: 1.5; }
-.bo-alive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.bo-alive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .bo-alive-team {
-  display: flex; align-items: center; gap: 6px;
-  background: var(--bg-soft); border: 1px solid var(--border);
-  padding: 4px 10px; border-radius: 999px; font-size: 0.84rem; font-weight: 600;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 0.84rem;
 }
+.bo-alive-team .bo-cand-name { font-weight: 700; }
+.bo-alive-dest { color: var(--text-dim); font-weight: 400; font-size: 0.8rem; }
+.bo-alive-dest strong { color: var(--text); font-weight: 600; }
+/* "<1%" margin-dependent candidate rows in the bracket grid. */
+.bo-cand-alive { opacity: 0.92; }
+.bo-cand-alive .bo-cand-name { font-style: italic; }
+.bo-pct-alive {
+  color: var(--delay); font-weight: 700; text-decoration: underline dotted;
+  text-underline-offset: 2px; cursor: help;
+}
+.bo-pct-alive:hover { color: var(--text); }
 
 /* ---------- Calendar modal ---------- */
 .cal-title { margin: 0 0 14px; }

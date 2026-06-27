@@ -23,9 +23,12 @@
 // false elimination.
 
 import { TEAMS } from '../data/teams.js'
+import { MATCHES } from '../data/matches.js'
 import { rankGroup } from './qualification.js'
 import { byFifaRank } from '../data/fifaRanking.js'
 import { goalCap, scorelinesUpTo } from './clinch.js'
+import { reachableThirdSets } from './opponentClinch.js'
+import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
 
 const GROUPS = Object.keys(TEAMS)
 const ADVANCING_THIRDS = 8 // 8 of the 12 third-placed teams advance
@@ -156,4 +159,51 @@ export function survivingTeams(matches) {
 // Single-team helper.
 export function isAlive(matches, team) {
   return eliminationStatus(matches)[team] !== 'eliminated'
+}
+
+// winner-group letter -> R32 match number, for the eight matches that pair a
+// group winner with a third-place slot (the only matches a best-third lands in).
+const WINNER_THIRD_MATCH = (() => {
+  const out = {}
+  for (const m of MATCHES.filter((x) => x.stage === 'R32')) {
+    const w = [m.t1, m.t2].find((s) => /^Winner Group ([A-L])$/.test(s))
+    const third = [m.t1, m.t2].find((s) => /^3rd /.test(s))
+    if (w && third) out[/^Winner Group ([A-L])$/.exec(w)[1]] = m.num
+  }
+  return out
+})()
+
+// The Round-of-32 matches a still-alive third from `team`'s group could land in,
+// across every still-reachable "8 best thirds" combination (FIFA Annexe C). A
+// third's slot isn't fixed — which group winner it faces depends on which eight
+// thirds advance — so this returns every possibility: [{ matchNum, winnerGroup }]
+// sorted by match number (usually one or two). `reachable` may be passed in to
+// avoid recomputing the reachable sets when resolving several teams at once.
+export function thirdPlaceR32Slots(matches, team, reachable = null) {
+  const group = GROUPS.find((g) => TEAMS[g].some((t) => t.name === team))
+  if (!group) return []
+  const sets = reachable || reachableThirdSets(matches)
+  const winners = new Set()
+  for (const key of sets) {
+    if (!key.includes(group)) continue
+    const combo = THIRD_PLACE_COMBINATIONS[key] // winner-ordered string of third groups
+    const i = combo.indexOf(group)
+    if (i >= 0 && THIRD_WINNER_ORDER[i]) winners.add(THIRD_WINNER_ORDER[i])
+  }
+  return [...winners]
+    .map((w) => ({ winnerGroup: w, matchNum: WINNER_THIRD_MATCH[w] }))
+    .filter((x) => x.matchNum)
+    .sort((a, b) => a.matchNum - b.matchNum)
+}
+
+// Batch form: { team -> slots[] } for the given teams, computing the reachable
+// Annexe C sets once. Teams that can't land in a third-place slot are omitted.
+export function aliveR32Slots(matches, teams) {
+  const reachable = reachableThirdSets(matches)
+  const out = {}
+  for (const t of teams) {
+    const slots = thirdPlaceR32Slots(matches, t, reachable)
+    if (slots.length) out[t] = slots
+  }
+  return out
 }

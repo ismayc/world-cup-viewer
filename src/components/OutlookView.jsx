@@ -6,7 +6,7 @@ import { R32_SLOT_LABELS, countRemaining, totalOutcomes } from '../utils/outlook
 // exactly in reasonable time — wait until the field narrows.
 const MAX_REMAINING = 14 // 3^14 = 4,782,969
 
-function Side({ dist, slotLabel }) {
+function Side({ dist, slotLabel, extra = [] }) {
   if (dist.locked) {
     return (
       <div className="bo-side bo-locked">
@@ -20,7 +20,7 @@ function Side({ dist, slotLabel }) {
   return (
     <div className="bo-side">
       <div className="bo-slot-label">{slotLabel}</div>
-      {dist.candidates.length === 0 ? (
+      {dist.candidates.length === 0 && extra.length === 0 ? (
         <div className="bo-cand bo-tbd">To be determined</div>
       ) : (
         <ul className="bo-cands">
@@ -31,6 +31,21 @@ function Side({ dist, slotLabel }) {
               <span className="bo-cand-flag">{FLAG_BY_TEAM[c.team] || '•'}</span>
               <span className="bo-cand-name">{c.team}</span>
               <span className="bo-pct">{fmt(c.pct)}%</span>
+            </li>
+          ))}
+          {/* Margin-dependent contenders the one-goal model scores at 0% but that
+              are NOT eliminated — shown as "<1%" linking to the note below. */}
+          {extra.map((team) => (
+            <li className="bo-cand bo-cand-alive" key={`alive-${team}`}>
+              <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
+              <span className="bo-cand-name">{team}</span>
+              <a
+                className="bo-pct bo-pct-alive"
+                href="#bo-alive-note"
+                title="Mathematically alive but margin-dependent — see the note below"
+              >
+                &lt;1%
+              </a>
             </li>
           ))}
         </ul>
@@ -44,6 +59,7 @@ export default function OutlookView({ matches }) {
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState(null)
   const [survivors, setSurvivors] = useState(null)
+  const [aliveSlots, setAliveSlots] = useState(null)
   const [errMsg, setErrMsg] = useState('')
   const matchesRef = useRef(matches)
   matchesRef.current = matches
@@ -78,6 +94,7 @@ export default function OutlookView({ matches }) {
       else if (msg.type === 'done') {
         setResult(msg.result)
         setSurvivors(msg.survivors || [])
+        setAliveSlots(msg.aliveSlots || {})
         setPhase('done')
         worker.terminate()
       } else if (msg.type === 'error') {
@@ -113,6 +130,29 @@ export default function OutlookView({ matches }) {
     return survivors.filter((t) => !shown.has(t))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, survivors])
+
+  // matchNum -> [hidden-alive teams that could land in that match's third slot],
+  // so each such slot can carry the team as a "<1%" candidate.
+  const aliveByMatch = useMemo(() => {
+    const map = {}
+    if (!aliveSlots) return map
+    for (const team of hiddenAlive) {
+      for (const s of aliveSlots[team] || []) {
+        ;(map[s.matchNum] ||= []).push(team)
+      }
+    }
+    return map
+  }, [aliveSlots, hiddenAlive])
+
+  // The group-winner side of a third-place match, resolved to a real team when
+  // it's already locked, else the "Winner Group X" placeholder.
+  const winnerInfo = (matchNum) => {
+    const labels = R32_SLOT_LABELS[matchNum] || []
+    const idx = labels.findIndex((l) => /^Winner Group/.test(l))
+    if (idx < 0) return { label: `Match ${matchNum}` }
+    const dist = result?.perMatch?.[matchNum]?.[idx]
+    return { team: dist?.locked || null, label: labels[idx] }
+  }
 
   return (
     <div className="bracket-odds">
@@ -157,34 +197,55 @@ export default function OutlookView({ matches }) {
             {nums.map((n) => {
               const [s1, s2] = result.perMatch[n]
               const labels = R32_SLOT_LABELS[n]
+              // Margin-dependent teams attach to the third-place side of the match.
+              const aliveHere = aliveByMatch[n] || []
+              const extra1 = /^3rd/.test(labels[0]) ? aliveHere : []
+              const extra2 = /^3rd/.test(labels[1]) ? aliveHere : []
               return (
                 <div className="bo-match" key={n}>
                   <div className="bo-match-head">Match {n}</div>
-                  <Side dist={s1} slotLabel={labels[0]} />
+                  <Side dist={s1} slotLabel={labels[0]} extra={extra1} />
                   <div className="bo-vs">vs</div>
-                  <Side dist={s2} slotLabel={labels[1]} />
+                  <Side dist={s2} slotLabel={labels[1]} extra={extra2} />
                 </div>
               )
             })}
           </div>
 
           {hiddenAlive.length > 0 && (
-            <div className="bo-alive">
+            <div className="bo-alive" id="bo-alive-note">
               <div className="bo-alive-head">Still mathematically alive — but margin-dependent</div>
               <p className="bo-alive-note">
                 These teams can still reach the Round of 32, but only through goal-difference swings
                 (a rival third-placed team finishing well below them via a heavy result). The
                 percentages above model each remaining game at a one-goal margin, so those paths
-                aren’t counted there and these teams show 0% — they are <strong>not</strong>{' '}
-                eliminated.
+                aren’t counted there and these teams show 0% (tagged “&lt;1%” in the bracket) — they
+                are <strong>not</strong> eliminated.
               </p>
               <ul className="bo-alive-list">
-                {hiddenAlive.map((team) => (
-                  <li className="bo-alive-team" key={team}>
-                    <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
-                    <span className="bo-cand-name">{team}</span>
-                  </li>
-                ))}
+                {hiddenAlive.map((team) => {
+                  const slots = aliveSlots?.[team] || []
+                  return (
+                    <li className="bo-alive-team" key={team}>
+                      <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
+                      <span className="bo-cand-name">{team}</span>
+                      {slots.length > 0 && (
+                        <span className="bo-alive-dest">
+                          → if they advance, they’d play{' '}
+                          {slots.map((s, i) => {
+                            const w = winnerInfo(s.matchNum)
+                            return (
+                              <span key={s.matchNum}>
+                                {i > 0 && ' or '}
+                                <strong>{w.team || w.label}</strong> (Match {s.matchNum})
+                              </span>
+                            )
+                          })}
+                        </span>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           )}

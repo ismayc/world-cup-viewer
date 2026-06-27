@@ -3,7 +3,7 @@
 // progress updates and a final result.
 
 import { enumerateOutlook } from '../utils/outlookEnum.js'
-import { survivingTeams } from '../utils/eliminationCheck.js'
+import { survivingTeams, aliveR32Slots } from '../utils/eliminationCheck.js'
 
 self.onmessage = (e) => {
   const matches = e.data
@@ -15,7 +15,11 @@ self.onmessage = (e) => {
     // bubble team whose survival needs goal-difference swings (and thus shows 0%
     // above) is still reported rather than silently vanishing.
     const survivors = survivingTeams(matches)
-    self.postMessage({ type: 'done', result, survivors })
+    // For each survivor, the R32 slot(s) its (still-possible) third place could
+    // land in — so the "still alive" panel can show WHERE they'd play, and those
+    // slots can be tagged "<1%" in the bracket above.
+    const aliveSlots = aliveR32Slots(matches, survivors)
+    self.postMessage({ type: 'done', result, survivors, aliveSlots })
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err?.message || err) })
   }

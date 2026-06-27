@@ -7,6 +7,8 @@ import {
   survivingTeams,
   isAlive,
   thirdRanksAbove,
+  thirdPlaceR32Slots,
+  aliveR32Slots,
 } from '../src/utils/eliminationCheck.js'
 import { computeQualification } from '../src/utils/qualification.js'
 import { enumerateOutlook } from '../src/utils/outlookEnum.js'
@@ -143,6 +145,21 @@ describe('eliminationStatus — Scotland is alive but margin-dependent (the one-
     // …yet it is in the exact survivors set — exactly the discrepancy the
     // "still alive" panel surfaces.
     expect(survivingTeams(matches)).toContain('Scotland')
+  })
+
+  it('reports where Scotland would play if they advanced (Annexe C third slots)', () => {
+    const matches = scenario(STRONG_7, WEAK_3)
+    const slots = thirdPlaceR32Slots(matches, 'Scotland')
+    expect(slots.length).toBeGreaterThan(0)
+    // A third from Group C can only face the winners whose R32 third-slot label
+    // lists C — i.e. matches 74 (Winner E), 77 (Winner I), 79 (Winner A).
+    for (const s of slots) {
+      expect([74, 77, 79]).toContain(s.matchNum)
+      expect(['A', 'E', 'I']).toContain(s.winnerGroup)
+    }
+    // The batch form keys the same data by team.
+    const all = aliveR32Slots(matches, survivingTeams(matches))
+    expect(all['Scotland']).toEqual(slots)
   })
 
   it('flips to eliminated once an eighth group is forced above Scotland', () => {

@@ -5,6 +5,17 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **R32 Outlook: show where margin-dependent teams would play + "<1%" tags.**
+  The "Still mathematically alive — but margin-dependent" panel now lists, for
+  each team, the Round-of-32 matchup(s) it would land in if it advanced —
+  resolved via the FIFA Annexe C reachable third-place combinations (a third's
+  slot isn't fixed, so every still-possible winner it could face is shown, with
+  the opponent resolved to a real team once that group winner is locked). Those
+  same teams now also appear in the bracket grid on the relevant third-place
+  slot tagged "&lt;1%" (a dotted link that jumps to the note), so they no longer
+  silently read as absent. New `thirdPlaceR32Slots` / `aliveR32Slots` in
+  `eliminationCheck.js` (reusing `reachableThirdSets` + Annexe C), surfaced
+  through the Outlook worker. New test covers Scotland's reachable slots.
 - **Best third-placed table: live-aware status + blinking dot.** The completion
   marker is now three-way — `final` (all group games truly played), `in play` (a
   group match is live right now, so the position is provisional), or `to play`
