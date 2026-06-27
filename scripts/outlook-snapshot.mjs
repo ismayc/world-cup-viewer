@@ -20,12 +20,15 @@ import {
 } from '../src/utils/eliminationCheck.js'
 import { GROUP_STAGE_MD3 } from '../test/fixtures/group-stage-md3.js'
 
-// Fill Groups D, H, I final so only G/J/K/L remain (8 games), mirroring a real
-// last-day situation.
+// Fill Groups D, H, I, G final so only J/K/L remain (6 games), mirroring the
+// current last-day situation. NOTE: these are ILLUSTRATIVE results — the build
+// environment can't reach the live feed, so edit this map with the real scores
+// (matchNum -> [home, away]) to get a snapshot of the actual standings.
 const FILL = {
   59: [2, 1], 60: [0, 0], // D matchday 3
   63: [1, 1], 64: [0, 2], // H matchday 3
   61: [3, 0], 62: [1, 1], // I matchday 3
+  65: [1, 1], 66: [0, 2], // G matchday 3 (Egypt–Iran, NZ–Belgium)
 }
 const scored = { ...GROUP_STAGE_MD3, ...FILL }
 const matches = MATCHES.map((m) =>
