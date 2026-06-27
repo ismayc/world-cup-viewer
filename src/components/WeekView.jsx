@@ -9,6 +9,7 @@ import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
 import ScoreCheck from './ScoreCheck.jsx'
+import DayMatchesModal from './DayMatchesModal.jsx'
 
 function Legend() {
   return (
@@ -111,6 +112,9 @@ export default function WeekView({ allMatches, shown, tz, dayHidden }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const total = days.reduce((n, d) => n + (byDay[d]?.length || 0), 0)
 
+  // The day whose "all matches" pop-up is open: { matches, hidden } or null.
+  const [dayModal, setDayModal] = useState(null)
+
   return (
     <div className="weekview">
       <div className="week-nav">
@@ -144,6 +148,17 @@ export default function WeekView({ allMatches, shown, tz, dayHidden }) {
               <div className="week-col-head">
                 <span className="wd">{hdr.wd}</span>
                 <span className="dn">{hdr.day}</span>
+                {matches.length > 0 && (
+                  <button
+                    type="button"
+                    className="week-day-btn"
+                    onClick={() => setDayModal({ matches, hidden })}
+                    title={`Show all ${matches.length} match${matches.length === 1 ? '' : 'es'} this day`}
+                    aria-label={`Show all ${matches.length} match${matches.length === 1 ? '' : 'es'} on ${hdr.wd} ${hdr.day}`}
+                  >
+                    ⤢
+                  </button>
+                )}
               </div>
               <div className="week-col-body">
                 {matches.map((m) => (
@@ -154,6 +169,15 @@ export default function WeekView({ allMatches, shown, tz, dayHidden }) {
           )
         })}
       </div>
+
+      {dayModal && (
+        <DayMatchesModal
+          matches={dayModal.matches}
+          tz={tz}
+          hideScores={dayModal.hidden}
+          onClose={() => setDayModal(null)}
+        />
+      )}
     </div>
   )
 }

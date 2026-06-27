@@ -61,6 +61,29 @@ describe('WeekView', () => {
     expect(screen.getByText('v')).toBeInTheDocument()
   })
 
+  it('opens a day pop-up from the date-header button and drills into match detail', () => {
+    const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+    const m = { ...MATCHES.find((x) => x.stage === 'Group'), ko: `${todayKey}T18:00:00-04:00`, score: [2, 1] }
+    const { openDetail } = renderWeek({ allMatches: [m], shown: [m] })
+    // The date-header button appears only for days that have matches.
+    fireEvent.click(screen.getByRole('button', { name: /Show all 1 match on/ }))
+    // The day pop-up opens, listing the day's matches as compact rows.
+    const dialog = screen.getByRole('dialog')
+    const row = dialog.querySelector('.dm-row')
+    expect(row).toBeTruthy()
+    // Clicking a row drills into the full match-detail modal.
+    fireEvent.click(row)
+    expect(openDetail).toHaveBeenCalled()
+  })
+
+  it('shows no day-header button for an empty day', () => {
+    // A single match on one day → only that day has a button; the other six don't.
+    const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+    const m = { ...MATCHES.find((x) => x.stage === 'Group'), ko: `${todayKey}T18:00:00-04:00` }
+    renderWeek({ allMatches: [m], shown: [m] })
+    expect(screen.getAllByRole('button', { name: /Show all .* match/ })).toHaveLength(1)
+  })
+
   it('shows singular "match" count when a week has exactly one match', () => {
     const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
     const m = { ...MATCHES.find((x) => x.stage === 'Group'), ko: `${todayKey}T18:00:00-04:00` }

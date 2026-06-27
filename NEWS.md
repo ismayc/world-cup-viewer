@@ -5,6 +5,12 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **Week view: per-day "all matches" pop-up.** Each date header with matches now
+  has a small ⤢ button that opens a pop-up listing every match scheduled that day
+  as compact rows (kickoff time, both teams, score/live status, stage, venue/city).
+  Each row drills into the existing full match-detail modal. Respects the
+  timezone and spoiler-free mode (reveal toggle). Empty days have no button. New
+  `DayMatchesModal` (reuses the modal + match-row patterns); WeekView tests added.
 - **R32 Outlook: drop the bounds-based "<1%" tags (they over-claimed).** The "<1%"
   margin extras came from `reachableThirdSets`, a SAFE over-approximation for
   *demoting* a lock but one that *over-claims* when used to *add* a candidate — it

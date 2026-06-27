@@ -1167,7 +1167,37 @@ select {
   color: var(--text-dim);
 }
 .week-col-head .dn { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.week-day-btn {
+  margin-left: 2px; align-self: center;
+  background: var(--card); border: 1px solid var(--border); color: var(--text-dim);
+  width: 22px; height: 22px; border-radius: 6px; cursor: pointer; line-height: 1;
+  font-size: 0.78rem; display: inline-flex; align-items: center; justify-content: center;
+}
+.week-day-btn:hover, .week-day-btn:focus-visible { border-color: var(--accent); color: var(--text); outline: none; }
 .week-col-body { display: flex; flex-direction: column; gap: 6px; padding: 8px 6px; }
+
+/* ---------- Day matches pop-up (Week-view date button) ---------- */
+.dm-list { gap: 4px; }
+.dm-row {
+  width: 100%; display: grid; align-items: center; gap: 8px;
+  grid-template-columns: 92px 1fr auto auto;
+  background: var(--bg-soft); border: 1px solid var(--border); border-radius: 9px;
+  padding: 8px 10px; cursor: pointer; text-align: left; color: var(--text); font: inherit;
+}
+.dm-row:hover, .dm-row:focus-visible { border-color: var(--accent); outline: none; }
+.dm-time { font-size: 0.82rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dm-tz { font-size: 0.66rem; font-weight: 400; color: var(--text-faint); }
+.dm-matchup { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.dm-team { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.dm-result { font-weight: 700; font-variant-numeric: tabular-nums; }
+.dm-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 0.7rem; }
+.dm-stage { font-weight: 700; }
+.dm-venue { color: var(--text-faint); white-space: nowrap; }
+.dm-status { display: flex; align-items: center; }
+@media (max-width: 560px) {
+  .dm-row { grid-template-columns: 1fr auto; grid-auto-rows: auto; row-gap: 4px; }
+  .dm-meta { flex-direction: row; gap: 8px; grid-column: 1 / -1; align-items: center; }
+}
 
 .week-cell {
   border: 1px solid var(--border);
