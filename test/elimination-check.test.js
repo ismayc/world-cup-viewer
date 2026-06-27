@@ -9,6 +9,7 @@ import {
   thirdRanksAbove,
   thirdPlaceR32Slots,
   aliveR32Slots,
+  advancementRequirements,
 } from '../src/utils/eliminationCheck.js'
 import { computeQualification } from '../src/utils/qualification.js'
 import { enumerateOutlook } from '../src/utils/outlookEnum.js'
@@ -160,6 +161,23 @@ describe('eliminationStatus — Scotland is alive but margin-dependent (the one-
     // The batch form keys the same data by team.
     const all = aliveR32Slots(matches, survivingTeams(matches))
     expect(all['Scotland']).toEqual(slots)
+  })
+
+  it('spells out the goal-difference requirements to advance', () => {
+    const matches = scenario(STRONG_7, WEAK_3)
+    const req = advancementRequirements(matches, 'Scotland')
+    expect(req).toBeTruthy()
+    expect(req.profile).toMatchObject({ Pts: 3, GD: -3 })
+    expect(req.ownGroupComplete).toBe(true) // Group C is done
+    // Seven groups are already ahead, three already below → only Group G (the
+    // one with a game left) is in the balance, and Scotland needs it to go their
+    // way: "needs at least 1 of these 1".
+    expect(req.forcedAbove).toBe(7)
+    expect(req.variable.map((v) => v.group)).toEqual(['G'])
+    expect(req.needAtLeast).toBe(1)
+    // The condition is phrased in goal-difference terms relative to Scotland.
+    expect(req.variable[0].condition).toMatch(/fewer than 3 points/)
+    expect(req.variable[0].condition).toMatch(/worse than -3/)
   })
 
   it('flips to eliminated once an eighth group is forced above Scotland', () => {

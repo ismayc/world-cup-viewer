@@ -1764,14 +1764,17 @@ select {
 }
 .bo-alive-head { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #d99100; margin-bottom: 6px; }
 .bo-alive-note { font-size: 0.82rem; color: var(--text-dim); margin: 0 0 10px; line-height: 1.5; }
-.bo-alive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.bo-alive-team {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  font-size: 0.84rem;
-}
+.bo-alive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.bo-alive-team { font-size: 0.84rem; }
+.bo-alive-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bo-alive-team .bo-cand-name { font-weight: 700; }
 .bo-alive-dest { color: var(--text-dim); font-weight: 400; font-size: 0.8rem; }
 .bo-alive-dest strong { color: var(--text); font-weight: 600; }
+.bo-req { margin: 4px 0 0 22px; font-size: 0.8rem; }
+.bo-req-own { color: var(--text-dim); margin-bottom: 3px; }
+.bo-req-head { color: var(--text); font-weight: 600; margin-bottom: 3px; }
+.bo-req-list { list-style: disc; margin: 0; padding-left: 18px; color: var(--text-dim); display: flex; flex-direction: column; gap: 2px; }
+.bo-req-cont { color: var(--text-faint); }
 /* "<1%" margin-dependent candidate rows in the bracket grid. */
 .bo-cand-alive { opacity: 0.92; }
 .bo-cand-alive .bo-cand-name { font-style: italic; }

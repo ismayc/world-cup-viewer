@@ -96,6 +96,7 @@ export default function OutlookView({ matches }) {
   const [result, setResult] = useState(null)
   const [survivors, setSurvivors] = useState(null)
   const [aliveSlots, setAliveSlots] = useState(null)
+  const [requirements, setRequirements] = useState(null)
   const [errMsg, setErrMsg] = useState('')
   const matchesRef = useRef(matches)
   matchesRef.current = matches
@@ -131,6 +132,7 @@ export default function OutlookView({ matches }) {
         setResult(msg.result)
         setSurvivors(msg.survivors || [])
         setAliveSlots(msg.aliveSlots || {})
+        setRequirements(msg.requirements || {})
         setPhase('done')
         worker.terminate()
       } else if (msg.type === 'error') {
@@ -261,23 +263,48 @@ export default function OutlookView({ matches }) {
               <ul className="bo-alive-list">
                 {hiddenAlive.map((team) => {
                   const slots = aliveSlots?.[team] || []
+                  const req = requirements?.[team]
                   return (
                     <li className="bo-alive-team" key={team}>
-                      <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
-                      <span className="bo-cand-name">{team}</span>
-                      {slots.length > 0 && (
-                        <span className="bo-alive-dest">
-                          → if they advance, they’d play{' '}
-                          {slots.map((s, i) => {
-                            const w = winnerInfo(s.matchNum)
-                            return (
-                              <span key={s.matchNum}>
-                                {i > 0 && ' or '}
-                                <strong>{w.team || w.label}</strong> (Match {s.matchNum})
-                              </span>
-                            )
-                          })}
-                        </span>
+                      <div className="bo-alive-row">
+                        <span className="bo-cand-flag">{FLAG_BY_TEAM[team] || '•'}</span>
+                        <span className="bo-cand-name">{team}</span>
+                        {slots.length > 0 && (
+                          <span className="bo-alive-dest">
+                            → if they advance, they’d play{' '}
+                            {slots.map((s, i) => {
+                              const w = winnerInfo(s.matchNum)
+                              return (
+                                <span key={s.matchNum}>
+                                  {i > 0 && ' or '}
+                                  <strong>{w.team || w.label}</strong> (Match {s.matchNum})
+                                </span>
+                              )
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      {req && req.variable.length > 0 && (
+                        <div className="bo-req">
+                          {!req.ownGroupComplete && (
+                            <div className="bo-req-own">
+                              First, <strong>{team}</strong> must finish 3rd in Group {req.ownGroup}{' '}
+                              (the bigger the win, the better their goal difference) — then:
+                            </div>
+                          )}
+                          <div className="bo-req-head">
+                            Needs at least <strong>{req.needAtLeast}</strong> of these{' '}
+                            {req.variable.length} to go their way:
+                          </div>
+                          <ul className="bo-req-list">
+                            {req.variable.map((v) => (
+                              <li key={v.group}>
+                                {v.condition}{' '}
+                                <span className="bo-req-cont">({v.contenders.join(' / ')})</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
                     </li>
                   )

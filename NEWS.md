@@ -5,6 +5,16 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **R32 Outlook: "needs N of these" goal-difference checklist for live teams.**
+  Under each still-alive (margin-dependent) team, the panel now spells out what it
+  needs to advance: if its own group is still playing, finish 3rd there first; then
+  "needs at least N of these M" rival groups' third-placed teams to finish at/below
+  it, each stated in goal-difference terms (e.g. "Group G's third must finish on
+  fewer than 3 points, or on 3 with a goal difference worse than −3"). New
+  `advancementRequirements` / `allAdvancementRequirements` in `eliminationCheck.js`
+  classify every other group as forced-above / forced-below / in-the-balance using
+  the team's best reachable third profile, and 8-advance arithmetic gives the
+  "at least N" count. Surfaced via the Outlook worker. New test.
 - **R32 Outlook fix: don't show a slot "clinched" while a live team can reach it.**
   The Outlook's ✅ "locked" badge came from the one-goal enumeration, which
   excludes margin-dependent survivors — so a third-place slot could read 100% /

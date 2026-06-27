@@ -94,7 +94,13 @@ function groupReach(group, matches) {
   }
   visit(0)
 
-  return { group, names, feasible: true, ranks, thirds }
+  return { group, names, feasible: true, complete: remaining.length === 0, ranks, thirds }
+}
+
+function reachAll(matches) {
+  const out = {}
+  for (const g of GROUPS) out[g] = groupReach(g, matches)
+  return out
 }
 
 // Per-team verdict: 'eliminated' | 'alive'. 'alive' means there exists SOME
@@ -204,6 +210,83 @@ export function aliveR32Slots(matches, teams) {
   for (const t of teams) {
     const slots = thirdPlaceR32Slots(matches, t, reachable)
     if (slots.length) out[t] = slots
+  }
+  return out
+}
+
+const fmtGD = (v) => (v > 0 ? `+${v}` : `${v}`)
+
+// What a still-alive (third-place-dependent) team needs to ADVANCE, expressed as
+// goal-difference conditions on the other groups — the "needs N of these" picture.
+//
+// Using the team's BEST reachable third-place profile P (its easiest path), a
+// rival group is:
+//   • forced-above   — every reachable third out-ranks P (already ahead of us),
+//   • forced-below   — no reachable third out-ranks P (already behind us), or
+//   • variable       — could go either way on its remaining result(s).
+// Eight thirds advance, so at most 7 may rank above us: with `forcedAbove` already
+// locked in, we can afford `7 - forcedAbove` of the variable groups to go against
+// us — i.e. we NEED at least (variable − that budget) of them to finish at/below
+// us. Returns null for a team that can't reach a third place (e.g. a clinched
+// group winner). `reach` may be passed in to avoid recomputation.
+export function advancementRequirements(matches, team, reach = null) {
+  reach = reach || reachAll(matches)
+  const gT = GROUPS.find((g) => TEAMS[g].some((t) => t.name === team))
+  if (!gT) return null
+  const rT = reach[gT]
+  if (!rT.feasible) return null
+  const mine = rT.thirds.filter((t) => t.name === team)
+  if (!mine.length) return null // can't finish 3rd → not a third-place case
+  let P = mine[0]
+  for (const t of mine) if (thirdRanksAbove(t, P)) P = t
+
+  let forcedAbove = 0
+  let forcedBelow = 0
+  const variable = []
+  for (const g of GROUPS) {
+    if (g === gT) continue
+    const r = reach[g]
+    if (!r.feasible || !r.thirds.length) continue
+    const allAbove = r.thirds.every((t) => thirdRanksAbove(t, P))
+    const anyAbove = r.thirds.some((t) => thirdRanksAbove(t, P))
+    if (allAbove) {
+      forcedAbove++
+    } else if (!anyAbove) {
+      forcedBelow++
+    } else {
+      variable.push({
+        group: g,
+        contenders: [...new Set(r.thirds.map((t) => t.name))],
+        // The condition for this group's third to finish at/below us.
+        condition: `Group ${g}'s third must finish below ${team} — on fewer than ${P.Pts} point${
+          P.Pts === 1 ? '' : 's'
+        }, or on ${P.Pts} with a goal difference worse than ${fmtGD(P.GD)}`,
+      })
+    }
+  }
+
+  const budget = ADVANCING_THIRDS - 1 - forcedAbove // = 7 - forcedAbove
+  const needAtLeast = Math.max(0, variable.length - budget)
+
+  return {
+    team,
+    profile: { Pts: P.Pts, GD: P.GD, GF: P.GF },
+    ownGroup: gT,
+    ownGroupComplete: rT.complete,
+    forcedAbove,
+    forcedBelow,
+    needAtLeast,
+    variable,
+  }
+}
+
+// Batch form: { team -> requirements } for the given teams (reach computed once).
+export function allAdvancementRequirements(matches, teams) {
+  const reach = reachAll(matches)
+  const out = {}
+  for (const t of teams) {
+    const req = advancementRequirements(matches, t, reach)
+    if (req) out[t] = req
   }
   return out
 }

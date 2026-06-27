@@ -3,7 +3,7 @@
 // progress updates and a final result.
 
 import { enumerateOutlook } from '../utils/outlookEnum.js'
-import { survivingTeams, aliveR32Slots } from '../utils/eliminationCheck.js'
+import { survivingTeams, aliveR32Slots, allAdvancementRequirements } from '../utils/eliminationCheck.js'
 
 self.onmessage = (e) => {
   const matches = e.data
@@ -19,7 +19,10 @@ self.onmessage = (e) => {
     // land in — so the "still alive" panel can show WHERE they'd play, and those
     // slots can be tagged "<1%" in the bracket above.
     const aliveSlots = aliveR32Slots(matches, survivors)
-    self.postMessage({ type: 'done', result, survivors, aliveSlots })
+    // For each survivor, the goal-difference conditions it needs to advance — the
+    // "needs N of these" checklist shown under the still-alive panel.
+    const requirements = allAdvancementRequirements(matches, survivors)
+    self.postMessage({ type: 'done', result, survivors, aliveSlots, requirements })
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err?.message || err) })
   }
