@@ -203,34 +203,59 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
   )
 }
 
-// A small marker showing whether a third-placed line is settled (the group has
-// played all its games) or still provisional (the group is mid-stage).
-function ThirdStatus({ complete }) {
-  return complete ? (
-    <span className="third-status third-final" title="All group games played — this third-place line is final">
-      final
-    </span>
-  ) : (
-    <span className="third-status third-toplay" title="Group still playing — this position is provisional and can still change">
+// A small marker showing whether a third-placed line is settled ('final' — every
+// group game played), still in progress ('live' — a group match is on right now,
+// so the score and thus the position are provisional), or not yet decided
+// ('toplay' — games still to come).
+function ThirdStatus({ state }) {
+  if (state === 'live')
+    return (
+      <span className="third-status third-live" title="A group match is in play now — this position can still change">
+        in play
+      </span>
+    )
+  if (state === 'final')
+    return (
+      <span className="third-status third-final" title="All group games played — this third-place line is final">
+        final
+      </span>
+    )
+  return (
+    <span className="third-status third-toplay" title="Group games still to come — this position is provisional and can still change">
       to play
     </span>
   )
 }
 
-function BestThirds({ qual, clinch }) {
+// The blinking red dot used on rows whose score is live (mirrors the group
+// tables), going gold for a delayed/suspended match.
+function LiveDot({ name, liveTeams, pausedTeams }) {
+  if (!liveTeams.has(name)) return null
+  const paused = pausedTeams.get(name)
+  return (
+    <span
+      className={`row-live-dot${paused ? ' delayed' : ''}`}
+      title={paused ? `${paused} — score is provisional` : 'Playing now — score is provisional'}
+    >
+      ●
+    </span>
+  )
+}
+
+function BestThirds({ qual, clinch, groupState, liveTeams, pausedTeams }) {
   const anyPlayed = qual.thirds.some((t) => t.P > 0)
   if (!anyPlayed) return null
   const ties = softThirdTiebreaks(qual.thirds)
 
   // Teams not currently 3rd but still able to climb into a third-place spot: the
-  // current 4th-placed team of any group that's still playing, as long as it's
-  // not yet mathematically eliminated. The static 12-row table shows only the
+  // current 4th-placed team of any group not yet finished, as long as it's not
+  // yet mathematically eliminated. The static 12-row table shows only the
   // CURRENT thirds, so a side sitting 4th with a live shot (Uzbekistan-type)
   // would otherwise be invisible here.
   const shown = new Set(qual.thirds.map((t) => t.name))
   const contenders = []
   for (const g of GROUPS) {
-    if (qual.completion[g]) continue // group done → its third is settled
+    if (groupState[g] === 'final') continue // group done → its third is settled
     const rows = qual.groups[g] || []
     if (!rows.some((r) => r.P > 0)) continue // group hasn't kicked off → not meaningful yet
     const fourth = rows[3]
@@ -240,6 +265,7 @@ function BestThirds({ qual, clinch }) {
   }
 
   const gd = (v) => (v > 0 ? `+${v}` : v)
+  const allFinal = GROUPS.every((g) => groupState[g] === 'final')
 
   return (
     <div className="thirds-card">
@@ -247,9 +273,13 @@ function BestThirds({ qual, clinch }) {
       <p className="thirds-note">
         The 8 best of the 12 third-placed teams advance (ranked by points, then goal difference,
         then goals scored, then fair play, then FIFA ranking).{' '}
-        {qual.allComplete ? '' : 'Provisional — group stage still in progress. '}
-        {!qual.allComplete && (
-          <>“final” = all group games played; “to play” = group still in progress.</>
+        {allFinal ? (
+          ''
+        ) : (
+          <>
+            Provisional — group stage still in progress. “final” = all group games played; “in play”
+            = a match is live now; “to play” = games still to come.
+          </>
         )}
       </p>
       <table className="standings-table">
@@ -275,7 +305,8 @@ function BestThirds({ qual, clinch }) {
                 <span className="rank">{i + 1}</span>
                 <span className="team-flag">{r.flag}</span>
                 <span className="row-team">{r.name}</span>
-                <ThirdStatus complete={qual.completion[r.group]} />
+                <ThirdStatus state={groupState[r.group]} />
+                <LiveDot name={r.name} liveTeams={liveTeams} pausedTeams={pausedTeams} />
                 <TieMark tie={ties.get(r.name)} />
               </td>
               <td>{r.group}</td>
@@ -297,7 +328,8 @@ function BestThirds({ qual, clinch }) {
                     <span className="rank rank-dash" aria-hidden="true">–</span>
                     <span className="team-flag">{r.flag}</span>
                     <span className="row-team">{r.name}</span>
-                    <ThirdStatus complete={false} />
+                    <ThirdStatus state={groupState[r.group]} />
+                    <LiveDot name={r.name} liveTeams={liveTeams} pausedTeams={pausedTeams} />
                   </td>
                   <td>{r.group}</td>
                   <td>{r.P}</td>
@@ -407,6 +439,19 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
     }
   }
 
+  // Per-group play state for the best-thirds markers: 'live' (a match is on now,
+  // so positions are provisional — NOT final, even though a live score makes the
+  // group look "complete"), 'final' (all six games truly final), else 'toplay'.
+  const GROUP_MATCH_COUNT = 6 // 4 teams => 6 matches per group
+  const groupState = {}
+  for (const g of GROUPS) {
+    const gm = matches.filter((m) => m.stage === 'Group' && m.group === g)
+    if (gm.some((m) => m.live)) groupState[g] = 'live'
+    else if (gm.filter((m) => m.score && !m.live && !m.voided).length >= GROUP_MATCH_COUNT)
+      groupState[g] = 'final'
+    else groupState[g] = 'toplay'
+  }
+
   return (
     <>
       <p className="standings-tip">
@@ -458,7 +503,13 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
           />
         ))}
       </div>
-      <BestThirds qual={qual} clinch={clinch} />
+      <BestThirds
+        qual={qual}
+        clinch={clinch}
+        groupState={groupState}
+        liveTeams={liveTeams}
+        pausedTeams={pausedTeams}
+      />
       {groupGames && (
         <GroupGamesModal
           group={groupGames.group}

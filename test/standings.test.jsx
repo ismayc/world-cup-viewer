@@ -214,6 +214,29 @@ describe('Standings', () => {
     expect(container.querySelectorAll('.thirds-card .third-toplay').length).toBeGreaterThan(0)
   })
 
+  it('marks a third whose group has a live match as "in play" with a blinking dot, not "final"', () => {
+    // Group A's six games all carry a score, but one (m53, involving Czechia) is
+    // still LIVE — so the line is provisional, not final.
+    const fixture = MATCHES.map((m) => {
+      if (m.stage !== 'Group' || m.group !== 'A') return m
+      const s = { 1: [2, 0], 2: [2, 0], 25: [2, 0], 28: [1, 0], 53: [0, 2], 54: [0, 1] }[m.num]
+      const base = s ? { ...m, score: s } : m
+      return m.num === 53 ? { ...base, live: { clock: "60'", detail: '' } } : base
+    })
+    const { container } = render(
+      <FollowProvider>
+        <Standings matches={fixture} hideScores={false} />
+      </FollowProvider>,
+    )
+    const czechia = [...container.querySelectorAll('.thirds-card tbody tr')].find(
+      (tr) => tr.querySelector('.row-team')?.textContent === 'Czechia',
+    )
+    // In play, not final — and the live red dot is present.
+    expect(czechia?.querySelector('.third-live')).toBeTruthy()
+    expect(czechia?.querySelector('.third-final')).toBeFalsy()
+    expect(czechia?.querySelector('.row-live-dot')).toBeTruthy()
+  })
+
   it('lists a currently-4th, not-yet-eliminated team as an in-contention third', () => {
     // Group A complete; Group B has only matchday 1 played, so it has a current
     // 4th place that is nowhere near eliminated → shown as a contender.

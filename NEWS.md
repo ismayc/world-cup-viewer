@@ -5,6 +5,14 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-27
+- **Best third-placed table: live-aware status + blinking dot.** The completion
+  marker is now three-way — `final` (all group games truly played), `in play` (a
+  group match is live right now, so the position is provisional), or `to play`
+  (games still to come) — fixing the case where a live final-matchday game made a
+  line read "final." In-play rows also get the same blinking red live dot as the
+  group tables (gold if the match is delayed/suspended). Status no longer keys off
+  `groupComplete` (which counts a live score as complete); it inspects each group's
+  matches directly. New standings test covers the live case.
 - **Best third-placed teams table: completion markers + in-contention teams.**
   Each row now carries a "final" (all group games played → line locked) or "to
   play" (group still in progress → provisional) marker, so it's clear at a glance

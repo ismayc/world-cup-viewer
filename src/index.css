@@ -1850,6 +1850,7 @@ select {
 }
 .third-final { background: rgba(0, 194, 168, 0.14); color: var(--accent); }
 .third-toplay { background: rgba(245, 166, 35, 0.16); color: var(--delay); }
+.third-live { background: rgba(255, 71, 87, 0.16); color: var(--live); }
 .thirds-divider td {
   font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--text-faint); padding: 12px 8px 4px; border-bottom: 1px solid var(--border);
