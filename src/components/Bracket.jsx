@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { STAGE_LABELS } from '../data/matches.js'
 import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
@@ -35,19 +35,45 @@ function FeederTeam({ name }) {
   )
 }
 
+// True once the two candidate teams in a feeder slot have wrapped onto separate
+// lines (their second team sits below the first). In the wide bracket a "/" left
+// dangling at a line break reads ambiguously, so we swap in a clearer "vs" then
+// (see CSS); on one line the slash stays.
+function useFeederWrapped(active) {
+  const ref = useRef(null)
+  const [wrapped, setWrapped] = useState(false)
+  useLayoutEffect(() => {
+    if (!active || !ref.current || typeof ResizeObserver === 'undefined') return
+    const el = ref.current
+    const check = () => {
+      const teams = el.querySelectorAll('.bx-feeder-team')
+      setWrapped(teams.length === 2 && teams[1].offsetTop - teams[0].offsetTop > 2)
+    }
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [active])
+  return [ref, wrapped]
+}
+
 // Team names are pre-resolved upstream (clinched "Winner Group X" slots are
 // already filled in the match data), so this renders whatever it's given — except
 // a feed slot whose source tie is set, which expands to the two potential teams.
 function Side({ name, ko, feeder }) {
   const { isFollowed } = useFollow()
+  const [ref, wrapped] = useFeederWrapped(Boolean(feeder))
   if (feeder) {
     return (
       <div
-        className="bx-side bx-side-feeder"
+        ref={ref}
+        className={`bx-side bx-side-feeder${wrapped ? ' wrapped' : ''}`}
         title={`${feeder.kind} of Match ${feeder.num}: ${feeder.a} or ${feeder.b}`}
       >
         <FeederTeam name={feeder.a} />
-        <span className="bx-slash">/</span>
+        {/* Only one shows at a time (CSS): "/" normally, "vs" when wrapped + wide. */}
+        <span className="bx-slash" aria-hidden="true">/</span>
+        <span className="bx-vs" aria-hidden="true">vs</span>
         <FeederTeam name={feeder.b} />
       </div>
     )

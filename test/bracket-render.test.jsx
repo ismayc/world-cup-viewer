@@ -81,6 +81,10 @@ describe('Bracket', () => {
     for (const t of ['Mexico', 'Canada', 'Spain', 'Brazil']) {
       expect(within(m90).getByText(t)).toBeInTheDocument()
     }
+    // Both separators are present (CSS shows "/" normally, "vs" when the slot
+    // wraps in the wide layout); neither is announced to screen readers.
+    expect(m90.querySelector('.bx-side-feeder .bx-slash')).toBeTruthy()
+    expect(m90.querySelector('.bx-side-feeder .bx-vs')).toBeTruthy()
   })
 
   it('leaves a feed slot as its plain label while the source tie is unresolved', () => {
