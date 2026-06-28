@@ -67,6 +67,58 @@ export const FINAL_GROUP_RESULTS = {
     scores: { 10: [2, 2], 12: [5, 1], 33: [5, 1], 36: [0, 4], 57: [1, 1], 58: [1, 3] },
     order: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
   },
+  // Belgium and Egypt both finish on 5 pts (W1 D2 L0 each); 1–1 head-to-head, so
+  // decided by overall GD: Belgium +4 vs Egypt +2 → Belgium 1st. Iran 3rd (3 pts
+  // from 3 draws). New Zealand last (1 pt, GD −6).
+  G: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'Web search (Yahoo Sports, ESPN, CBS Sports)'],
+    scores: { 14: [1, 1], 16: [2, 2], 38: [0, 0], 40: [1, 3], 65: [1, 1], 66: [1, 5] },
+    order: ['Belgium', 'Egypt', 'Iran', 'New Zealand'],
+  },
+  // Spain win with 7 pts (W2 D1). Cape Verde surprise runners-up on 3 pts (D3).
+  // Uruguay and Saudi Arabia both on 2 pts; 1–1 H2H, so decided by overall GD:
+  // Uruguay −1 > Saudi Arabia −4 → Uruguay 3rd.
+  H: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'Web search (Al Jazeera, Sky Sports, Bolavip)'],
+    scores: { 13: [0, 0], 15: [1, 1], 37: [4, 0], 39: [2, 2], 63: [0, 0], 64: [0, 1] },
+    order: ['Spain', 'Cape Verde', 'Uruguay', 'Saudi Arabia'],
+  },
+  // France dominate with 9 pts (W3). Norway 2nd (6 pts). Senegal 3rd (3 pts,
+  // carried by a 5–0 win over Iraq). Iraq winless on 0 pts.
+  I: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'Web search (ESPN, FIFA.com, Yahoo Sports)'],
+    scores: { 17: [3, 1], 18: [1, 4], 42: [3, 0], 43: [3, 2], 61: [1, 4], 62: [5, 0] },
+    order: ['France', 'Norway', 'Senegal', 'Iraq'],
+  },
+  // Argentina win with 9 pts (W3). Austria and Algeria both on 4 pts; 3–3 H2H
+  // draw, so decided by overall GD: Austria 0 vs Algeria −2 → Austria 2nd. Jordan
+  // winless on 0 pts.
+  J: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'Web search (ESPN, Yahoo Sports, FOX Sports)'],
+    scores: { 19: [3, 0], 20: [3, 1], 41: [2, 0], 44: [1, 2], 71: [3, 3], 72: [1, 3] },
+    order: ['Argentina', 'Austria', 'Algeria', 'Jordan'],
+  },
+  // Colombia top the group with 7 pts (W2 D1). Portugal 2nd (5 pts). DR Congo 3rd
+  // (4 pts, qualifying as one of the 8 best third-placed teams). Uzbekistan last
+  // on 0 pts.
+  K: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'Web search (ESPN, FIFA.com, CBS Sports)'],
+    scores: { 21: [1, 1], 24: [1, 3], 45: [5, 0], 48: [1, 0], 69: [0, 0], 70: [3, 1] },
+    order: ['Colombia', 'Portugal', 'DR Congo', 'Uzbekistan'],
+  },
+  // England win with 7 pts (W2 D1). Croatia 2nd (6 pts, W2 L1). Ghana 3rd (4 pts,
+  // qualifying as one of the 8 best third-placed teams). Panama last on 0 pts.
+  L: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'Web search (NBC Sports, Yahoo Sports, Bolavip)'],
+    scores: { 22: [4, 2], 23: [1, 0], 46: [0, 0], 47: [0, 1], 67: [0, 2], 68: [2, 1] },
+    order: ['England', 'Croatia', 'Ghana', 'Panama'],
+  },
 }
 
 // The official Round-of-32 draw, as published by FIFA once the group stage ends:
@@ -75,4 +127,27 @@ export const FINAL_GROUP_RESULTS = {
 // lands in (FIFA Annexe C). FILL THIS IN once all twelve groups are locked above;
 // the test then asserts our resolved bracket equals it. Left empty until then.
 //   e.g. 73: ['Canada', 'Mexico'],
-export const OFFICIAL_R32 = {}
+export const OFFICIAL_R32 = {
+  // June 28
+  73: ['South Africa', 'Canada'],
+  // June 29
+  74: ['Germany', 'Paraguay'],
+  76: ['Brazil', 'Japan'],
+  75: ['Netherlands', 'Morocco'],
+  // June 30
+  78: ['Ivory Coast', 'Norway'],
+  77: ['France', 'Sweden'],
+  79: ['Mexico', 'Ecuador'],
+  // July 1
+  80: ['England', 'DR Congo'],
+  82: ['Belgium', 'Senegal'],
+  81: ['USA', 'Bosnia & Herzegovina'],
+  // July 2
+  84: ['Spain', 'Austria'],
+  83: ['Portugal', 'Croatia'],
+  85: ['Switzerland', 'Algeria'],
+  // July 3
+  88: ['Australia', 'Egypt'],
+  86: ['Argentina', 'Cape Verde'],
+  87: ['Colombia', 'Ghana'],
+}

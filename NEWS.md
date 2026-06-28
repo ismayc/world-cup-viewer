@@ -4,6 +4,21 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-28
+- **Locked final group standings for Groups G–L (all 12 groups now complete).**
+  Scores verified from two independent sources (OpenFootball + web search via
+  ESPN/FIFA/Yahoo Sports/Al Jazeera/CBS Sports) before locking.
+  - **Group G:** Belgium, Egypt, Iran, New Zealand (Belgium edges Egypt on overall GD +4 vs +2 after a 1–1 H2H draw)
+  - **Group H:** Spain, Cape Verde, Uruguay, Saudi Arabia (Cape Verde debut runners-up; Uruguay 3rd on GD over Saudi Arabia)
+  - **Group I:** France, Norway, Senegal, Iraq (France perfect 9 pts; Senegal 3rd qualifies as best third)
+  - **Group J:** Argentina, Austria, Algeria, Jordan (Austria edges Algeria 2nd on GD 0 vs −2 after 3–3 H2H draw)
+  - **Group K:** Colombia, Portugal, DR Congo, Uzbekistan (DR Congo 3rd qualifies as best third)
+  - **Group L:** England, Croatia, Ghana, Panama (Ghana 3rd qualifies as best third)
+- **Filled OFFICIAL_R32** with the verified Round-of-32 draw (all 16 matches
+  confirmed from multiple sources including ESPN, Fox Sports, Yahoo Sports, Al
+  Jazeera, CBS Sports). Advancing thirds: Paraguay (D), Sweden (F), Ecuador (E),
+  DR Congo (K), Bosnia & Herzegovina (B), Ghana (L), Algeria (J), Senegal (I).
+
 ## 2026-06-27
 - **Week view: per-day "all matches" pop-up.** Each date header with matches now
   has a small ⤢ button that opens a pop-up listing every match scheduled that day
