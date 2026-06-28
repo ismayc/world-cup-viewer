@@ -67,12 +67,70 @@ export const FINAL_GROUP_RESULTS = {
     scores: { 10: [2, 2], 12: [5, 1], 33: [5, 1], 36: [0, 4], 57: [1, 1], 58: [1, 3] },
     order: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
   },
+  // Belgium win the group; Egypt 2nd, Iran 3rd, New Zealand last.
+  G: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'resolveBracket cross-check vs official R32 draw (check:bracket, 0 divergence)'],
+    scores: { 14: [1, 1], 16: [2, 2], 38: [0, 0], 40: [1, 3], 65: [1, 1], 66: [1, 5] },
+    order: ['Belgium', 'Egypt', 'Iran', 'New Zealand'],
+  },
+  // Spain top the group; Cape Verde 2nd, Uruguay 3rd, Saudi Arabia last.
+  H: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'resolveBracket cross-check vs official R32 draw (check:bracket, 0 divergence)'],
+    scores: { 13: [0, 0], 15: [1, 1], 37: [4, 0], 39: [2, 2], 63: [0, 0], 64: [0, 1] },
+    order: ['Spain', 'Cape Verde', 'Uruguay', 'Saudi Arabia'],
+  },
+  // France win the group; Norway 2nd, Senegal 3rd, Iraq last.
+  I: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'resolveBracket cross-check vs official R32 draw (check:bracket, 0 divergence)'],
+    scores: { 17: [3, 1], 18: [1, 4], 42: [3, 0], 43: [3, 2], 61: [1, 4], 62: [5, 0] },
+    order: ['France', 'Norway', 'Senegal', 'Iraq'],
+  },
+  // Argentina win the group; Austria 2nd, Algeria 3rd, Jordan last.
+  J: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'resolveBracket cross-check vs official R32 draw (check:bracket, 0 divergence)'],
+    scores: { 19: [3, 0], 20: [3, 1], 41: [2, 0], 44: [1, 2], 71: [3, 3], 72: [1, 3] },
+    order: ['Argentina', 'Austria', 'Algeria', 'Jordan'],
+  },
+  // Colombia win the group; Portugal 2nd, DR Congo 3rd, Uzbekistan last.
+  K: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'resolveBracket cross-check vs official R32 draw (check:bracket, 0 divergence)'],
+    scores: { 21: [1, 1], 24: [1, 3], 45: [5, 0], 48: [1, 0], 69: [0, 0], 70: [3, 1] },
+    order: ['Colombia', 'Portugal', 'DR Congo', 'Uzbekistan'],
+  },
+  // England win the group; Croatia 2nd, Ghana 3rd, Panama last.
+  L: {
+    verifiedOn: '2026-06-28',
+    sources: ['OpenFootball', 'resolveBracket cross-check vs official R32 draw (check:bracket, 0 divergence)'],
+    scores: { 22: [4, 2], 23: [1, 0], 46: [0, 0], 47: [0, 1], 67: [0, 2], 68: [2, 1] },
+    order: ['England', 'Croatia', 'Ghana', 'Panama'],
+  },
 }
 
 // The official Round-of-32 draw, as published by FIFA once the group stage ends:
 // match number -> [home, away] (teams.js spelling). This is the cross-group check
 // the per-group `order` can't make — which eight thirds advance and which tie each
-// lands in (FIFA Annexe C). FILL THIS IN once all twelve groups are locked above;
-// the test then asserts our resolved bracket equals it. Left empty until then.
-//   e.g. 73: ['Canada', 'Mexico'],
-export const OFFICIAL_R32 = {}
+// lands in (FIFA Annexe C). The test asserts our resolved bracket equals it.
+// Source: OpenFootball worldcup.json, cross-checked by check:bracket (0 divergence).
+export const OFFICIAL_R32 = {
+  73: ['South Africa', 'Canada'],
+  74: ['Germany', 'Paraguay'],
+  75: ['Netherlands', 'Morocco'],
+  76: ['Brazil', 'Japan'],
+  77: ['France', 'Sweden'],
+  78: ['Ivory Coast', 'Norway'],
+  79: ['Mexico', 'Ecuador'],
+  80: ['England', 'DR Congo'],
+  81: ['USA', 'Bosnia & Herzegovina'],
+  82: ['Belgium', 'Senegal'],
+  83: ['Portugal', 'Croatia'],
+  84: ['Spain', 'Austria'],
+  85: ['Switzerland', 'Algeria'],
+  86: ['Argentina', 'Cape Verde'],
+  87: ['Colombia', 'Ghana'],
+  88: ['Australia', 'Egypt'],
+}

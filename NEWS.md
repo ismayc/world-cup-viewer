@@ -4,6 +4,17 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-28
+- **Group stage complete — froze the final results + official R32 draw.** Added
+  Groups G–L to `test/fixtures/final-group-results.js` (all 12 now locked) and
+  filled `OFFICIAL_R32` with FIFA's published Round-of-32 draw, sourced from
+  OpenFootball and cross-checked by `check:bracket` (0 divergence). The
+  `final-standings` test's R32-draw assertion is now active: it replays every
+  frozen group result through the ranking engine and confirms our `resolveBracket`
+  reproduces the official draw exactly, with no placeholder slots left — a static
+  regression anchor independent of the live feed. Verified: Scenarios + R32 Outlook
+  tabs auto-archive >24h after the last group kickoff. 726 tests green.
+
 ## 2026-06-27
 - **Week view: per-day "all matches" pop-up.** Each date header with matches now
   has a small ⤢ button that opens a pop-up listing every match scheduled that day
