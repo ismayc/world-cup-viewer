@@ -89,6 +89,35 @@ describe('Bracket', () => {
     expect(vs[0].textContent).toBe('vs')
   })
 
+  // The feeder expansion is round-agnostic: a "Winner/Loser Match N" slot shows
+  // its pair the moment match N has two real teams. So as each round is played and
+  // the next round's teams get confirmed, that next round renders "pair vs pair"
+  // exactly like the Round of 16 does today — with no per-round special-casing.
+  describe('cascades to later rounds as teams are confirmed', () => {
+    // QF 97 ← R16 89/90 · SF 101 ← QF 97/98 · Final 104 ← SF 101/102 · 3rd 103 ← SF losers.
+    const cases = [
+      { round: 'Quarterfinal', box: 97, feeders: [89, 90] },
+      { round: 'Semifinal', box: 101, feeders: [97, 98] },
+      { round: 'Final', box: 104, feeders: [101, 102] },
+      { round: 'third-place (Loser Match feeds)', box: 103, feeders: [101, 102] },
+    ]
+    const teams = ['Mexico', 'Canada', 'Spain', 'Brazil']
+    for (const { round, box, feeders } of cases) {
+      it(`${round} box shows pair vs pair once its feeders have teams`, () => {
+        const matches = MATCHES.map((m) => {
+          if (m.num === feeders[0]) return { ...m, t1: teams[0], t2: teams[1] }
+          if (m.num === feeders[1]) return { ...m, t1: teams[2], t2: teams[3] }
+          return m
+        })
+        renderBracket(matches)
+        const el = document.getElementById(`bx-m${box}`)
+        expect(el.querySelectorAll('.bx-side-feeder').length).toBe(2)
+        expect(el.querySelector('.bx-vs-divider')).toBeTruthy()
+        for (const t of teams) expect(within(el).getByText(t)).toBeInTheDocument()
+      })
+    }
+  })
+
   it('shows no "vs" divider when only one R16 side is a resolved pair', () => {
     // Only match 73 resolved → R16 match 90 has one feeder side and one plain
     // "Winner Match 75" placeholder, so there is no all-four-teams "vs" divider.
