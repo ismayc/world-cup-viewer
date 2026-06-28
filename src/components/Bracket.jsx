@@ -9,10 +9,49 @@ import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
 import ScoreCheck from './ScoreCheck.jsx'
 
-// Team names are pre-resolved upstream (clinched "Winner Group X" slots are
-// already filled in the match data), so this just renders whatever it's given.
-function Side({ name, ko }) {
+// A still-unresolved feed slot ("Winner Match 73" / "Loser Match 73"). When the
+// match it feeds from already has BOTH its teams (e.g. an R16 slot fed by a
+// resolved R32 tie), show those two teams with a slash so the potential matchup
+// reads at a glance ("🇳🇴 Norway / 🇮🇹 Italy") instead of a cryptic "Winner Match 73".
+const FEED_LABEL = /^(Winner|Loser) Match (\d+)$/
+function feederTeams(label, byNum) {
+  const hit = FEED_LABEL.exec(label)
+  if (!hit) return null
+  const fm = byNum[Number(hit[2])]
+  // Only expand once both feeding teams are real (have a flag) — otherwise the
+  // feeder is itself a placeholder, so the plain label is clearer.
+  if (!fm || !FLAG_BY_TEAM[fm.t1] || !FLAG_BY_TEAM[fm.t2]) return null
+  return { a: fm.t1, b: fm.t2, kind: hit[1], num: fm.num }
+}
+
+// One of the two candidate teams inside a potential-matchup slot.
+function FeederTeam({ name }) {
   const { isFollowed } = useFollow()
+  return (
+    <span className={`bx-feeder-team${isFollowed(name) ? ' followed' : ''}`}>
+      <span className="bx-flag">{FLAG_BY_TEAM[name] || '·'}</span>
+      <span className="bx-team">{name}</span>
+    </span>
+  )
+}
+
+// Team names are pre-resolved upstream (clinched "Winner Group X" slots are
+// already filled in the match data), so this renders whatever it's given — except
+// a feed slot whose source tie is set, which expands to the two potential teams.
+function Side({ name, ko, feeder }) {
+  const { isFollowed } = useFollow()
+  if (feeder) {
+    return (
+      <div
+        className="bx-side bx-side-feeder"
+        title={`${feeder.kind} of Match ${feeder.num}: ${feeder.a} or ${feeder.b}`}
+      >
+        <FeederTeam name={feeder.a} />
+        <span className="bx-slash">/</span>
+        <FeederTeam name={feeder.b} />
+      </div>
+    )
+  }
   const flag = FLAG_BY_TEAM[name]
   const on = Boolean(flag) && isFollowed(name)
   return (
@@ -56,8 +95,8 @@ function BracketMatch({ num, byNum, tz, hideScores }) {
           </span>
         )}
       </div>
-      <Side name={m.t1} ko={m.ko} />
-      <Side name={m.t2} ko={m.ko} />
+      <Side name={m.t1} ko={m.ko} feeder={feederTeams(m.t1, byNum)} />
+      <Side name={m.t2} ko={m.ko} feeder={feederTeams(m.t2, byNum)} />
       {showScore && (
         <div className="bx-score">
           {voided && <span className="status-badge">{flag.label}</span>}

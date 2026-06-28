@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import Bracket from '../src/components/Bracket.jsx'
 import { FollowProvider } from '../src/context/follow.jsx'
 import { DetailContext } from '../src/context/detail.js'
@@ -64,6 +64,31 @@ describe('Bracket', () => {
     fireEvent.keyDown(card, { key: ' ' })
     fireEvent.keyDown(card, { key: 'Escape' }) // ignored branch
     expect(openDetail).toHaveBeenCalledTimes(3)
+  })
+
+  it('expands an R16 slot into the two feeding R32 teams as a potential matchup', () => {
+    // R16 match 90 is fed by R32 matches 73 and 75. Once those ties have real
+    // teams, the R16 box should read "TeamA / TeamB" instead of "Winner Match 73".
+    const matches = MATCHES.map((m) => {
+      if (m.num === 73) return { ...m, t1: 'Mexico', t2: 'Canada' }
+      if (m.num === 75) return { ...m, t1: 'Spain', t2: 'Brazil' }
+      return m
+    })
+    renderBracket(matches)
+    const m90 = document.getElementById('bx-m90')
+    expect(m90.textContent).not.toMatch(/Winner Match/)
+    expect(m90.querySelectorAll('.bx-side-feeder').length).toBe(2)
+    for (const t of ['Mexico', 'Canada', 'Spain', 'Brazil']) {
+      expect(within(m90).getByText(t)).toBeInTheDocument()
+    }
+  })
+
+  it('leaves a feed slot as its plain label while the source tie is unresolved', () => {
+    // Raw MATCHES: R32 still holds group placeholders, so R16 can't expand yet.
+    renderBracket(MATCHES)
+    const m90 = document.getElementById('bx-m90')
+    expect(within(m90).getByText('Winner Match 73')).toBeInTheDocument()
+    expect(m90.querySelector('.bx-side-feeder')).toBeNull()
   })
 
   it('scrolls a focused match into view and calls onFocusHandled', () => {

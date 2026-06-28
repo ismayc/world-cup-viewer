@@ -1058,6 +1058,27 @@ select {
 .bx-flag { font-size: 0.95rem; }
 .bx-team { font-size: 0.82rem; font-weight: 600; }
 .bx-tbd { font-size: 0.72rem; color: var(--text-dim); }
+
+/* Potential-matchup slot: the two teams that feed an unresolved knockout slot,
+   shown "TeamA / TeamB" so the possible pairing reads at a glance. Slightly
+   dimmed + smaller than a settled team, since neither has advanced yet. */
+.bx-side-feeder {
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+.bx-feeder-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bx-side-feeder .bx-team {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.bx-side-feeder .bx-flag { font-size: 0.85rem; }
+.bx-slash { color: var(--text-faint); font-size: 0.72rem; }
+.bx-feeder-team.followed .bx-team { color: var(--gold); }
 .bx-score {
   text-align: center;
   font-weight: 800;
