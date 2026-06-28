@@ -1077,17 +1077,22 @@ select {
   color: var(--text-dim);
 }
 .bx-side-feeder .bx-flag { font-size: 0.85rem; }
-.bx-slash,
-.bx-vs { color: var(--text-faint); font-size: 0.72rem; }
-.bx-vs { display: none; font-style: italic; }
-/* Wide bracket only: when the two candidates wrap onto separate lines, a lone
-   "/" at the break is unclear — swap it for "vs". The tall (mobile) rows keep the
-   slash (the 720px breakpoint mirrors the one that picks the mobile layout). */
-@media (min-width: 721px) {
-  .bx-side-feeder.wrapped .bx-slash { display: none; }
-  .bx-side-feeder.wrapped .bx-vs { display: inline; }
-}
+.bx-slash { color: var(--text-faint); font-size: 0.72rem; }
 .bx-feeder-team.followed .bx-team { color: var(--gold); }
+/* "vs" between the two candidate pairs of an all-four-teams R16 box, so the
+   (A/B) vs (C/D) reading is clear. Wide bracket only — the tall mobile rows show
+   the two pairs full-width and read fine without it (the 720px breakpoint mirrors
+   the one that picks the mobile layout). */
+.bx-vs-divider {
+  text-align: center;
+  font-style: italic;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  margin: 1px 0;
+}
+@media (max-width: 720px) {
+  .bx-vs-divider { display: none; }
+}
 .bx-score {
   text-align: center;
   font-weight: 800;

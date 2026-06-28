@@ -81,10 +81,22 @@ describe('Bracket', () => {
     for (const t of ['Mexico', 'Canada', 'Spain', 'Brazil']) {
       expect(within(m90).getByText(t)).toBeInTheDocument()
     }
-    // Both separators are present (CSS shows "/" normally, "vs" when the slot
-    // wraps in the wide layout); neither is announced to screen readers.
-    expect(m90.querySelector('.bx-side-feeder .bx-slash')).toBeTruthy()
-    expect(m90.querySelector('.bx-side-feeder .bx-vs')).toBeTruthy()
+    // Each pair joins its two teams with "/"; the two pairs are joined by a single
+    // "vs" divider (wide layout, hidden on mobile via CSS).
+    expect(m90.querySelectorAll('.bx-side-feeder .bx-slash').length).toBe(2)
+    const vs = m90.querySelectorAll('.bx-vs-divider')
+    expect(vs.length).toBe(1)
+    expect(vs[0].textContent).toBe('vs')
+  })
+
+  it('shows no "vs" divider when only one R16 side is a resolved pair', () => {
+    // Only match 73 resolved → R16 match 90 has one feeder side and one plain
+    // "Winner Match 75" placeholder, so there is no all-four-teams "vs" divider.
+    const matches = MATCHES.map((m) => (m.num === 73 ? { ...m, t1: 'Mexico', t2: 'Canada' } : m))
+    renderBracket(matches)
+    const m90 = document.getElementById('bx-m90')
+    expect(m90.querySelector('.bx-vs-divider')).toBeNull()
+    expect(m90.querySelectorAll('.bx-side-feeder').length).toBe(1)
   })
 
   it('leaves a feed slot as its plain label while the source tie is unresolved', () => {
