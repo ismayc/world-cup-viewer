@@ -10,6 +10,7 @@ import {
   resolveBracket,
 } from '../src/utils/bracketResolve.js'
 import { GROUP_STAGE_MD3 } from './fixtures/group-stage-md3.js'
+import { FINAL_GROUP_RESULTS } from './fixtures/final-group-results.js'
 
 const GROUPS = Object.keys(TEAMS)
 const THIRD_SLOT = /^3rd [A-L/]+$/
@@ -185,5 +186,37 @@ describe('resolveBracket — full pipeline', () => {
     // The third-place play-off (fed by the semifinal losers) also fully resolved.
     const third = cur.find((m) => m.stage === '3rd')
     expect(ALL_TEAMS.has(third.t1) && ALL_TEAMS.has(third.t2)).toBe(true)
+  })
+
+  it('propagates REAL R32 winners through the bracket (frozen group results)', () => {
+    const ALL_TEAMS = new Set(Object.values(TEAMS).flat().map((t) => t.name))
+    const scores = Object.assign({}, ...Object.values(FINAL_GROUP_RESULTS).map((r) => r.scores))
+    const clinch = computeClinch(MATCHES.map((m) => (scores[m.num] ? { ...m, score: scores[m.num] } : m)))
+    let cur = resolveBracket(
+      MATCHES.map((m) => (scores[m.num] ? { ...m, score: scores[m.num] } : m)),
+      clinch,
+    )
+    // Knockout sim: home side advances; the Mexico–Ecuador R32 (M79) goes to a
+    // shootout to exercise the penalty path on real data.
+    for (let pass = 0; pass < 10; pass++) {
+      let changed = false
+      cur = cur.map((m) => {
+        if (m.stage === 'Group' || Array.isArray(m.score)) return m
+        if (!ALL_TEAMS.has(m.t1) || !ALL_TEAMS.has(m.t2)) return m
+        changed = true
+        return m.num === 79 ? { ...m, score: [1, 1], pens: [4, 2] } : { ...m, score: [1, 0] }
+      })
+      cur = resolveBracket(cur, clinch)
+      if (!changed) break
+    }
+    const byNum = Object.fromEntries(cur.map((m) => [m.num, m]))
+    // R32 winners land in the right R16 slots: M79 (Mexico, on pens) and M80
+    // (England) feed R16 M92.
+    expect([byNum[92].t1, byNum[92].t2]).toEqual(['Mexico', 'England'])
+    // Every knockout slot resolved to a real team, and the Final has a winner.
+    for (const m of cur.filter((x) => x.stage !== 'Group')) {
+      expect(ALL_TEAMS.has(m.t1) && ALL_TEAMS.has(m.t2), `M${m.num}`).toBe(true)
+    }
+    expect(decideMatch(byNum[104])).not.toBeNull()
   })
 })

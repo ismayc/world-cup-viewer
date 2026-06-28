@@ -14,6 +14,13 @@ data/source updates, deployment). Newest day on top.
   reproduces the official draw exactly, with no placeholder slots left — a static
   regression anchor independent of the live feed. Verified: Scenarios + R32 Outlook
   tabs auto-archive >24h after the last group kickoff. 726 tests green.
+- **Knockout-propagation sanity check (real data).** Confirmed R32 results feed the
+  bracket correctly through to a champion on the actual frozen results — winners
+  land in the right R16 slots, the penalty-shootout path resolves draws, and SF
+  losers route to the 3rd-place play-off, with 0 unresolved knockout slots. Added a
+  `bracket-resolve` test that replays the real R32 (incl. a Mexico–Ecuador shootout)
+  up the bracket (the existing end-to-end test used a synthetic group stage). 727
+  tests green.
 
 ## 2026-06-27
 - **Week view: per-day "all matches" pop-up.** Each date header with matches now
