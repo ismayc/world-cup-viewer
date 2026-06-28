@@ -35,8 +35,10 @@ function parseSlot(label) {
   m = /^Runner-up Group ([A-L])$/.exec(label)
   if (m) return { type: 'runner', group: m[1] }
   if (/^3rd /.test(label)) return { type: 'third' }
+  /* v8 ignore start -- defensive: every R32 slot label is a group-winner/runner-up/third */
   return { type: 'other' }
 }
+/* v8 ignore stop */
 
 // Which "8 best third-placed groups" combinations are STILL reachable. For each
 // candidate (the keys of the Annexe C table), set in-combination groups to their
@@ -98,5 +100,7 @@ export function lockedOpponent(matches, team, clinch = computeClinch(matches), r
     return third ? { opponent: third.name, matchNum: match.num } : null
   }
 
+  /* v8 ignore start -- unreachable: the opponent slot is always winner/runner/third */
   return null
 }
+/* v8 ignore stop */

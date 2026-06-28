@@ -1,0 +1,123 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { render, screen, act } from '@testing-library/react'
+import { MATCHES } from '../src/data/matches.js'
+import { R32_SLOT_LABELS } from '../src/utils/outlookEnum.js'
+import OutlookView from '../src/components/OutlookView.jsx'
+
+// All group games scored → 0 remaining (≤ MAX_REMAINING), so the component enters
+// the 'enumerating' phase and constructs a Worker — which we stub so the test can
+// drive its messages (the real worker can't run in jsdom).
+const COMPLETE = MATCHES.map((m) => (m.stage === 'Group' ? { ...m, score: [1, 0] } : m))
+const NUMS = Object.keys(R32_SLOT_LABELS)
+  .map(Number)
+  .sort((a, b) => a - b)
+
+let workerInstance
+class FakeWorker {
+  constructor() {
+    workerInstance = this
+    this.onmessage = null
+    this.postMessage = vi.fn()
+    this.terminate = vi.fn()
+  }
+}
+
+beforeEach(() => {
+  workerInstance = null
+  globalThis.Worker = FakeWorker
+})
+afterEach(() => {
+  delete globalThis.Worker
+})
+
+const send = (msg) => act(() => workerInstance.onmessage({ data: msg }))
+
+function allLocked() {
+  const perMatch = {}
+  for (const n of NUMS) perMatch[n] = [
+    { locked: 'Mexico', candidates: [] },
+    { locked: 'Canada', candidates: [] },
+  ]
+  return { total: 1, remaining: 0, cap: 8, perMatch }
+}
+
+describe('OutlookView (enumeration result rendering)', () => {
+  it('shows the enumerating progress bar, then renders the grid with locked / candidate / TBD sides', () => {
+    render(<OutlookView matches={COMPLETE} />)
+    // Worker was constructed and we're enumerating.
+    expect(workerInstance).toBeTruthy()
+    expect(screen.getByText(/Enumerating goal-difference outcomes/)).toBeInTheDocument()
+
+    // A progress tick updates the percentage.
+    send({ type: 'progress', done: 1, total: 2 })
+    expect(screen.getByText(/Enumerating goal-difference outcomes… 50%/)).toBeInTheDocument()
+
+    // One match has a non-locked side (candidates with >99 / mid / <1 formatting)
+    // and an empty (TBD) opposite side; the rest are locked.
+    const perMatch = {}
+    for (const n of NUMS) perMatch[n] = [
+      { locked: 'Mexico', candidates: [] },
+      { locked: 'Canada', candidates: [] },
+    ]
+    perMatch[NUMS[0]] = [
+      {
+        locked: null,
+        candidates: [
+          { team: 'Spain', pct: 0.999 },
+          { team: 'Brazil', pct: 0.5 },
+          { team: 'Norway', pct: 0.001 },
+        ],
+      },
+      { locked: null, candidates: [] },
+    ]
+    send({
+      type: 'done',
+      result: { total: 100, remaining: 1, cap: 6, perMatch },
+      survivors: ['Ghana', 'Uzbekistan'],
+      requirements: {
+        Ghana: {
+          ownGroupComplete: true,
+          variable: [{ group: 'K', contenders: ['DR Congo', 'Senegal'] }],
+          needAtLeast: 1,
+          profile: { Pts: 4, GD: 0 },
+        },
+        Uzbekistan: {
+          ownGroupComplete: false,
+          ownGroup: 'L',
+          thirdPts: 3,
+          unresolvedGroups: ['K'],
+        },
+      },
+    })
+
+    // Header summary with the enumerated total + cap.
+    expect(screen.getByText(/100/)).toBeInTheDocument()
+    // "margins to ±6" appears in both the header summary and the exact-runs line.
+    expect(screen.getAllByText(/margins to ±6/).length).toBeGreaterThan(0)
+    // Candidate share formatting: >99, mid, <1.
+    expect(screen.getByText('>99%')).toBeInTheDocument()
+    expect(screen.getByText('<1%')).toBeInTheDocument()
+    // Locked sides show the confirmed ✅; a TBD side shows the placeholder.
+    expect(document.querySelector('.bo-confirmed')).toBeTruthy()
+    expect(screen.getByText('To be determined')).toBeInTheDocument()
+
+    // Hidden-alive net: one team with an exact checklist, one with the 3rd-place race.
+    expect(screen.getByText(/Still mathematically alive/)).toBeInTheDocument()
+    expect(screen.getByText(/Needs/)).toBeInTheDocument()
+    expect(screen.getByText(/1 of 1/)).toBeInTheDocument()
+    expect(screen.getByText(/Must finish/)).toBeInTheDocument()
+    expect(screen.getByText(/3rd in Group L/)).toBeInTheDocument()
+  })
+
+  it('announces a fully-set bracket when every slot is locked and nobody is alive beyond the margins', () => {
+    render(<OutlookView matches={COMPLETE} />)
+    send({ type: 'done', result: allLocked(), survivors: [], requirements: {} })
+    expect(screen.getByText(/Every Round-of-32 matchup is now mathematically set/)).toBeInTheDocument()
+  })
+
+  it('surfaces an enumeration error', () => {
+    render(<OutlookView matches={COMPLETE} />)
+    send({ type: 'error', message: 'boom' })
+    expect(screen.getByText(/Enumeration failed: boom/)).toBeInTheDocument()
+  })
+})

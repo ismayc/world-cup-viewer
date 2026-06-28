@@ -470,6 +470,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
               ? proj.second
               : row.rank === 3
                 ? proj.third
+                /* v8 ignore next -- a through (top2/third) team is always rank 1-3 */
                 : null
     // A mathematically locked opponent (invariant across every remaining outcome)
     // is authoritative; otherwise fall back to the provisional "as it stands"

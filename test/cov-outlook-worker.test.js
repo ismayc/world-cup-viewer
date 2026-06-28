@@ -1,0 +1,36 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { MATCHES } from '../src/data/matches.js'
+
+// The worker module assigns `self.onmessage` at import (in jsdom, self === window).
+// We drive it directly and capture what it posts back via a stubbed postMessage.
+describe('outlook.worker', () => {
+  let posts
+  beforeEach(async () => {
+    posts = []
+    await import('../src/workers/outlook.worker.js') // sets self.onmessage (cached after first import)
+    self.postMessage = (m) => posts.push(m)
+  })
+
+  it('enumerates a settled group stage and posts progress + done (survivors, requirements)', () => {
+    // All group games final → enumeration is trivial (1 outcome) but still runs the
+    // full handler: enumerateOutlook fires its final onProgress (→ a progress post)
+    // and the survivors/requirements pass, then a done message.
+    const complete = MATCHES.map((m) => (m.stage === 'Group' ? { ...m, score: [1, 0] } : m))
+    self.onmessage({ data: complete })
+
+    expect(posts.some((p) => p.type === 'progress')).toBe(true)
+    const done = posts.find((p) => p.type === 'done')
+    expect(done).toBeTruthy()
+    expect(done.result && typeof done.result === 'object').toBe(true)
+    expect(Array.isArray(done.survivors)).toBe(true)
+    expect(done.requirements && typeof done.requirements === 'object').toBe(true)
+  })
+
+  it('posts an error message when enumeration throws', () => {
+    // Bad input → countRemaining(undefined) throws inside the try → error branch.
+    self.onmessage({ data: null })
+    const err = posts.find((p) => p.type === 'error')
+    expect(err).toBeTruthy()
+    expect(typeof err.message).toBe('string')
+  })
+})
