@@ -299,6 +299,38 @@ describe('Standings', () => {
     expect(note.textContent).toMatch(/#\d+/)
   })
 
+  it('explains a fair-play (conduct) tie-breaker between thirds, with card values', () => {
+    // Groups A and B each played to a clean 9/6/3/0 hierarchy so their THIRD-placed
+    // teams (Czechia, Bosnia) are fixed by points — and both land on 3 pts, GD −1,
+    // GF 1, i.e. level on points/GD/goals. A yellow card on Bosnia makes its conduct
+    // score worse, so Czechia is placed above it on fair-play points (criterion 7,
+    // ahead of FIFA ranking). The note spells that out with both conduct values.
+    const scores = {
+      // Group A: Mexico 9, South Korea 6, Czechia 3 (GD −1, GF 1), South Africa 0.
+      1: [1, 0], 2: [1, 0], 25: [1, 0], 28: [1, 0], 53: [0, 1], 54: [0, 1],
+      // Group B: Canada 9, Switzerland 6, Bosnia 3 (GD −1, GF 1), Qatar 0.
+      3: [1, 0], 5: [0, 1], 26: [1, 0], 27: [1, 0], 49: [0, 1], 50: [1, 0],
+    }
+    const fixture = MATCHES.map((m) => {
+      if (!scores[m.num]) return m
+      const base = { ...m, score: scores[m.num] }
+      // One yellow for Bosnia (M50 Bosnia v Qatar → Bosnia is t1).
+      return m.num === 50 ? { ...base, cards: { t1: [{ color: 'yellow' }], t2: [] } } : base
+    })
+    const { container } = render(
+      <FollowProvider>
+        <Standings matches={fixture} hideScores={false} />
+      </FollowProvider>,
+    )
+    const note = container.querySelector('.thirds-tie-note')
+    expect(note).toBeTruthy()
+    const conductItem = [...note.querySelectorAll('li')].find((li) => /fair-play points/.test(li.textContent))
+    expect(conductItem, 'a fair-play tie-breaker line should be present').toBeTruthy()
+    // Czechia (conduct 0) placed above Bosnia (conduct −1), with both values shown.
+    expect(conductItem.textContent).toMatch(/Czechia.*finished above.*Bosnia/)
+    expect(conductItem.textContent).toMatch(/Czechia 0 vs Bosnia & Herzegovina -1/)
+  })
+
   it('falls back to showing the projection when localStorage.getItem throws', () => {
     const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked')
