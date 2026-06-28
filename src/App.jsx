@@ -338,15 +338,26 @@ export default function App() {
     })
   }, [filters, displayMatches, followed])
 
+  // Once the group stage is archived, the (now all-completed) group games drop
+  // out of the Schedule by default so it opens on the knockouts — unless the user
+  // explicitly picks the Group stage filter to bring them back. Scoped to the
+  // Schedule list only (the Week view still shows everything in `filtered`).
+  const hideArchivedGroups = archived && !filters.stages.includes('Group')
+  const scheduleMatches = useMemo(
+    () => (hideArchivedGroups ? filtered.filter((m) => m.stage !== 'Group') : filtered),
+    [filtered, hideArchivedGroups],
+  )
+  const hiddenGroupCount = hideArchivedGroups ? filtered.length - scheduleMatches.length : 0
+
   const days = useMemo(() => {
     const map = new Map()
-    for (const m of filtered) {
+    for (const m of scheduleMatches) {
       const key = dayKey(m.ko, tz)
       if (!map.has(key)) map.set(key, [])
       map.get(key).push(m)
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  }, [filtered, tz])
+  }, [scheduleMatches, tz])
 
   // Past days render as collapsed sections by default (and expand per-day as
   // usual); "Hide past days" drops them from the schedule entirely.
@@ -538,6 +549,14 @@ export default function App() {
       {view === 'schedule' && (
         <>
           <NextMatch matches={displayMatches} tz={tz} />
+          {hiddenGroupCount > 0 && (
+            <p className="schedule-note">
+              Group stage complete — {hiddenGroupCount} group game{hiddenGroupCount === 1 ? '' : 's'} hidden.{' '}
+              <button className="linklike" onClick={() => setFilters((f) => ({ ...f, stages: ['Group'] }))}>
+                Show group games
+              </button>
+            </p>
+          )}
           <main className="schedule">
             {days.length === 0 && (
               <div className="empty">

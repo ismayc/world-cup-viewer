@@ -64,18 +64,16 @@ describe('scenarios util', () => {
 
 describe('groupStageArchived', () => {
   const allDone = MATCHES.map((m) => (m.stage === 'Group' ? { ...m, score: m.score || [1, 0] } : m))
-  const lastKo = Math.max(
-    ...allDone.filter((m) => m.stage === 'Group').map((m) => new Date(m.ko).getTime()),
-  )
 
   it('is false while any group game is unplayed', () => {
-    expect(groupStageArchived(MATCHES, lastKo + 1e12)).toBe(false)
+    expect(groupStageArchived(MATCHES)).toBe(false)
   })
-  it('is false on the day the group stage finishes (within 24h of the last game)', () => {
-    expect(groupStageArchived(allDone, lastKo + 60 * 60 * 1000)).toBe(false)
+  it('is false while a group game is still live (not yet settled)', () => {
+    const oneLive = allDone.map((m) => (m.num === 1 ? { ...m, live: { clock: "70'" } } : m))
+    expect(groupStageArchived(oneLive)).toBe(false)
   })
-  it('is true a day after the last group game once all are final', () => {
-    expect(groupStageArchived(allDone, lastKo + 25 * 60 * 60 * 1000)).toBe(true)
+  it('is true as soon as every group game is final', () => {
+    expect(groupStageArchived(allDone)).toBe(true)
   })
 })
 

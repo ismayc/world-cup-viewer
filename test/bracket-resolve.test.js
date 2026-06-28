@@ -115,6 +115,22 @@ describe('resolveKnockoutSlots — propagate winners/losers up the bracket', () 
     // Original array returned untouched when nothing resolves.
     expect(resolveKnockoutSlots(ms)).toEqual(ms)
   })
+
+  it('does NOT advance a LIVE knockout — even one with a leading score — until full time', () => {
+    // A tie in play (Brazil leading 2-1 at 70') must not propagate: the lead can
+    // still change, so the next round stays a placeholder until the match is final.
+    const live = [
+      { num: 73, stage: 'R32', t1: 'Canada', t2: 'Brazil', score: [1, 2], live: { clock: "70'" } },
+      { num: 90, stage: 'R16', t1: 'Winner Match 73', t2: 'Winner Match 75' },
+    ]
+    const r = resolveKnockoutSlots(live)
+    expect(r.find((m) => m.num === 90).t1).toBe('Winner Match 73')
+    expect(resolveKnockoutSlots(live)).toEqual(live) // nothing resolved → untouched
+
+    // The instant the SAME score goes final (live cleared), it propagates.
+    const finalized = live.map((m) => (m.num === 73 ? { ...m, live: undefined } : m))
+    expect(resolveKnockoutSlots(finalized).find((m) => m.num === 90).t1).toBe('Brazil')
+  })
 })
 
 describe('resolveBracket — full pipeline', () => {

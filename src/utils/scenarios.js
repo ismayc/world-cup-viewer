@@ -49,15 +49,13 @@ export function openGroups(matches) {
   return GROUPS.filter((g) => open[g] && open[g].length)
 }
 
-// True once the group stage is in the rear-view: every group game has a final
-// score AND it's been at least a day since the last group kickoff. Used to retire
-// the group-stage-only tools (Scenarios, R32 Outlook) from the nav.
-export function groupStageArchived(matches, now = Date.now()) {
+// True once the group stage is in the rear-view: every group game is final (and
+// none still live/settling). Used to retire the group-stage-only tools
+// (Scenarios, R32 Outlook) from the nav the moment the knockouts take over.
+export function groupStageArchived(matches) {
   const group = matches.filter((m) => m.stage === 'Group' && !m.voided)
   if (!group.length) return false
-  if (!group.every((m) => Array.isArray(m.score) && !m.live)) return false
-  const lastKo = Math.max(...group.map((m) => new Date(m.ko).getTime()))
-  return now > lastKo + 24 * 60 * 60 * 1000
+  return group.every((m) => Array.isArray(m.score) && !m.live)
 }
 
 // How many of the remaining group games are still unpicked.

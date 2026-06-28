@@ -21,7 +21,7 @@ import { MATCHES } from '../src/data/matches.js'
 import { VENUES } from '../src/data/venues.js'
 import { LIVE_SOURCE, normEspn } from '../src/services/espn.js'
 import { normSdb, sdbDayUrl } from '../src/services/thesportsdb.js'
-import { RESULTS_SOURCE, normalizeTeam, pairKey } from '../src/services/results.js'
+import { RESULTS_SOURCE, normalizeTeam, pairKey, fetchResults, applyResults, isRealTeam } from '../src/services/results.js'
 import { compareSchedule, compareKnockoutSchedule } from './schedule-core.mjs'
 import { etStrings, editMatches, editFixture } from './schedule-fix-core.mjs'
 
@@ -200,15 +200,21 @@ function ofMs(date, time) {
   return Number.isNaN(t) ? null : t
 }
 
+// OpenFootball kickoff times keyed by team pair. Groups always; knockouts too
+// once their teams resolve to real names (so the knockout feed-consensus fallback
+// has OF as a corroborating source alongside ESPN/TheSportsDB).
 async function openFootballByKey() {
   const map = new Map()
   try {
     const r = await fetch(RESULTS_SOURCE.url, { cache: 'no-store' })
     if (!r.ok) return map
     for (const m of (await r.json()).matches || []) {
-      if (!(m.round || '').startsWith('Matchday')) continue
+      const isGroup = (m.round || '').startsWith('Matchday')
       const t = ofMs(m.date, m.time)
-      if (m.team1 && m.team2 && t != null) map.set(pairKey(normalizeTeam(m.team1), normalizeTeam(m.team2)), t)
+      if (t == null || !m.team1 || !m.team2) continue
+      // Knockouts: only key once both teams are resolved (skip "Winner Group A").
+      if (!isGroup && !(isRealTeam(normalizeTeam(m.team1)) && isRealTeam(normalizeTeam(m.team2)))) continue
+      map.set(pairKey(normalizeTeam(m.team1), normalizeTeam(m.team2)), t)
     }
   } catch {
     /* best-effort */
@@ -216,11 +222,33 @@ async function openFootballByKey() {
   return map
 }
 
+// num -> { t1, t2 } for every knockout tie whose teams have resolved in
+// OpenFootball, so the schedule fallback can key the secondary feeds by pair.
+async function resolvedKnockoutTeams() {
+  const byNum = new Map()
+  try {
+    const ofMap = await fetchResults()
+    for (const m of applyResults(MATCHES, ofMap)) {
+      if (m.stage === 'Group') continue
+      if (isRealTeam(m.t1) && isRealTeam(m.t2)) byNum.set(m.num, { t1: m.t1, t2: m.t2 })
+    }
+  } catch {
+    /* best-effort — no resolved teams just means no fallback */
+  }
+  return byNum
+}
+
 async function main() {
   const reportOnly = process.env.SCHEDULE_REPORT_ONLY === '1'
   const thresholdMin = Number(process.env.THRESHOLD_MIN) || 5
 
-  const [fifaRes, espn, sdb, of] = await Promise.all([fifaByKey(), espnByKey(), sdbByKey(), openFootballByKey()])
+  const [fifaRes, espn, sdb, of, resolvedKo] = await Promise.all([
+    fifaByKey(),
+    espnByKey(),
+    sdbByKey(),
+    openFootballByKey(),
+    resolvedKnockoutTeams(),
+  ])
   const { byKey: fifa, venueByKey: fifaVenues, byNum: fifaByNum } = fifaRes
   const sources = [
     { name: 'FIFA', byKey: fifa },
@@ -248,10 +276,18 @@ async function main() {
   // so they can't be keyed by pair). Merge into the same buckets so reporting,
   // auto-fix, and the email treat group and knockout drifts identically.
   const koMatches = MATCHES.filter((m) => m.stage !== 'Group')
+  // Feed-consensus fallback (used per-match only when FIFA has no time for it):
+  // the secondary feeds keyed by the tie's resolved team pair.
+  const koFallbackSources = [
+    { name: 'ESPN', byKey: espn },
+    { name: 'TheSportsDB', byKey: sdb },
+    { name: 'OpenFootball', byKey: of },
+  ].filter((s) => s.byKey.size)
   const koResult = compareKnockoutSchedule(koMatches, fifaByNum, {
     thresholdMin,
     venues: VENUES,
     venueAliasById: FIFA_VENUE_ALIASES,
+    fallback: resolvedKo.size ? { resolvedByNum: resolvedKo, sources: koFallbackSources } : null,
   })
   drifts.push(...koResult.drifts)
   notes.push(...koResult.notes)

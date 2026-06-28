@@ -173,6 +173,56 @@ export function compareSchedule(
   return { drifts, notes, unmatched, venueMismatches }
 }
 
+// Feed-consensus fallback for a single knockout match FIFA can't time. Returns
+// true if it produced a drift/note (caller should NOT mark it unmatched), false
+// if no resolved teams / no feed had it (fall through to unmatched). Mirrors the
+// authority-missing branch of compareSchedule: ≥2 agreeing feeds → consensus
+// drift; a single dissenter → single-source note.
+function resolveByConsensus(m, thr, fallback, out) {
+  if (!fallback?.resolvedByNum || !fallback.sources?.length) return false
+  const teams = fallback.resolvedByNum.get(m.num)
+  if (!teams || !teams.t1 || !teams.t2) return false
+  const key = keyOf(teams.t1, teams.t2)
+  const reported = fallback.sources
+    .map((s) => ({ name: s.name, ms: s.byKey.get(key) }))
+    .filter((r) => r.ms != null)
+  if (!reported.length) return false
+
+  const stored = new Date(m.ko).getTime()
+  const base = {
+    num: m.num,
+    t1: teams.t1,
+    t2: teams.t2,
+    storedISO: new Date(stored).toISOString(),
+  }
+  const dissent = reported.filter((r) => Math.abs(r.ms - stored) >= thr)
+  let produced = false
+  for (const cluster of clusterByTime(dissent, thr)) {
+    if (cluster.length >= 2) {
+      out.drifts.push({
+        ...base,
+        authISO: new Date(cluster[0].ms).toISOString(),
+        diffMin: Math.round((cluster[0].ms - stored) / 60000),
+        via: 'consensus',
+        corroborators: cluster.map((c) => c.name),
+      })
+      produced = true
+    } else {
+      out.notes.push({
+        ...base,
+        kind: 'single-source',
+        source: cluster[0].name,
+        theirISO: new Date(cluster[0].ms).toISOString(),
+        diffMin: Math.round((cluster[0].ms - stored) / 60000),
+      })
+      produced = true
+    }
+  }
+  // Feeds had the match and all agreed with us → confirmed, nothing to report,
+  // but it's no longer "unmatched".
+  return produced || true
+}
+
 // Knockout matches can't be keyed by team pair — the teams are placeholders
 // ("Winner Group A", "Winner Match 73") until the bracket resolves. FIFA is the
 // only source that publishes a stable MatchNumber for an as-yet-undecided tie,
@@ -181,10 +231,19 @@ export function compareSchedule(
 // — consistent with the "authority decides" model; drift objects use the same
 // shape as compareSchedule so reporting / autofix / email handle them uniformly.
 //   fifaByNum: Map(num -> { ms, venue: { id, name, city } | null }).
+//
+// Fallback (used only for a match FIFA has no time for, e.g. FIFA unreachable):
+// once a tie's teams have RESOLVED, the secondary feeds DO carry it by team pair,
+// so we can fall back to the same two-feed consensus the group path uses rather
+// than going dark on knockouts. Pass:
+//   fallback.resolvedByNum: Map(num -> { t1, t2 })   resolved real team names
+//   fallback.sources:       [{ name, byKey: Map(pairKey -> ms) }]   secondary feeds
+// A drift is only raised when ≥2 feeds agree on a time that differs from ours
+// (via: 'consensus'); a lone dissenter is a single-source note, never a drift.
 export function compareKnockoutSchedule(
   matches,
   fifaByNum,
-  { thresholdMin = 5, venues = null, venueAliasById = {} } = {},
+  { thresholdMin = 5, venues = null, venueAliasById = {}, fallback = null } = {},
 ) {
   const thr = thresholdMin * 60000
   const drifts = []
@@ -195,6 +254,8 @@ export function compareKnockoutSchedule(
   for (const m of matches) {
     const fifa = fifaByNum?.get(m.num)
     if (!fifa || fifa.ms == null) {
+      // No authority time. Try the resolved-team feed consensus before giving up.
+      if (resolveByConsensus(m, thr, fallback, { drifts, notes })) continue
       unmatched.push({ num: m.num, t1: m.t1, t2: m.t2 })
       continue
     }

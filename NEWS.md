@@ -5,6 +5,27 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-28
+- **Knockouts have started — retired the group-stage tools and tidied the Schedule.**
+  Scenarios + R32 Outlook now auto-hide the moment every group game is final (the
+  `groupStageArchived` gate dropped its 24-hour grace period — it was a leftover
+  that delayed the handover). On the Schedule, the now-complete group games are
+  hidden by default once the stage is archived, with a one-line note and a "Show
+  group games" link to bring them back. Group-stage tests updated to the no-grace
+  rule.
+- **Knockout coverage for the live drift guards (`check:schedule`, `check:sync`).**
+  - `check:schedule`: when FIFA (the authority) is unreachable, resolved knockout
+    ties now fall back to the same two-feed consensus the group path uses — keyed by
+    each tie's resolved team pair (from OpenFootball), corroborated by ESPN /
+    TheSportsDB / OpenFootball — instead of going dark on the knockouts. FIFA still
+    wins whenever it has a time; a lone dissenting feed is a note, never a drift.
+  - `check:sync`: now also validates `cup_finals.txt` — every knockout `(NN)` line is
+    present (catches an upstream restructure), and once a tie's teams resolve, the
+    pairing is verified locatable under our `cupName` aliases (the exact lookup the
+    autofill does). A resolved tie upstream hasn't named yet is reported as info, not
+    a failure.
+  - Added a propagation-level guard that a **live** knockout never advances the
+    bracket — even one with a leading score — until full time, plus unit coverage for
+    the new schedule fallback.
 - **Group stage complete — froze the final results + official R32 draw.** Added
   Groups G–L to `test/fixtures/final-group-results.js` (all 12 now locked) and
   filled `OFFICIAL_R32` with FIFA's published Round-of-32 draw, sourced from

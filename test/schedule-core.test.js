@@ -106,4 +106,55 @@ describe('compareKnockoutSchedule — FIFA-anchored by match number', () => {
     expect(venueMismatches).toHaveLength(1)
     expect(venueMismatches[0]).toMatchObject({ num: 73, fifaName: otherVenue.name })
   })
+
+  describe('feed-consensus fallback when FIFA has no time', () => {
+    // Two resolved teams + secondary feeds keyed by their pair.
+    const teams = { t1: 'Mexico', t2: 'England' }
+    const pk = pairKey(normalizeTeam(teams.t1), normalizeTeam(teams.t2))
+    const feed = (name, ms) => ({ name, byKey: new Map([[pk, ms]]) })
+    const fb = (sources) => ({
+      fallback: { resolvedByNum: new Map([[m73.num, teams]]), sources },
+    })
+
+    it('does NOT mark a match unmatched once feeds confirm it (no drift, no note)', () => {
+      const r = compareKnockoutSchedule([m73], new Map(), fb([feed('ESPN', ko(m73)), feed('OpenFootball', ko(m73))]))
+      expect(r.unmatched).toHaveLength(0)
+      expect(r.drifts).toHaveLength(0)
+      expect(r.notes).toHaveLength(0)
+    })
+
+    it('raises a consensus drift when ≥2 feeds agree on a different time', () => {
+      const moved = shift(m73.ko, 45)
+      const r = compareKnockoutSchedule([m73], new Map(), fb([feed('ESPN', moved), feed('OpenFootball', moved)]))
+      expect(r.unmatched).toHaveLength(0)
+      expect(r.drifts).toHaveLength(1)
+      expect(r.drifts[0]).toMatchObject({ num: 73, t1: 'Mexico', t2: 'England', via: 'consensus', diffMin: 45 })
+      expect(r.drifts[0].corroborators).toEqual(['ESPN', 'OpenFootball'])
+    })
+
+    it('a lone dissenting feed is a single-source note, never a drift', () => {
+      const r = compareKnockoutSchedule([m73], new Map(), fb([feed('ESPN', shift(m73.ko, 45)), feed('OpenFootball', ko(m73))]))
+      expect(r.drifts).toHaveLength(0)
+      expect(r.unmatched).toHaveLength(0)
+      expect(r.notes).toContainEqual(expect.objectContaining({ kind: 'single-source', source: 'ESPN' }))
+    })
+
+    it('still unmatched when the tie is unresolved or no feed carries it', () => {
+      // Unresolved: no resolvedByNum entry.
+      const r1 = compareKnockoutSchedule([m73], new Map(), {
+        fallback: { resolvedByNum: new Map(), sources: [feed('ESPN', ko(m73))] },
+      })
+      expect(r1.unmatched).toEqual([{ num: 73, t1: m73.t1, t2: m73.t2 }])
+      // Resolved, but no feed has the pair.
+      const r2 = compareKnockoutSchedule([m73], new Map(), fb([{ name: 'ESPN', byKey: new Map() }]))
+      expect(r2.unmatched).toEqual([{ num: 73, t1: m73.t1, t2: m73.t2 }])
+    })
+
+    it('FIFA still wins when present — fallback only fills FIFA gaps', () => {
+      const moved = shift(m73.ko, 30)
+      // FIFA has the time AND feeds would say something else; FIFA decides.
+      const r = compareKnockoutSchedule([m73], fifaNum(m73, ko(m73)), fb([feed('ESPN', moved), feed('OpenFootball', moved)]))
+      expect(r.drifts).toHaveLength(0) // FIFA confirms our stored time
+    })
+  })
 })
