@@ -5,6 +5,24 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-28
+- **Groups: explain the soft tie-breakers among the third-placed teams.** A note
+  below the Best third-placed table now spells out each adjacent pair of thirds that
+  finished level on points, goal difference AND goals scored — where the order came
+  down to a criterion whose value isn't in the table. It names the higher team and
+  shows the deciding values: fair-play points (cards) if those differ, otherwise
+  FIFA ranking. So e.g. "Ghana finished above Ecuador … broken by fair-play points"
+  is explained, not just flagged with the ⚖️ marker. Driven off the ranked thirds,
+  so it reflects whatever the live data produces.
+- **Bracket: show potential matchups for unresolved slots.** A "Winner/Loser Match
+  N" slot now expands to the two teams of the tie it feeds from — rendered
+  "🇲🇽 Mexico / 🇨🇦 Canada" — as soon as that source tie has both real teams. So the
+  Round of 16 reads as potential matchups (each side a candidate pair, with a "vs"
+  on its own line between the two pairs of an all-four-teams box) instead of cryptic
+  "Winner Match N" labels. The expansion is round-agnostic and per-slot: it cascades
+  to the QF, SF, Final and third-place play-off as each round's teams are confirmed,
+  and a side populates the moment its own feeder resolves (no waiting for the rest of
+  the round). The "vs" between pairs is wide-layout only; the tall mobile rows keep
+  the slash. Locked in with cascade + partial-completion regression tests.
 - **Knockouts have started — retired the group-stage tools and tidied the Schedule.**
   Scenarios + R32 Outlook now auto-hide the moment every group game is final (the
   `groupStageArchived` gate dropped its 24-hour grace period — it was a leftover

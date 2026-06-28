@@ -40,7 +40,9 @@ city/stadium, a bracket, group standings, and live results.
 - **Group standings & qualification** — all 12 tables with the official 2026
   tie-breakers (points → head-to-head → goal difference → goals → fair play
   [team conduct / cards] → FIFA World Ranking), who advances, and the 8 best
-  third-placed teams.
+  third-placed teams. A ⚖️ marker (and a plain-language note below the third-place
+  table) explains any placing decided by a soft tie-breaker, showing both teams'
+  fair-play or FIFA-ranking values — so e.g. "Ghana above Ecuador" is spelled out.
 - **Clinch & elimination detection** — teams are marked 🥇 Won group / ✅ Through /
   ❌ Out the moment the outcome is mathematically guaranteed (an exact
   scoreline-enumeration engine with a sound points-bound fallback, accounting for
@@ -53,7 +55,12 @@ city/stadium, a bracket, group standings, and live results.
   Annexe C allocation** (all 495 combinations, parsed from the regulations PDF).
   Each projected match number links straight to that tie on the bracket, and the
   whole block can be toggled off.
-- **Bracket** — two-sided knockout bracket that fills in as teams resolve.
+- **Bracket** — two-sided knockout bracket that fills in as teams resolve. Slots
+  still awaiting a result preview the **potential matchup**: a "Winner Match N" box
+  shows the two candidate teams of the tie feeding it ("🇲🇽 Mexico / 🇨🇦 Canada"), so
+  the Round of 16 reads as pairings rather than "Winner Match N". This cascades
+  round by round — and per-slot, the moment each feeder is decided — to the
+  quarter-finals, semis, final and third-place play-off.
 - **Add to calendar** — per-match `.ics` download, plus a `webcal://`
   subscription feed (all matches or just your teams) that auto-updates.
 - **Spoiler-free mode** — hide scores globally, per day, or per match.
@@ -84,6 +91,10 @@ npm test         # run the Vitest suite
 Every push runs the tests + build in GitHub Actions; pushes to `main` deploy to
 Netlify and GitHub Pages only if they pass.
 
+New to the code? [`ARCHITECTURE.md`](./ARCHITECTURE.md) maps the modules and how
+data flows from the static schedule + live feeds through the standings, clinch,
+projection and bracket-resolution layers to the views.
+
 ## Schedule accuracy
 
 The schedule data is validated against external sources and frozen into
@@ -104,6 +115,13 @@ matched by team pair. It runs hourly as a red-build backstop and each morning
 ours, the daily check rewrites both `src/data/matches.js` and the kickoff fixture
 to FIFA's time and opens a ready-to-merge PR, so a reschedule (like M32 moving an
 hour earlier) can't slip by unnoticed. See `npm run check:schedule`.
+
+Knockout matches are validated too: their teams are placeholders until the bracket
+resolves, so they're matched to FIFA by **match number** rather than team pair, and
+once a tie's teams are known the secondary feeds provide a consensus fallback if
+FIFA is unreachable. A companion check (`npm run check:sync`) verifies the upstream
+OpenFootball `cup.txt` / `cup_finals.txt` still name every group and knockout match
+under the spellings the result-contribution autofill expects.
 
 ## Data sources
 
