@@ -118,6 +118,20 @@ describe('Bracket', () => {
     }
   })
 
+  it('populates a slot from partial results — no waiting for the whole previous round', () => {
+    // Only the feeders for ONE QF side are in: R16 match 89 has its two teams,
+    // but R16 match 90 is still a placeholder. The ready side shows its candidate
+    // pair immediately; the pending side stays a label and there's no divider yet.
+    const matches = MATCHES.map((m) => (m.num === 89 ? { ...m, t1: 'Mexico', t2: 'Canada' } : m))
+    renderBracket(matches)
+    const m97 = document.getElementById('bx-m97')
+    expect(m97.querySelectorAll('.bx-side-feeder').length).toBe(1) // only the ready side
+    expect(within(m97).getByText('Mexico')).toBeInTheDocument()
+    expect(within(m97).getByText('Canada')).toBeInTheDocument()
+    expect(within(m97).getByText('Winner Match 90')).toBeInTheDocument() // pending side
+    expect(m97.querySelector('.bx-vs-divider')).toBeNull()
+  })
+
   it('shows no "vs" divider when only one R16 side is a resolved pair', () => {
     // Only match 73 resolved → R16 match 90 has one feeder side and one plain
     // "Winner Match 75" placeholder, so there is no all-four-teams "vs" divider.
