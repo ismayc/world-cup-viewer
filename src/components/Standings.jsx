@@ -6,6 +6,7 @@ import { projectKnockout } from '../utils/asItStands.js'
 import { lockedOpponent } from '../utils/opponentClinch.js'
 import { softTiebreaks, softThirdTiebreaks, TIEBREAK_LABEL } from '../utils/tiebreakNotes.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
+import { FIFA_RANK } from '../data/fifaRanking.js'
 import { useFollow } from '../context/follow.jsx'
 import GroupGamesModal from './GroupGamesModal.jsx'
 
@@ -242,6 +243,64 @@ function LiveDot({ name, liveTeams, pausedTeams }) {
   )
 }
 
+// Spells out, below the table, every adjacent pair of third-placed teams that
+// finished level on points, goal difference AND goals scored — so the order came
+// down to a tie-breaker whose value isn't in the table (fair-play conduct, then
+// FIFA ranking). Shows both teams' deciding values so e.g. "Ghana above Ecuador"
+// is explained rather than just marked with a ⚖️. Driven entirely off the ranked
+// `thirds`, so it reflects whatever the live data produces.
+function ThirdTieNotes({ thirds }) {
+  const gd = (v) => (v > 0 ? `+${v}` : `${v}`)
+  const pairs = []
+  for (let k = 0; k + 1 < thirds.length; k++) {
+    const a = thirds[k]
+    const b = thirds[k + 1]
+    if (a.Pts === b.Pts && a.GD === b.GD && a.GF === b.GF) pairs.push([a, b])
+  }
+  if (!pairs.length) return null
+  return (
+    <div className="thirds-tie-note">
+      <h4 className="thirds-tie-head">⚖️ Tie-breakers among the thirds</h4>
+      <ul>
+        {pairs.map(([a, b]) => {
+          // conduct decides before FIFA ranking; they're only separated by FIFA if
+          // their (best-effort) conduct scores are equal.
+          const byConduct = a.conduct !== b.conduct
+          return (
+            <li key={a.name}>
+              <strong>
+                {a.flag} {a.name}
+              </strong>{' '}
+              finished above{' '}
+              <strong>
+                {b.flag} {b.name}
+              </strong>{' '}
+              despite both being level on points ({a.Pts}), goal difference ({gd(a.GD)}) and goals
+              scored ({a.GF}). The tie was broken by{' '}
+              {byConduct ? (
+                <>
+                  <strong>fair-play points</strong> (disciplinary cards): {a.name} {a.conduct} vs{' '}
+                  {b.name} {b.conduct}{' '}
+                  <span className="thirds-tie-fine">
+                    — closer to 0 is cleaner (−1 per yellow, −4 per red; best-effort card data)
+                  </span>
+                </>
+              ) : (
+                <>
+                  <strong>FIFA ranking</strong>: {a.name} #{FIFA_RANK[a.name] ?? '—'} vs {b.name} #
+                  {FIFA_RANK[b.name] ?? '—'}{' '}
+                  <span className="thirds-tie-fine">— a lower number ranks higher</span>
+                </>
+              )}
+              .
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function BestThirds({ qual, clinch, groupState, liveTeams, pausedTeams }) {
   const anyPlayed = qual.thirds.some((t) => t.P > 0)
   if (!anyPlayed) return null
@@ -342,6 +401,7 @@ function BestThirds({ qual, clinch, groupState, liveTeams, pausedTeams }) {
           )}
         </tbody>
       </table>
+      <ThirdTieNotes thirds={qual.thirds} />
     </div>
   )
 }

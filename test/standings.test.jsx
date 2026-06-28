@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import Standings from '../src/components/Standings.jsx'
 import { FollowProvider } from '../src/context/follow.jsx'
 import { MATCHES } from '../src/data/matches.js'
@@ -273,6 +273,30 @@ describe('Standings', () => {
       </FollowProvider>,
     )
     expect(screen.getAllByText('outside the best 8').length).toBeGreaterThan(0)
+  })
+
+  it('explains a soft tie-breaker between adjacent thirds with their values', () => {
+    // Every group drawn 1–1 → all four teams in each group sit on 3 pts, GD 0,
+    // GF 3, so every third-placed team is level on points/GD/goals and the order
+    // comes down to conduct, then FIFA ranking. The note below the table spells
+    // each pairing out with the deciding values.
+    const allDrawn = MATCHES.map((m) => (m.stage === 'Group' ? { ...m, score: [1, 1] } : m))
+    const { container } = render(
+      <FollowProvider>
+        <Standings matches={allDrawn} hideScores={false} />
+      </FollowProvider>,
+    )
+    const note = container.querySelector('.thirds-tie-note')
+    expect(note).toBeTruthy()
+    expect(within(note).getByText(/Tie-breakers among the thirds/)).toBeInTheDocument()
+    const items = note.querySelectorAll('li')
+    expect(items.length).toBeGreaterThan(0)
+    // Each explanation states the shared level and the deciding criterion + values.
+    expect(note.textContent).toMatch(/level on points \(3\)/)
+    expect(note.textContent).toMatch(/goals scored \(3\)/)
+    // No cards in the fixture → the decider is FIFA ranking, shown with #numbers.
+    expect(note.textContent).toMatch(/FIFA ranking/)
+    expect(note.textContent).toMatch(/#\d+/)
   })
 
   it('falls back to showing the projection when localStorage.getItem throws', () => {

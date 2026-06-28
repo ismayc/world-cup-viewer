@@ -1944,6 +1944,24 @@ select {
   margin-top: 16px;
 }
 .thirds-note { font-size: 0.78rem; color: var(--text-dim); margin: 0 0 10px; line-height: 1.5; }
+/* Explanation of soft tie-breakers among the third-placed teams (below the table). */
+.thirds-tie-note {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.thirds-tie-head {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+.thirds-tie-note ul { margin: 0; padding-left: 18px; }
+.thirds-tie-note li { margin-bottom: 4px; }
+.thirds-tie-note strong { color: var(--text); }
+.thirds-tie-fine { color: var(--text-faint); }
 .third-status {
   margin-left: 6px; font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.03em; padding: 1px 6px; border-radius: 999px; vertical-align: middle;
