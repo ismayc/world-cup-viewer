@@ -14,6 +14,15 @@ data/source updates, deployment). Newest day on top.
   reproduces the official draw exactly, with no placeholder slots left — a static
   regression anchor independent of the live feed. Verified: Scenarios + R32 Outlook
   tabs auto-archive >24h after the last group kickoff. 726 tests green.
+- **Fix: handle knockouts decided in extra time (no shootout).** A knockout won in
+  ET has a *level* 90-minute score (`ft`) with the decider in `et`; the results
+  ingestion was using `ft`, so an ET-decided tie would read as a draw with no
+  pens → `decideMatch` returned null and the winner never advanced (the whole
+  downstream bracket would stall). Now `applyResults` / `openFootballFinalScore`
+  prefer `score.et` when present (and `parseScore` keeps it). The `.ics` calendar
+  feed likewise now shows the ET/penalty result instead of the level 90-min score.
+  New tests cover the ET-without-shootout path. (Penalty shootouts already worked;
+  this closes the ET-only gap.)
 - **Knockout-propagation sanity check (real data).** Confirmed R32 results feed the
   bracket correctly through to a champion on the actual frozen results — winners
   land in the right R16 slots, the penalty-shootout path resolves draws, and SF

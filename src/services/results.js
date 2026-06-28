@@ -63,7 +63,9 @@ export function openFootballFinalScore(match, ofMap) {
   if (!ofMap) return null
   const rec = ofMap.get(matchKey(match))
   if (!rec?.score?.ft) return null
-  return { home: rec.home, away: rec.away, ft: rec.score.ft }
+  // The decisive score (extra time when a knockout went to ET), matching what
+  // the live sources report — so cross-source comparison doesn't false-flag.
+  return { home: rec.home, away: rec.away, ft: rec.score.et || rec.score.ft }
 }
 
 // OpenFootball score shape: { ft: [home, away], ht: [...], et: [...], p: [...] }.
@@ -73,7 +75,13 @@ function parseScore(score) {
   if (!ft || ft.length < 2 || ft[0] == null || ft[1] == null) return null
   const out = { ft: [Number(ft[0]), Number(ft[1])] }
   if (Array.isArray(score.p) && score.p[0] != null) out.pens = [Number(score.p[0]), Number(score.p[1])]
-  if (Array.isArray(score.et) && score.et[0] != null) out.aet = true
+  // Extra time: `et` is the score AFTER extra time (cumulative). It's the decisive
+  // result for a knockout won in ET, so keep it — `ft` alone would be level and
+  // leave the winner unresolved.
+  if (Array.isArray(score.et) && score.et[0] != null) {
+    out.et = [Number(score.et[0]), Number(score.et[1])]
+    out.aet = true
+  }
   return out
 }
 
@@ -143,7 +151,10 @@ export function applyResults(matches, map) {
     if (isRealTeam(rec.home)) out.t1 = rec.home
     if (isRealTeam(rec.away)) out.t2 = rec.away
     if (rec.score) {
-      out.score = rec.score.ft
+      // Prefer the extra-time score when present — for a knockout decided in ET
+      // (no shootout) the 90-minute `ft` is level and would leave the tie (and the
+      // whole downstream bracket) unresolved.
+      out.score = rec.score.et || rec.score.ft
       if (rec.score.pens) out.pens = rec.score.pens
       if (rec.score.aet) out.aet = true
       out.goals = { t1: rec.g1, t2: rec.g2 }

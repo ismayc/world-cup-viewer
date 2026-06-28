@@ -72,7 +72,12 @@ function vevent(m) {
   if (!start) return null
   const end = new Date(start.getTime() + MATCH_MS)
   const stage = m.round && m.round.startsWith('Matchday') ? (m.group || 'Group stage') : STAGE[m.round] || m.round
-  const ft = m.score && Array.isArray(m.score.ft) ? ` (${m.score.ft[0]}–${m.score.ft[1]})` : ''
+  // Final score: prefer the extra-time score (a knockout won in ET has a level
+  // `ft`); note AET / penalty shootouts so the calendar shows the real result.
+  const fin = m.score && (Array.isArray(m.score.et) ? m.score.et : Array.isArray(m.score.ft) ? m.score.ft : null)
+  const pens = m.score && Array.isArray(m.score.p) ? ` p${m.score.p[0]}–${m.score.p[1]}` : ''
+  const aet = m.score && Array.isArray(m.score.et) ? ' AET' : ''
+  const ft = fin ? ` (${fin[0]}–${fin[1]}${aet}${pens})` : ''
   const summary = `World Cup: ${prettySlot(m.team1)} vs ${prettySlot(m.team2)}${ft}`
   return [
     'BEGIN:VEVENT',

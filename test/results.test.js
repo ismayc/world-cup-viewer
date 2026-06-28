@@ -54,6 +54,19 @@ describe('results merge (applyResults)', () => {
     expect(final.aet).toBe(true)
   })
 
+  it('uses the extra-time score for a knockout decided in ET (no shootout)', () => {
+    // OpenFootball reports ft = level 90-min score and et = the decisive ET score.
+    // Using ft alone would leave the tie (and the rest of the bracket) unresolved.
+    const map = new Map([
+      ['stage:Final', { home: 'Argentina', away: 'France', score: { ft: [1, 1], et: [2, 1], aet: true } }],
+    ])
+    const merged = applyResults(MATCHES, map)
+    const final = merged.find((m) => m.stage === 'Final')
+    expect(final.score).toEqual([2, 1]) // ET result, not the level 90-min score
+    expect(final.aet).toBe(true)
+    expect(final.pens).toBeUndefined()
+  })
+
   it('does not mutate the static MATCHES array', () => {
     const before = MATCHES.find((m) => m.num === 1)
     const map = new Map([
@@ -73,6 +86,7 @@ describe('fetchResults (parsing OpenFootball shape)', () => {
       matches: [
         { round: 'Matchday 1', team1: 'Mexico', team2: 'South Africa', score: { ft: [2, 1] } },
         { round: 'Round of 32', num: 73, team1: 'Spain', team2: 'Morocco', score: { ft: [1, 1], et: [1, 1], p: [4, 2] } },
+        { round: 'Round of 16', num: 89, team1: 'Croatia', team2: 'Japan', score: { ft: [1, 1], et: [2, 1] } }, // won in ET, no shootout
         { round: 'Matchday 1', team1: 'South Korea', team2: 'Czech Republic' }, // alias, no score
         { round: 'Final', team1: 'W101', team2: 'W102' }, // unplayed placeholder
       ],
@@ -86,8 +100,14 @@ describe('fetchResults (parsing OpenFootball shape)', () => {
 
     const r32 = map.get('num:73')
     expect(r32.score.ft).toEqual([1, 1])
+    expect(r32.score.et).toEqual([1, 1]) // level after ET → went to the shootout
     expect(r32.score.pens).toEqual([4, 2])
     expect(r32.score.aet).toBe(true)
+
+    const r16 = map.get('num:89')
+    expect(r16.score.et).toEqual([2, 1]) // decided in ET, no shootout
+    expect(r16.score.aet).toBe(true)
+    expect(r16.score.pens).toBeUndefined()
 
     // "Czech Republic" normalized to "Czechia"; unplayed match has null score.
     const alias = map.get('pair:' + ['South Korea', 'Czechia'].sort().join('|'))
