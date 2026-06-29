@@ -1190,6 +1190,18 @@ select {
   fill: var(--text-faint);
   font-weight: 700;
 }
+/* Score for a played/live match, just under the match number. */
+.rb-score {
+  fill: var(--text-dim);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+/* Blinking red dot on a match that's in play (mirrors the other views). */
+.rb-live-dot {
+  fill: var(--live);
+  animation: pulse 1.4s infinite;
+}
 /* Wide, invisible hit area so the matchup bar is easy to click. */
 .rb-hit {
   stroke: transparent;

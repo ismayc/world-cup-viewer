@@ -97,11 +97,20 @@ function FlagNode({ x, y, team, label, followed, onClick, r = 17 }) {
   )
 }
 
-export default function RadialBracket({ matches, tz }) {
+export default function RadialBracket({ matches, tz, hideScores }) {
   const { isFollowed } = useFollow()
   const openDetail = useDetail()
   const byNum = useMemo(() => matchesByNum(matches), [matches])
   const { angle, leafAngleOf } = useMemo(buildAngles, [])
+
+  // Compact score for a played/live match (penalties or a.e.t. noted), or null.
+  const scoreText = (m) => {
+    if (!m || !Array.isArray(m.score)) return null
+    let s = `${m.score[0]}–${m.score[1]}`
+    if (Array.isArray(m.pens)) s += ` p${m.pens[0]}–${m.pens[1]}`
+    else if (m.aet) s += ' aet'
+    return s
+  }
 
   // One-line summary for a match's hover tooltip — the gist of the detail popout.
   const matchInfo = (m) => {
@@ -194,9 +203,15 @@ export default function RadialBracket({ matches, tz }) {
               ))}
               {bar && <polyline points={bar} className="rb-line" />}
               {bar && <polyline points={bar} className="rb-hit" />}
+              {m?.live && <circle className="rb-live-dot" cx={label[0]} cy={label[1] - 11} r={3.4} />}
               <text className="rb-mnum" x={label[0]} y={label[1]} fontSize="11">
                 M{num}
               </text>
+              {m && !hideScores && scoreText(m) && (
+                <text className="rb-score" x={label[0]} y={label[1] + 12} fontSize="9.5">
+                  {scoreText(m)}
+                </text>
+              )}
             </g>
           )
         })}
@@ -282,11 +297,18 @@ export default function RadialBracket({ matches, tz }) {
           onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
           r={16}
         />
+        {byNum[103]?.live && <circle className="rb-live-dot" cx={CX} cy={THIRD_Y - 26} r={3.4} />}
+        {!hideScores && scoreText(byNum[103]) && (
+          <text className="rb-score" x={CX} y={THIRD_Y + 22} fontSize="9.5">
+            {scoreText(byNum[103])}
+          </text>
+        )}
       </svg>
       <p className="rb-hint">
         Outer ring = Round of 32. Each match’s winner advances one ring inward toward the trophy;
-        flags fill in as results land. Hover a flag for the country; click a matchup (its bracket
-        join or match number) to open the match details.
+        flags fill in as results land, with the score under each played match and a blinking red dot
+        on any match in play. Hover a flag for the country; click a matchup (its bracket join or
+        match number) to open the match details.
       </p>
     </div>
   )

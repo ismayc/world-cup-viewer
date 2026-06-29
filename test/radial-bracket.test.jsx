@@ -93,6 +93,24 @@ describe('RadialBracket', () => {
     expect(openDetail).toHaveBeenCalledTimes(1)
   })
 
+  it('shows scores on played matches, hides them in spoiler-free mode, and blinks a live dot', () => {
+    // Played bracket → scores present; mark one R32 tie live.
+    const played = playedBracket().map((m) => (m.num === 73 ? { ...m, live: { clock: "70'" } } : m))
+    const { container, rerender } = renderRB(played)
+    expect(container.querySelectorAll('.rb-score').length).toBeGreaterThan(0)
+    expect(container.querySelector('.rb-live-dot')).toBeTruthy() // M73 is in play
+    // Spoiler-free: scores hidden (the live dot, a status not a score, remains).
+    rerender(
+      <FollowProvider>
+        <DetailContext.Provider value={() => {}}>
+          <RadialBracket matches={played} hideScores />
+        </DetailContext.Provider>
+      </FollowProvider>,
+    )
+    expect(container.querySelectorAll('.rb-score').length).toBe(0)
+    expect(container.querySelector('.rb-live-dot')).toBeTruthy()
+  })
+
   it('opens the match detail when a matchup group (its bracket join / number) is clicked', () => {
     const { container, openDetail } = renderRB(playedBracket())
     const group = container.querySelector('.rb-matchup.rb-click')
