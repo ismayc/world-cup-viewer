@@ -61,6 +61,11 @@ city/stadium, a bracket, group standings, and live results.
   the Round of 16 reads as pairings rather than "Winner Match N". This cascades
   round by round — and per-slot, the moment each feeder is decided — to the
   quarter-finals, semis, final and third-place play-off.
+- **Radial bracket** — a circular view of the knockout bracket: the 32 Round-of-32
+  teams ring the outside and each winner advances one ring inward toward the trophy
+  at the centre, flags filling in as results land. The finalists meet on the line
+  through the trophy, with the third-place play-off just below. Hover a flag for the
+  country; tap to open the match.
 - **Add to calendar** — per-match `.ics` download, plus a `webcal://`
   subscription feed (all matches or just your teams) that auto-updates.
 - **Spoiler-free mode** — hide scores globally, per day, or per match.

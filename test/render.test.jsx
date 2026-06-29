@@ -217,6 +217,12 @@ describe('Follow teams', () => {
       </FollowProvider>,
     )
     expect(screen.queryByRole('button', { name: /My Teams/ })).not.toBeInTheDocument()
+    // Past days collapse once the tournament is underway; expand one so a match
+    // card (and its Follow buttons) is in the DOM regardless of the current date.
+    if (screen.queryAllByRole('button', { name: /^Follow / }).length === 0) {
+      const toggle = document.querySelector('.day-toggle')
+      if (toggle) fireEvent.click(toggle)
+    }
     fireEvent.click(screen.getAllByRole('button', { name: /^Follow / })[0])
     expect(screen.getByRole('button', { name: /My Teams/ })).toBeInTheDocument()
   })

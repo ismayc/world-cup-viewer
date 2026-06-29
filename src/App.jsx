@@ -4,6 +4,7 @@ import { VENUES } from './data/venues.js'
 import Filters from './components/Filters.jsx'
 import MatchCard from './components/MatchCard.jsx'
 import Bracket from './components/Bracket.jsx'
+import RadialBracket from './components/RadialBracket.jsx'
 import Standings from './components/Standings.jsx'
 import ScenariosView from './components/ScenariosView.jsx'
 import OutlookView from './components/OutlookView.jsx'
@@ -39,6 +40,7 @@ const VIEWS = [
   { id: 'scenarios', label: '🧮 Scenarios', groupStageOnly: true },
   { id: 'outlook', label: '🔮 R32 Outlook', groupStageOnly: true },
   { id: 'bracket', label: '🏆 Bracket' },
+  { id: 'radial', label: '🎯 Radial' },
 ]
 
 const INITIAL_FILTERS = {
@@ -627,6 +629,12 @@ export default function App() {
             focusMatch={focusMatch}
             onFocusHandled={() => setFocusMatch(null)}
           />
+        </main>
+      )}
+
+      {view === 'radial' && (
+        <main className="bracket-view">
+          <RadialBracket matches={displayMatches} tz={tz} hideScores={hideScores} />
         </main>
       )}
 
