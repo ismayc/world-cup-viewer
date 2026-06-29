@@ -63,9 +63,13 @@ describe('RadialBracket', () => {
     const { container } = renderRB(MATCHES)
     expect(container.querySelector('.rb-svg')).toBeTruthy()
     expect(screen.getByText('🏆')).toBeInTheDocument()
-    expect(screen.getByText('Third place')).toBeInTheDocument()
+    expect(screen.getByText(/Third place/)).toBeInTheDocument()
     // Connectors for the whole tree are drawn.
     expect(container.querySelectorAll('.rb-line').length).toBeGreaterThan(30)
+    // A clickable matchup group + match-number label for every knockout match.
+    expect(container.querySelectorAll('.rb-matchup.rb-click').length).toBeGreaterThan(15)
+    expect(container.querySelectorAll('.rb-mnum').length).toBeGreaterThan(15)
+    expect(screen.getByText('76')).toBeInTheDocument() // Brazil v Japan match number
     // Pre-knockout there's no champion crown yet.
     expect(screen.queryByText('👑')).toBeNull()
   })
@@ -86,6 +90,14 @@ describe('RadialBracket', () => {
     const node = container.querySelector('.rb-node.rb-click')
     expect(node).toBeTruthy()
     fireEvent.click(node)
+    expect(openDetail).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the match detail when a matchup group (its bracket join / number) is clicked', () => {
+    const { container, openDetail } = renderRB(playedBracket())
+    const group = container.querySelector('.rb-matchup.rb-click')
+    expect(group).toBeTruthy()
+    fireEvent.click(group)
     expect(openDetail).toHaveBeenCalledTimes(1)
   })
 })

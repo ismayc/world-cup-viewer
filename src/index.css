@@ -1180,9 +1180,35 @@ select {
 .rb-trophy,
 .rb-crown,
 .rb-3rd-label,
-.rb-3rd-vs {
+.rb-3rd-vs,
+.rb-mnum {
   text-anchor: middle;
   dominant-baseline: central;
+}
+/* Match-number label between a matchup's two teams. */
+.rb-mnum {
+  fill: var(--text-faint);
+  font-weight: 700;
+}
+/* Wide, invisible hit area so the matchup bar is easy to click. */
+.rb-hit {
+  stroke: transparent;
+  stroke-width: 16;
+  fill: none;
+  pointer-events: stroke;
+}
+.rb-matchup.rb-click:hover .rb-line {
+  stroke: var(--accent);
+}
+.rb-matchup.rb-click:hover .rb-mnum {
+  fill: var(--accent);
+}
+.rb-matchup:focus-visible {
+  outline: none;
+}
+.rb-matchup:focus-visible .rb-line {
+  stroke: var(--accent);
+  stroke-width: 2.4;
 }
 .rb-3rd-label,
 .rb-3rd-vs {

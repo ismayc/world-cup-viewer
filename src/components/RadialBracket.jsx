@@ -3,6 +3,7 @@ import { BRACKET, matchesByNum } from '../utils/bracket.js'
 import { MATCHES, STAGE_LABELS } from '../data/matches.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { decideMatch } from '../utils/bracketResolve.js'
+import { formatTime, tzAbbrev } from '../utils/time.js'
 import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
 
@@ -96,11 +97,17 @@ function FlagNode({ x, y, team, label, followed, onClick, r = 17 }) {
   )
 }
 
-export default function RadialBracket({ matches }) {
+export default function RadialBracket({ matches, tz }) {
   const { isFollowed } = useFollow()
   const openDetail = useDetail()
   const byNum = useMemo(() => matchesByNum(matches), [matches])
   const { angle, leafAngleOf } = useMemo(buildAngles, [])
+
+  // One-line summary for a match's hover tooltip — the gist of the detail popout.
+  const matchInfo = (m) => {
+    const date = new Date(m.ko).toLocaleDateString('en-US', { timeZone: tz, month: 'short', day: 'numeric' })
+    return `Match ${m.num} · ${STAGE_LABELS[m.stage]} · ${m.t1} vs ${m.t2} · ${date} ${formatTime(m.ko, tz)} ${tzAbbrev(m.ko, tz)}`
+  }
 
   const teamAt = (n, side) => {
     const m = byNum[n]
@@ -113,14 +120,13 @@ export default function RadialBracket({ matches }) {
   const leafPos = (s) => toXY(leafAngleOf[`${s.n}:${s.side}`], LEAF_R)
   const nodePos = (n) => toXY(angle[n], ROUND_OF[n])
 
-  // Connectors (drawn under the nodes), as a proper radial BRACKET rather than
-  // diagonal spokes: each child sends a straight RADIAL line inward to the parent's
-  // ring, and the two siblings are joined there by a TANGENTIAL bar that hugs the
-  // ring through the winner node — the orthogonal "⊐" join that reads as a bracket.
-  // The bar is sampled as short straight segments so it stays a polyline of lines
-  // and meets the node exactly even where siblings are far apart (near the centre).
-  const radials = [] // [[x1,y1],[x2,y2]]
-  const bars = [] // "x,y x,y …" polyline point strings
+  // Each matchup's connector is built as a clickable GROUP: two straight RADIAL
+  // spokes (one per participant, inward to the parent ring) joined by a TANGENTIAL
+  // bar that hugs the ring through the winner node — the orthogonal "⊐" join that
+  // reads as a bracket. The bar is sampled as short straight segments so it stays a
+  // polyline of lines and meets the node even where siblings are far apart. The
+  // whole group (spokes + bar + the match-number label between the teams) opens the
+  // match's detail popout — and shows it on hover.
   const barPoints = (a1, a2, r, n = 12) => {
     const pts = []
     for (let i = 0; i <= n; i++) {
@@ -129,26 +135,33 @@ export default function RadialBracket({ matches }) {
     }
     return pts.join(' ')
   }
-  const addBracket = (parentR, childR, a1, a2) => {
-    radials.push([toXY(a1, childR), toXY(a1, parentR)])
-    radials.push([toXY(a2, childR), toXY(a2, parentR)])
-    if (parentR > 0) bars.push(barPoints(a1, a2, parentR))
+  const matchups = [] // { num, radials:[[p,p]…], bar, label:[x,y] }
+  const addBracket = (num, parentR, childR, a1, a2, labelR) => {
+    matchups.push({
+      num,
+      radials: [
+        [toXY(a1, childR), toXY(a1, parentR)],
+        [toXY(a2, childR), toXY(a2, parentR)],
+      ],
+      bar: parentR > 0 ? barPoints(a1, a2, parentR) : null,
+      label: toXY((a1 + a2) / 2, labelR),
+    })
   }
   // R32 winners join their two outer teams.
   for (const n of [...BRACKET.left.R32, ...BRACKET.right.R32]) {
-    addBracket(RING.R32, LEAF_R, leafAngleOf[`${n}:0`], leafAngleOf[`${n}:1`])
+    addBracket(n, RING.R32, LEAF_R, leafAngleOf[`${n}:0`], leafAngleOf[`${n}:1`], (RING.R32 + LEAF_R) / 2)
   }
   // Each later round joins the two it feeds from, at that round's ring.
   const CHILD_RING = { R16: RING.R32, QF: RING.R16, SF: RING.QF }
   for (const round of ['R16', 'QF', 'SF']) {
     for (const n of [...BRACKET.left[round], ...BRACKET.right[round]]) {
       const [c1, c2] = childMatchNums(n)
-      addBracket(RING[round], CHILD_RING[round], angle[c1], angle[c2])
+      addBracket(n, RING[round], CHILD_RING[round], angle[c1], angle[c2], (RING[round] + CHILD_RING[round]) / 2)
     }
   }
-  // The final: the two finalists run straight in to the centre (the horizontal
-  // line through the trophy).
-  addBracket(0, RING.SF, angle[101], angle[102])
+  // The final: the two finalists run straight in to the centre; its number sits
+  // above the trophy.
+  addBracket(104, 0, RING.SF, angle[101], angle[102], 80)
 
   const champion = winnerOf(104)
 
@@ -161,15 +174,32 @@ export default function RadialBracket({ matches }) {
   return (
     <div className="radial-wrap">
       <svg className="rb-svg" viewBox="0 0 1000 1080" role="img" aria-label="Knockout bracket, circular view">
-        {/* Connectors: straight radial spokes + ring-hugging bars (the bracket). */}
-        <g className="rb-lines">
-          {radials.map(([[x1, y1], [x2, y2]], i) => (
-            <line key={`r${i}`} x1={x1} y1={y1} x2={x2} y2={y2} className="rb-line" />
-          ))}
-          {bars.map((pts, i) => (
-            <polyline key={`b${i}`} points={pts} className="rb-line rb-bar" />
-          ))}
-        </g>
+        {/* Each matchup: the bracket join (spokes + bar) plus its match number,
+            grouped into one clickable target that opens the detail popout. */}
+        {matchups.map(({ num, radials, bar, label }) => {
+          const m = byNum[num]
+          const open = m ? () => openDetail(m) : undefined
+          return (
+            <g
+              key={`mu${num}`}
+              className={`rb-matchup${open ? ' rb-click' : ''}`}
+              onClick={open}
+              role={open ? 'button' : undefined}
+              tabIndex={open ? 0 : undefined}
+              onKeyDown={open ? (e) => (e.key === 'Enter' || e.key === ' ') && open() : undefined}
+            >
+              {m && <title>{matchInfo(m)}</title>}
+              {radials.map(([[x1, y1], [x2, y2]], i) => (
+                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="rb-line" />
+              ))}
+              {bar && <polyline points={bar} className="rb-line" />}
+              {bar && <polyline points={bar} className="rb-hit" />}
+              <text className="rb-mnum" x={label[0]} y={label[1]} fontSize="11">
+                {num}
+              </text>
+            </g>
+          )
+        })}
 
         {/* Centre: trophy (or a crowned champion). */}
         <text className="rb-trophy" x={CX} y={CY} fontSize="46">🏆</text>
@@ -219,10 +249,20 @@ export default function RadialBracket({ matches }) {
           )
         })}
 
-        {/* Third-place play-off, below the trophy. */}
-        <text className="rb-3rd-label" x={CX} y={THIRD_Y - 26} fontSize="15">
-          Third place
-        </text>
+        {/* Third-place play-off, below the trophy. The label carries its match
+            number and opens the detail popout (matching the matchup groups). */}
+        <g
+          className={byNum[103] ? 'rb-matchup rb-click' : undefined}
+          onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
+          role={byNum[103] ? 'button' : undefined}
+          tabIndex={byNum[103] ? 0 : undefined}
+          onKeyDown={byNum[103] ? (e) => (e.key === 'Enter' || e.key === ' ') && openDetail(byNum[103]) : undefined}
+        >
+          {byNum[103] && <title>{matchInfo(byNum[103])}</title>}
+          <text className="rb-3rd-label" x={CX} y={THIRD_Y - 26} fontSize="15">
+            Third place <tspan className="rb-mnum-inline">· M103</tspan>
+          </text>
+        </g>
         <FlagNode
           x={CX - 28}
           y={THIRD_Y}
@@ -245,7 +285,8 @@ export default function RadialBracket({ matches }) {
       </svg>
       <p className="rb-hint">
         Outer ring = Round of 32. Each match’s winner advances one ring inward toward the trophy;
-        flags fill in as results land. Hover a flag for the country; tap to open the match.
+        flags fill in as results land. Hover a flag for the country; click a matchup (its bracket
+        join or match number) to open the match details.
       </p>
     </div>
   )
