@@ -5,6 +5,14 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-06-28
+- **New “Radial” bracket view.** A circular rendering of the knockout bracket: the
+  32 Round-of-32 teams sit on the outer ring and each match’s winner advances one
+  ring inward toward the trophy at the centre, so the flags progress along the
+  spokes as results land. Drawn as a true radial bracket (straight radial spokes +
+  ring-hugging bars) so the structure reads at a glance; the two finalists meet on
+  the horizontal line through the trophy, and the third-place play-off sits just
+  below it. Hovering a flag names the country; tapping opens the match. New tab
+  beside Bracket. (`RadialBracket`, +3 tests.)
 - **Groups: explain the soft tie-breakers among the third-placed teams.** A note
   below the Best third-placed table now spells out each adjacent pair of thirds that
   finished level on points, goal difference AND goals scored — where the order came

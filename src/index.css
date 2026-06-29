@@ -1149,6 +1149,73 @@ select {
   width: 100%;
 }
 
+/* ---------- Radial (circular) bracket ---------- */
+.radial-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.rb-svg {
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  display: block;
+}
+.rb-line {
+  stroke: var(--text-faint);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rb-dot {
+  fill: var(--text-faint);
+}
+.rb-flag-bg {
+  fill: var(--card);
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+.rb-flag,
+.rb-trophy,
+.rb-crown,
+.rb-3rd-label,
+.rb-3rd-vs {
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.rb-3rd-label,
+.rb-3rd-vs {
+  fill: var(--text-dim);
+  font-weight: 600;
+}
+.rb-node.followed .rb-flag-bg {
+  stroke: var(--gold);
+  stroke-width: 2.6;
+}
+.rb-click {
+  cursor: pointer;
+}
+.rb-click:hover .rb-flag-bg {
+  stroke: var(--accent);
+  stroke-width: 2.2;
+}
+.rb-node:focus-visible {
+  outline: none;
+}
+.rb-node:focus-visible .rb-flag-bg {
+  stroke: var(--accent);
+  stroke-width: 2.6;
+}
+.rb-hint {
+  margin-top: 8px;
+  max-width: 620px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
 /* ---------- Week view ---------- */
 .week-nav {
   display: flex;
