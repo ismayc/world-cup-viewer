@@ -85,6 +85,17 @@ describe('RadialBracket', () => {
     expect(titles.some((t) => /^Champion: /.test(t))).toBe(true)
   })
 
+  it('pins the final (M104) above the trophy, with third place below it (no overlap)', () => {
+    const { container } = renderRB(playedBracket())
+    const m104 = [...container.querySelectorAll('.rb-mnum')].find((t) => t.textContent === 'M104')
+    expect(m104).toBeTruthy()
+    // viewBox centre is y=500; the final must sit above it…
+    expect(parseFloat(m104.getAttribute('y'))).toBeLessThan(500)
+    // …and the third-place label below it.
+    const third = [...container.querySelectorAll('.rb-3rd-label')][0]
+    expect(parseFloat(third.getAttribute('y'))).toBeGreaterThan(500)
+  })
+
   it('opens the match detail when a flag is clicked', () => {
     const { container, openDetail } = renderRB(playedBracket())
     const node = container.querySelector('.rb-node.rb-click')

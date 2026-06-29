@@ -168,9 +168,11 @@ export default function RadialBracket({ matches, tz, hideScores }) {
       addBracket(n, RING[round], CHILD_RING[round], angle[c1], angle[c2], (RING[round] + CHILD_RING[round]) / 2)
     }
   }
-  // The final: the two finalists run straight in to the centre; its number sits
-  // above the trophy.
+  // The final: the two finalists run straight in to the centre. Its number is
+  // pinned ABOVE the trophy — the finalists' average angle points straight down,
+  // which would otherwise drop the label onto the third-place section below.
   addBracket(104, 0, RING.SF, angle[101], angle[102], 80)
+  matchups[matchups.length - 1].label = [CX, CY - 78]
 
   const champion = winnerOf(104)
 
