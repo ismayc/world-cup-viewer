@@ -277,7 +277,12 @@ export default function RadialBracket({ matches, tz, hideScores }) {
         >
           {byNum[103] && <title>{matchInfo(byNum[103])}</title>}
           <text className="rb-3rd-label" x={CX} y={THIRD_Y - 26} fontSize="15">
-            Third place <tspan className="rb-mnum-inline">· M103</tspan>
+            Third place
+          </text>
+          {/* Match number sits below the matchup, smaller (mirrors the inner
+              matchups, where the score tucks just under the number). */}
+          <text className="rb-mnum" x={CX} y={THIRD_Y + 22} fontSize="9">
+            M103
           </text>
         </g>
         <FlagNode
@@ -301,7 +306,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
         />
         {byNum[103]?.live && <circle className="rb-live-dot" cx={CX} cy={THIRD_Y - 26} r={3.4} />}
         {!hideScores && scoreText(byNum[103]) && (
-          <text className="rb-score" x={CX} y={THIRD_Y + 22} fontSize="9.5">
+          <text className="rb-score" x={CX} y={THIRD_Y + 34} fontSize="9.5">
             {scoreText(byNum[103])}
           </text>
         )}

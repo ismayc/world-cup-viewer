@@ -4,6 +4,12 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-06-29
+- **Radial view: tidy the third-place label.** The match number ("M103") now sits
+  below the `· vs ·` matchup, rendered smaller (faint match-number style, mirroring
+  the inner matchups), instead of trailing the "Third place" heading. The score
+  shifts down accordingly so it tucks just under the number. (`RadialBracket`.)
+
 ## 2026-06-28
 - **New “Radial” bracket view.** A circular rendering of the knockout bracket: the
   32 Round-of-32 teams sit on the outer ring and each match’s winner advances one
