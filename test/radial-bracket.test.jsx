@@ -69,7 +69,7 @@ describe('RadialBracket', () => {
     // A clickable matchup group + match-number label for every knockout match.
     expect(container.querySelectorAll('.rb-matchup.rb-click').length).toBeGreaterThan(15)
     expect(container.querySelectorAll('.rb-mnum').length).toBeGreaterThan(15)
-    expect(screen.getByText('76')).toBeInTheDocument() // Brazil v Japan match number
+    expect(screen.getByText('M76')).toBeInTheDocument() // Brazil v Japan match number
     // Pre-knockout there's no champion crown yet.
     expect(screen.queryByText('👑')).toBeNull()
   })

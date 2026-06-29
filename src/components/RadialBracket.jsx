@@ -195,7 +195,7 @@ export default function RadialBracket({ matches, tz }) {
               {bar && <polyline points={bar} className="rb-line" />}
               {bar && <polyline points={bar} className="rb-hit" />}
               <text className="rb-mnum" x={label[0]} y={label[1]} fontSize="11">
-                {num}
+                M{num}
               </text>
             </g>
           )
