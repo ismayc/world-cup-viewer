@@ -227,11 +227,17 @@ function liveRecordFor(match, liveMap) {
   return liveMap.get('inst:' + inst) || null
 }
 
+// ESPN flips a match to STATUS_DELAYED at the scheduled hour, but kickoff is
+// normally only a few minutes after it. Within this grace window an ESPN
+// "Delayed" is treated as pre-match (countdown, no amber badge); a real delay
+// outlives the window and shows normally.
+const DELAY_GRACE_MS = 5 * 60 * 1000
+
 // Overlay ESPN live / just-finished data onto an already-OpenFootball-merged
 // matches array. OpenFootball stays the source of record: if a match already has
 // a score (from OpenFootball), it is left untouched. The static input is never
 // mutated.
-export function applyLive(matches, liveMap) {
+export function applyLive(matches, liveMap, now = Date.now()) {
   if (!liveMap || liveMap.size === 0) return matches
   return matches.map((m) => {
     const rec = liveRecordFor(m, liveMap)
@@ -261,9 +267,15 @@ export function applyLive(matches, liveMap) {
 
     const bothReal = isRealTeam(m.t1) && isRealTeam(m.t2)
 
+    // An ESPN "Delayed" inside the grace window is premature — the match just
+    // hasn't kicked off yet. Fall through to the pre-match branch (suspensions
+    // are a real stoppage and are never suppressed).
+    const earlyDelay =
+      rec.paused && rec.statusLabel === 'Delayed' && now - new Date(m.ko).getTime() < DELAY_GRACE_MS
+
     // Nothing to show yet (pre-match or no numeric score): only resolve knockout
     // team names if ESPN knows them and we still hold placeholders.
-    if (rec.state === 'pre' || !rec.score) {
+    if (rec.state === 'pre' || earlyDelay || !rec.score) {
       if (!bothReal && isRealTeam(rec.home) && isRealTeam(rec.away)) {
         return { ...m, t1: rec.home, t2: rec.away }
       }

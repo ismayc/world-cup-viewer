@@ -61,27 +61,56 @@ describe('Standings — delayed group', () => {
 })
 
 describe('espn — STATUS_DELAYED flows through to m.live.delayed', () => {
+  const type = { state: 'in', name: 'STATUS_DELAYED', description: 'Delayed', shortDetail: 'Delay' }
+  const event = {
+    date: '2026-06-22T21:00Z',
+    status: { type },
+    competitions: [
+      {
+        status: { type },
+        competitors: [
+          { homeAway: 'home', team: { id: '1', displayName: 'France' }, score: '1' },
+          { homeAway: 'away', team: { id: '2', displayName: 'Iraq' }, score: '0' },
+        ],
+      },
+    ],
+  }
+  const fra = MATCHES.find(
+    (m) => (m.t1 === 'France' && m.t2 === 'Iraq') || (m.t1 === 'Iraq' && m.t2 === 'France'),
+  )
+
   it('flags a delayed match via fetchLive + applyLive', async () => {
-    const type = { state: 'in', name: 'STATUS_DELAYED', description: 'Delayed', shortDetail: 'Delay' }
-    const event = {
-      date: '2026-06-22T21:00Z',
-      status: { type },
-      competitions: [
-        {
-          status: { type },
-          competitors: [
-            { homeAway: 'home', team: { id: '1', displayName: 'France' }, score: '1' },
-            { homeAway: 'away', team: { id: '2', displayName: 'Iraq' }, score: '0' },
-          ],
-        },
-      ],
-    }
     global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ events: [event] }) }))
     const map = await fetchLive()
-    const fra = MATCHES.find(
-      (m) => (m.t1 === 'France' && m.t2 === 'Iraq') || (m.t1 === 'Iraq' && m.t2 === 'France'),
-    )
     const [out] = applyLive([fra], map)
     expect(out.live.delayed).toBe(true)
+  })
+
+  it('suppresses an ESPN "Delayed" within 5 minutes of kickoff (match is just starting late)', async () => {
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ events: [event] }) }))
+    const map = await fetchLive()
+    const ko = new Date(fra.ko).getTime()
+    // 2 minutes after the scheduled hour: still pre-match — no badge, no score.
+    const [early] = applyLive([fra], map, ko + 2 * 60 * 1000)
+    expect(early.live).toBeUndefined()
+    expect(early.score).toBeUndefined()
+    // 5 minutes after: the delay is real — badge shows.
+    const [late] = applyLive([fra], map, ko + 5 * 60 * 1000)
+    expect(late.live.delayed).toBe(true)
+  })
+
+  it('never suppresses a suspension, even right after kickoff', async () => {
+    const susType = { state: 'in', name: 'STATUS_SUSPENDED', description: 'Suspended', shortDetail: 'Susp' }
+    const susEvent = {
+      ...event,
+      status: { type: susType },
+      competitions: [{ ...event.competitions[0], status: { type: susType } }],
+    }
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ events: [susEvent] }) }))
+    const map = await fetchLive()
+    const ko = new Date(fra.ko).getTime()
+    const [out] = applyLive([fra], map, ko + 60 * 1000)
+    expect(out.live.delayed).toBe(true)
+    expect(out.live.label).toBe('Suspended')
   })
 })

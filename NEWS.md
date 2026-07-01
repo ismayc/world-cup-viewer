@@ -4,6 +4,14 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-07-01
+- **No premature "Delayed" badge at kickoff.** ESPN flips a match to
+  `STATUS_DELAYED` right at the scheduled hour, but kickoff normally happens a
+  few minutes after it. An ESPN "Delayed" within 5 minutes of the scheduled
+  start is now treated as pre-match (the countdown stays; no amber badge, no
+  provisional score) — a real delay outlives the window and shows as before.
+  Suspensions are never suppressed. (`applyLive` in `services/espn.js`.)
+
 ## 2026-06-29
 - **Radial view: tidy the third-place label.** The match number ("M103") now sits
   below the `· vs ·` matchup, rendered smaller (faint match-number style, mirroring
