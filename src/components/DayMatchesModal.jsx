@@ -68,6 +68,8 @@ function DayRow({ match, tz, scoreHidden, onOpen }) {
             <span className="gg-badge gg-voided">{flag.label}</span>
           ) : state === 'finished' ? (
             <span className="gg-badge gg-final">FT</span>
+          ) : state === 'live' ? (
+            <span className="gg-badge gg-delayed">Delayed</span>
           ) : (
             <span className="gg-badge gg-upcoming">Upcoming</span>
           )}

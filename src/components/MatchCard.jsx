@@ -126,7 +126,10 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
             {match.live ? (
               <LiveBadge match={match} />
             ) : status === 'live' ? (
-              <div className="badge-live">● LIVE</div>
+              // Past kickoff but ESPN isn't ticking minutes yet → show "Delayed",
+              // not a bare "LIVE". Once ESPN sends a clock the match.live branch
+              // above takes over and shows the running time.
+              <div className="badge-delayed" role="status" aria-label="Delayed">⏸ Delayed</div>
             ) : status === 'finished' ? (
               <div className="badge-done" aria-label="Full time">FT</div>
             ) : null}

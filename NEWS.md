@@ -11,6 +11,13 @@ data/source updates, deployment). Newest day on top.
   shifts down accordingly so it tucks just under the number. (`RadialBracket`.)
 
 ## 2026-06-28
+- **"Delayed" instead of a false "LIVE" once past kickoff.** When a match is inside
+  its scheduled window but ESPN isn't ticking minutes yet (kicked off late — e.g. a
+  weather/lightning hold), the schedule card, match detail, Next-match bar and the
+  day/group pop-ups now read **"⏸ Delayed"** rather than a bare "● LIVE". The moment
+  ESPN starts the clock, the live minute takes over as before. (ESPN-confirmed live
+  and ESPN-flagged delays were already handled; this covers the past-kickoff-with-
+  no-feed gap.) Tests updated.
 - **New “Radial” bracket view.** A circular rendering of the knockout bracket: the
   32 Round-of-32 teams sit on the outer ring and each match’s winner advances one
   ring inward toward the trophy at the centre, so the flags progress along the

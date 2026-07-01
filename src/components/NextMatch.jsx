@@ -152,7 +152,10 @@ export default function NextMatch({ matches, tz }) {
 
       <div className="nm-bottom">
         {live ? (
-          match.live?.delayed ? (
+          !match.live ? (
+            // In its window but ESPN isn't ticking yet → delayed, not in progress.
+            <span className="nm-countdown delayed">⏸ Delayed</span>
+          ) : match.live.delayed ? (
             <span className="nm-countdown delayed">⏸ {match.live.label || 'Delayed'}</span>
           ) : (
             <span className="nm-countdown live">● in progress</span>

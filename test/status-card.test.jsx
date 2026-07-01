@@ -96,12 +96,13 @@ describe('MatchCard normal states (full coverage)', () => {
     expect(screen.getByText('● LIVE')).toBeInTheDocument()
   })
 
-  it('live via the time window', () => {
+  it('past kickoff with no live feed → Delayed (not LIVE)', () => {
     vi.useFakeTimers()
     try {
       vi.setSystemTime(new Date(base.ko))
       renderCard()
-      expect(screen.getByText('● LIVE')).toBeInTheDocument()
+      expect(screen.getByText(/Delayed/)).toBeInTheDocument()
+      expect(screen.queryByText('● LIVE')).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }

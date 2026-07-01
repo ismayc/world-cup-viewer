@@ -87,7 +87,8 @@ export default function MatchDetail({ match, tz, hideScores, onClose }) {
           ) : match.live ? (
             <LiveBadge match={match} className="md-live" />
           ) : (
-            status === 'live' && <span className="md-live">● LIVE</span>
+            // In-window but ESPN isn't ticking yet → delayed, not live.
+            status === 'live' && <span className="badge-delayed" role="status">⏸ Delayed</span>
           )}
         </div>
 

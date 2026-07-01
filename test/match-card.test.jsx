@@ -77,13 +77,15 @@ describe('MatchCard rendering states', () => {
     expect(screen.getByText('● LIVE')).toBeInTheDocument()
   })
 
-  it('shows the in-window LIVE badge from liveState when no live flag', () => {
+  it('shows "Delayed" (not LIVE) when past kickoff but no live feed yet', () => {
     vi.useFakeTimers()
     try {
-      // Set "now" to be inside the match window (kickoff is ET).
+      // "now" is inside the match window but there's no ESPN live flag → the match
+      // is past kickoff and not confirmed started, so it reads Delayed, not LIVE.
       vi.setSystemTime(new Date(groupMatch.ko))
       renderCard()
-      expect(screen.getByText('● LIVE')).toBeInTheDocument()
+      expect(screen.getByText(/Delayed/)).toBeInTheDocument()
+      expect(screen.queryByText('● LIVE')).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }

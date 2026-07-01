@@ -151,12 +151,13 @@ describe('MatchDetail live states', () => {
     expect(screen.getByText(/Match 28/)).toBeInTheDocument()
   })
 
-  it('renders the ● LIVE text from liveState when inside the match window', () => {
+  it('renders "Delayed" (not LIVE) when inside the window but no live feed yet', () => {
     vi.useFakeTimers()
     try {
       vi.setSystemTime(new Date(groupMatch.ko))
       renderDetail()
-      expect(screen.getByText('● LIVE')).toBeInTheDocument()
+      expect(screen.getByText(/Delayed/)).toBeInTheDocument()
+      expect(screen.queryByText('● LIVE')).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }

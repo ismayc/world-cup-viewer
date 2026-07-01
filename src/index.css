@@ -1823,6 +1823,7 @@ select {
 .gg-final { background: rgba(0, 194, 168, 0.14); color: var(--accent); }
 .gg-upcoming { background: var(--card); color: var(--text-faint); border: 1px solid var(--border); }
 .gg-voided { background: rgba(240, 173, 78, 0.16); color: #f0ad4e; }
+.gg-delayed { background: rgba(240, 173, 78, 0.16); color: var(--delay); border: 1px solid var(--delay); }
 .gg-empty { font-size: 0.82rem; color: var(--text-faint); margin: 0; }
 .gg-knockout h4 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .gg-ko-badge {
