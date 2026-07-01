@@ -447,6 +447,14 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* Optional per-match note by the kickoff time (e.g. a weather-delayed start). */
+.kickoff-note {
+  margin-top: 3px;
+  font-size: 0.62rem;
+  color: var(--delay);
+  font-weight: 600;
+  line-height: 1.3;
+}
 .badge-live {
   margin-top: 4px;
   font-size: 0.64rem;

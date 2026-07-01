@@ -120,6 +120,9 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
           <>
             <div className="kickoff">{viewerTime}</div>
             <div className="kickoff-tz">{viewerAbbr}</div>
+            {/* Optional per-match note (e.g. a weather-delayed start), shown by
+                the listed kickoff time. */}
+            {match.note && <div className="kickoff-note">({match.note})</div>}
             {/* Real in-match status from ESPN (clock/HT) beats the time-based guess;
                 a match with a final score reads FT even if still inside the window.
                 A paused (delayed/suspended) match shows the LiveBadge, not a countdown. */}

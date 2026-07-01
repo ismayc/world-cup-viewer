@@ -77,6 +77,11 @@ describe('MatchCard rendering states', () => {
     expect(screen.getByText('● LIVE')).toBeInTheDocument()
   })
 
+  it('renders an optional per-match note by the kickoff time', () => {
+    renderCard({ match: { ...groupMatch, note: 'Delayed start due to weather' } })
+    expect(screen.getByText('(Delayed start due to weather)')).toBeInTheDocument()
+  })
+
   it('shows "Delayed" (not LIVE) when past kickoff but no live feed yet', () => {
     vi.useFakeTimers()
     try {

@@ -121,7 +121,7 @@ export const MATCHES = [
   { num: 75, stage: 'R32', t1: 'Winner Group F', t2: 'Runner-up Group C', venue: 'bbva', ko: '2026-06-29T21:00:00-04:00' },
   { num: 78, stage: 'R32', t1: 'Runner-up Group E', t2: 'Runner-up Group I', venue: 'att', ko: '2026-06-30T13:00:00-04:00' },
   { num: 77, stage: 'R32', t1: 'Winner Group I', t2: '3rd C/D/F/G/H', venue: 'metlife', ko: '2026-06-30T17:00:00-04:00' },
-  { num: 79, stage: 'R32', t1: 'Winner Group A', t2: '3rd C/E/F/H/I', venue: 'azteca', ko: '2026-06-30T21:00:00-04:00' },
+  { num: 79, stage: 'R32', t1: 'Winner Group A', t2: '3rd C/E/F/H/I', venue: 'azteca', ko: '2026-06-30T21:00:00-04:00', note: 'Delayed start due to weather' },
   { num: 80, stage: 'R32', t1: 'Winner Group L', t2: '3rd E/H/I/J/K', venue: 'mercedes', ko: '2026-07-01T12:00:00-04:00' },
   { num: 82, stage: 'R32', t1: 'Winner Group G', t2: '3rd A/E/H/I/J', venue: 'lumen', ko: '2026-07-01T16:00:00-04:00' },
   { num: 81, stage: 'R32', t1: 'Winner Group D', t2: '3rd B/E/F/I/J', venue: 'levis', ko: '2026-07-01T20:00:00-04:00' },
