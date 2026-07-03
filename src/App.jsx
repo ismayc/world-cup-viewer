@@ -50,6 +50,9 @@ const VIEWS = [
 const HIDEABLE_STAGES = [
   { stage: 'Group', title: 'Group stage', noun: 'group game' },
   { stage: 'R32', title: 'Round of 32', noun: 'Round-of-32 game' },
+  { stage: 'R16', title: 'Round of 16', noun: 'Round-of-16 game' },
+  { stage: 'QF', title: 'Quarter-finals', noun: 'quarter-final' },
+  { stage: 'SF', title: 'Semi-finals', noun: 'semi-final' },
 ]
 
 const INITIAL_FILTERS = {
