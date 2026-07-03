@@ -12,7 +12,7 @@ import WeekView from './components/WeekView.jsx'
 import NextMatch from './components/NextMatch.jsx'
 import MatchDetail from './components/MatchDetail.jsx'
 import CalendarModal from './components/CalendarModal.jsx'
-import { groupStageArchived } from './utils/scenarios.js'
+import { groupStageArchived, stageArchived } from './utils/scenarios.js'
 import { detectTimezone, formatDateLong, dayKey, liveState } from './utils/time.js'
 import { readState, writeState } from './utils/urlState.js'
 import { parseQuery, matchesSearch } from './utils/search.js'
@@ -41,6 +41,15 @@ const VIEWS = [
   { id: 'outlook', label: '🔮 R32 Outlook', groupStageOnly: true },
   { id: 'bracket', label: '🏆 Bracket' },
   { id: 'radial', label: '🎯 Radial' },
+]
+
+// Stages that collapse out of the Schedule once every one of their games is final,
+// so the list stays focused on what's still to come. Each can be brought back via
+// the stage filter (the schedule note's "Show …" button). Ordered earliest-first;
+// the Final and third-place play-off are deliberately never auto-hidden.
+const HIDEABLE_STAGES = [
+  { stage: 'Group', title: 'Group stage', noun: 'group game' },
+  { stage: 'R32', title: 'Round of 32', noun: 'Round-of-32 game' },
 ]
 
 const INITIAL_FILTERS = {
@@ -340,16 +349,28 @@ export default function App() {
     })
   }, [filters, displayMatches, followed])
 
-  // Once the group stage is archived, the (now all-completed) group games drop
-  // out of the Schedule by default so it opens on the knockouts — unless the user
-  // explicitly picks the Group stage filter to bring them back. Scoped to the
-  // Schedule list only (the Week view still shows everything in `filtered`).
-  const hideArchivedGroups = archived && !filters.stages.includes('Group')
-  const scheduleMatches = useMemo(
-    () => (hideArchivedGroups ? filtered.filter((m) => m.stage !== 'Group') : filtered),
-    [filtered, hideArchivedGroups],
+  // Once a stage is fully played it drops out of the Schedule by default, so the
+  // list opens on what's still to come — unless the user picks that stage's filter
+  // to bring it back. Scoped to the Schedule list only (Week still shows all of
+  // `filtered`). Applies as each round finishes (group stage, then Round of 32, …).
+  const hiddenStages = useMemo(
+    () => HIDEABLE_STAGES.filter((s) => stageArchived(matches, s.stage) && !filters.stages.includes(s.stage)),
+    [matches, filters.stages],
   )
-  const hiddenGroupCount = hideArchivedGroups ? filtered.length - scheduleMatches.length : 0
+  const scheduleMatches = useMemo(() => {
+    if (!hiddenStages.length) return filtered
+    const hide = new Set(hiddenStages.map((s) => s.stage))
+    return filtered.filter((m) => !hide.has(m.stage))
+  }, [filtered, hiddenStages])
+  // How many games each hidden stage is holding back (from the otherwise-filtered
+  // set), for the "N … hidden" note. A stage with 0 (filtered out anyway) shows no note.
+  const hiddenStageNotes = useMemo(
+    () =>
+      hiddenStages
+        .map((s) => ({ ...s, count: filtered.filter((m) => m.stage === s.stage).length }))
+        .filter((s) => s.count > 0),
+    [hiddenStages, filtered],
+  )
 
   const days = useMemo(() => {
     const map = new Map()
@@ -551,14 +572,18 @@ export default function App() {
       {view === 'schedule' && (
         <>
           <NextMatch matches={displayMatches} tz={tz} />
-          {hiddenGroupCount > 0 && (
-            <p className="schedule-note">
-              Group stage complete — {hiddenGroupCount} group game{hiddenGroupCount === 1 ? '' : 's'} hidden.{' '}
-              <button className="linklike" onClick={() => setFilters((f) => ({ ...f, stages: ['Group'] }))}>
-                Show group games
+          {hiddenStageNotes.map((s) => (
+            <p key={s.stage} className="schedule-note">
+              {s.title} complete — {s.count} {s.noun}
+              {s.count === 1 ? '' : 's'} hidden.{' '}
+              <button
+                className="linklike"
+                onClick={() => setFilters((f) => ({ ...f, stages: [...new Set([...f.stages, s.stage])] }))}
+              >
+                Show {s.noun}s
               </button>
             </p>
-          )}
+          ))}
           <main className="schedule">
             {days.length === 0 && (
               <div className="empty">

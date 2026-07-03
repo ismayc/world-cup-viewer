@@ -49,13 +49,18 @@ export function openGroups(matches) {
   return GROUPS.filter((g) => open[g] && open[g].length)
 }
 
-// True once the group stage is in the rear-view: every group game is final (and
-// none still live/settling). Used to retire the group-stage-only tools
-// (Scenarios, R32 Outlook) from the nav the moment the knockouts take over.
+// True once a stage is in the rear-view: every one of its games is final (played,
+// not live/settling and not voided). Used to collapse completed stages out of the
+// Schedule, and (for the group stage) to retire the group-stage-only tools.
+export function stageArchived(matches, stage) {
+  const games = matches.filter((m) => m.stage === stage && !m.voided)
+  return games.length > 0 && games.every((m) => Array.isArray(m.score) && !m.live)
+}
+
+// The group stage is done — retire the group-stage-only tools (Scenarios, R32
+// Outlook) from the nav the moment the knockouts take over.
 export function groupStageArchived(matches) {
-  const group = matches.filter((m) => m.stage === 'Group' && !m.voided)
-  if (!group.length) return false
-  return group.every((m) => Array.isArray(m.score) && !m.live)
+  return stageArchived(matches, 'Group')
 }
 
 // How many of the remaining group games are still unpicked.

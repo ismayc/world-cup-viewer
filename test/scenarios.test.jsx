@@ -9,6 +9,7 @@ import {
   possibleOrderings,
   pickOutcome,
   groupStageArchived,
+  stageArchived,
   PICK_SCORES,
 } from '../src/utils/scenarios.js'
 import ScenariosView from '../src/components/ScenariosView.jsx'
@@ -74,6 +75,24 @@ describe('groupStageArchived', () => {
   })
   it('is true as soon as every group game is final', () => {
     expect(groupStageArchived(allDone)).toBe(true)
+  })
+})
+
+describe('stageArchived (generic, per-stage)', () => {
+  const r32Done = MATCHES.map((m) => (m.stage === 'R32' ? { ...m, score: [1, 0] } : m))
+
+  it('is false while any of the stage’s games is unplayed', () => {
+    expect(stageArchived(MATCHES, 'R32')).toBe(false)
+  })
+  it('is false while one of the stage’s games is still live', () => {
+    const oneLive = r32Done.map((m) => (m.num === 73 ? { ...m, live: { clock: "70'" } } : m))
+    expect(stageArchived(oneLive, 'R32')).toBe(false)
+  })
+  it('is true once every game in the stage is final', () => {
+    expect(stageArchived(r32Done, 'R32')).toBe(true)
+  })
+  it('is false for a stage with no games', () => {
+    expect(stageArchived(MATCHES, 'Nope')).toBe(false)
   })
 })
 

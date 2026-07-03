@@ -19,6 +19,12 @@ data/source updates, deployment). Newest day on top.
   shifts down accordingly so it tucks just under the number. (`RadialBracket`.)
 
 ## 2026-06-28
+- **Schedule collapses each completed round, not just the group stage.** The
+  group-stage-hiding was generalized: once every game in a stage is final it drops
+  out of the Schedule by default (Round of 32 added now — it finishes tonight),
+  with a per-stage note ("Round of 32 complete — N Round-of-32 games hidden · Show
+  Round-of-32 games") to bring it back via the stage filter. Reusable `stageArchived`
+  helper; the Final and third-place play-off are never auto-hidden.
 - **"Delayed" instead of a false "LIVE" once past kickoff.** When a match is inside
   its scheduled window but ESPN isn't ticking minutes yet (kicked off late — e.g. a
   weather/lightning hold), the schedule card, match detail, Next-match bar and the
