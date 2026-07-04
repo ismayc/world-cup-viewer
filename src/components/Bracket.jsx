@@ -1,19 +1,22 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { STAGE_LABELS } from '../data/matches.js'
 import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
-import { BRACKET, matchesByNum, feederTeams } from '../utils/bracket.js'
+import { BRACKET, matchesByNum, feederTeams, pathToFinal } from '../utils/bracket.js'
 import { formatTime, tzAbbrev, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { useFollow } from '../context/follow.jsx'
+import { usePath } from '../context/path.jsx'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
 import ScoreCheck from './ScoreCheck.jsx'
+import PathPicker from './PathPicker.jsx'
 
 // One of the two candidate teams inside a potential-matchup slot.
-function FeederTeam({ name }) {
+function FeederTeam({ name, pathTeam }) {
   const { isFollowed } = useFollow()
+  const onPath = name === pathTeam
   return (
-    <span className={`bx-feeder-team${isFollowed(name) ? ' followed' : ''}`}>
+    <span className={`bx-feeder-team${isFollowed(name) ? ' followed' : ''}${onPath ? ' on-path-team' : ''}`}>
       <span className="bx-flag">{FLAG_BY_TEAM[name] || '·'}</span>
       <span className="bx-team">{name}</span>
     </span>
@@ -23,7 +26,7 @@ function FeederTeam({ name }) {
 // Team names are pre-resolved upstream (clinched "Winner Group X" slots are
 // already filled in the match data), so this renders whatever it's given — except
 // a feed slot whose source tie is set, which expands to the two potential teams.
-function Side({ name, ko, feeder }) {
+function Side({ name, ko, feeder, pathTeam }) {
   const { isFollowed } = useFollow()
   if (feeder) {
     return (
@@ -31,23 +34,27 @@ function Side({ name, ko, feeder }) {
         className="bx-side bx-side-feeder"
         title={`${feeder.kind} of Match ${feeder.num}: ${feeder.a} or ${feeder.b}`}
       >
-        <FeederTeam name={feeder.a} />
+        <FeederTeam name={feeder.a} pathTeam={pathTeam} />
         <span className="bx-slash" aria-hidden="true">/</span>
-        <FeederTeam name={feeder.b} />
+        <FeederTeam name={feeder.b} pathTeam={pathTeam} />
       </div>
     )
   }
   const flag = FLAG_BY_TEAM[name]
   const on = Boolean(flag) && isFollowed(name)
+  const onPath = Boolean(flag) && name === pathTeam
   return (
-    <div className={`bx-side${on ? ' followed' : ''}`} title={teamKickoffTooltip(ko, name) || undefined}>
+    <div
+      className={`bx-side${on ? ' followed' : ''}${onPath ? ' on-path-team' : ''}`}
+      title={teamKickoffTooltip(ko, name) || undefined}
+    >
       <span className="bx-flag">{flag || '·'}</span>
       <span className={flag ? 'bx-team' : 'bx-tbd'}>{name}</span>
     </div>
   )
 }
 
-function BracketMatch({ num, byNum, tz, hideScores }) {
+function BracketMatch({ num, byNum, tz, hideScores, pathTeam, path }) {
   const openDetail = useDetail()
   const m = byNum[num]
   if (!m) return null
@@ -63,8 +70,13 @@ function BracketMatch({ num, byNum, tz, hideScores }) {
   const showScore = m.score && !hideScores
   const f1 = feederTeams(m.t1, byNum)
   const f2 = feederTeams(m.t2, byNum)
+  // Path-to-the-Final highlight: on the highlighted stretch of the route, and
+  // whether this is the match where the team was knocked out.
+  const onPath = path?.activeSet.has(num)
+  const isExit = path?.exitNum === num
+  const pathCls = onPath ? ` on-path${isExit ? ' path-exit' : ''}` : ''
   return (
-    <div className="bx-match" id={`bx-m${m.num}`} role="button" tabIndex={0}
+    <div className={`bx-match${pathCls}`} id={`bx-m${m.num}`} role="button" tabIndex={0}
       aria-label={`${m.t1} versus ${m.t2}, ${STAGE_LABELS[m.stage]}, Match ${m.num}`}
       onClick={() => openDetail(m)}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openDetail(m)}>
@@ -82,12 +94,12 @@ function BracketMatch({ num, byNum, tz, hideScores }) {
           </span>
         )}
       </div>
-      <Side name={m.t1} ko={m.ko} feeder={f1} />
+      <Side name={m.t1} ko={m.ko} feeder={f1} pathTeam={pathTeam} />
       {/* Both sides are potential-matchup pairs (all four teams shown) → a "vs"
           between the two pairs makes the (A/B) vs (C/D) reading clear. Wide
           layout only (hidden on the tall mobile rows). */}
       {f1 && f2 && <div className="bx-vs-divider" aria-hidden="true">vs</div>}
-      <Side name={m.t2} ko={m.ko} feeder={f2} />
+      <Side name={m.t2} ko={m.ko} feeder={f2} pathTeam={pathTeam} />
       {showScore && (
         <div className="bx-score">
           {voided && <span className="status-badge">{flag.label}</span>}
@@ -105,13 +117,13 @@ function BracketMatch({ num, byNum, tz, hideScores }) {
   )
 }
 
-function Column({ title, nums, byNum, tz, hideScores }) {
+function Column({ title, nums, ...common }) {
   return (
     <div className="bx-col">
       <div className="bx-col-head">{title}</div>
       <div className="bx-col-body">
         {nums.map((n) => (
-          <BracketMatch key={n} num={n} byNum={byNum} tz={tz} hideScores={hideScores} />
+          <BracketMatch key={n} num={n} {...common} />
         ))}
       </div>
     </div>
@@ -191,7 +203,14 @@ function MobileBracket({ common, activeRound, setActiveRound }) {
 
 export default function Bracket({ matches, tz, hideScores, focusMatch, onFocusHandled }) {
   const byNum = matchesByNum(matches)
-  const common = { byNum, tz, hideScores }
+  const { pathTeam } = usePath()
+  // The selected team's route (with a fast lookup set for per-match highlighting).
+  const path = useMemo(() => {
+    const p = pathTeam ? pathToFinal(pathTeam, byNum) : null
+    return p ? { ...p, activeSet: new Set(p.active) } : null
+  }, [pathTeam, byNum])
+  const common = { byNum, tz, hideScores, pathTeam: path ? pathTeam : null, path }
+  const hasPath = Boolean(path)
   const isMobile = useMediaQuery('(max-width: 720px)')
   const [activeRound, setActiveRound] = useState(() => currentRound(byNum))
 
@@ -217,7 +236,8 @@ export default function Bracket({ matches, tz, hideScores, focusMatch, onFocusHa
   }, [focusMatch, isMobile, activeRound, onFocusHandled])
 
   return (
-    <div className="bracket-wrap">
+    <div className={`bracket-wrap${hasPath ? ' has-path' : ''}`}>
+      <PathPicker byNum={byNum} />
       {isMobile ? (
         <MobileBracket common={common} activeRound={activeRound} setActiveRound={setActiveRound} />
       ) : (

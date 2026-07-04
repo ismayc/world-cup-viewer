@@ -1031,6 +1031,104 @@ select {
   cursor: pointer;
 }
 
+/* ---------- Path to the Final ---------- */
+/* Team selector shared by the Bracket and Radial views. */
+.path-picker {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.path-picker-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+.path-label { font-weight: 700; font-size: 0.9rem; }
+.path-select {
+  border: 1px solid var(--border);
+  background: var(--card-hover);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 0.9rem;
+  max-width: 100%;
+}
+.path-select:focus-visible { outline: 2px solid var(--accent); }
+.path-clear {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.path-clear:hover { border-color: var(--accent-2); color: var(--accent-2); }
+.path-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.path-status-alive { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.path-status-champ { color: var(--gold); background: color-mix(in srgb, var(--gold) 20%, transparent); }
+.path-status-out { color: var(--text-faint); background: color-mix(in srgb, var(--text-faint) 16%, transparent); }
+.path-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.path-chips-label { font-size: 0.85rem; }
+.path-chip {
+  border: 1px solid var(--border);
+  background: var(--card-hover);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.path-chip:hover { border-color: var(--accent); color: var(--text); }
+.path-chip.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+}
+
+/* When a path is active, dim everything off-route so the highlighted line pops. */
+.bracket-wrap.has-path .bx-match { opacity: 0.4; transition: opacity 0.15s; }
+.bracket-wrap.has-path .bx-match.on-path { opacity: 1; }
+.bx-match.on-path {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.bx-match.on-path.path-exit {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-2) 55%, transparent);
+}
+/* The traced team's flag/name inside a highlighted box. */
+.bx-side.on-path-team .bx-team,
+.bx-feeder-team.on-path-team .bx-team { color: var(--gold); font-weight: 800; }
+
+/* Radial: fade off-route connectors and flags, keep the route bright. */
+.radial-wrap.has-path .rb-matchup,
+.radial-wrap.has-path .rb-node { opacity: 0.28; transition: opacity 0.15s; }
+.radial-wrap.has-path .rb-matchup.on-path,
+.radial-wrap.has-path .rb-node.on-path { opacity: 1; }
+.rb-matchup.on-path .rb-line { stroke: var(--gold); stroke-width: 2.6; }
+.rb-matchup.on-path .rb-mnum { fill: var(--gold); }
+.rb-node.on-path .rb-flag-bg { stroke: var(--gold); stroke-width: 2.8; }
+
 /* ---------- Bracket ---------- */
 .bracket-hint { font-size: 0.8rem; color: var(--text-faint); margin: 0 0 12px; }
 .bracket {

@@ -4,6 +4,7 @@
 // two-sided bracket that meets at the Final.
 
 import { FLAG_BY_TEAM } from '../data/teams.js'
+import { MATCHES } from '../data/matches.js'
 
 // A still-unresolved feed slot ("Winner Match 73" / "Loser Match 73") expands to
 // the two teams of the tie it feeds from, ONCE that tie has both real teams — the
@@ -64,4 +65,76 @@ export function groupSlotMap(matches) {
     }
   }
   return map
+}
+
+// Static winner-advancement edges: child match number → the match its WINNER
+// feeds into. Parsed once from the original "Winner Match N" labels (resolved
+// matches drop those labels, so we read the invariant fixture data). The Final
+// (104) has no parent; "Loser Match N" edges (the third-place play-off) are
+// intentionally excluded — a path to the Final follows winners only.
+const WINNER_MATCH_LABEL = /^Winner Match (\d+)$/
+const KO_WINNER_PARENT = (() => {
+  const parent = {}
+  for (const m of MATCHES) {
+    for (const side of [m.t1, m.t2]) {
+      const hit = WINNER_MATCH_LABEL.exec(side)
+      if (hit) parent[Number(hit[1])] = m.num
+    }
+  }
+  return parent
+})()
+
+// Winner of a FINAL knockout tie (penalties break a draw); null while the match
+// is live, voided, or otherwise unsettled. A local mirror of decideMatch's
+// winner rule, kept here to avoid dragging the whole resolver into this widely
+// imported module.
+function koWinner(m) {
+  if (!m || !Array.isArray(m.score) || m.live || m.voided) return null
+  const [a, b] = m.score
+  if (a > b) return m.t1
+  if (b > a) return m.t2
+  const p = m.pens
+  if (p && p[0] != null && p[1] != null && p[0] !== p[1]) return p[0] > p[1] ? m.t1 : m.t2
+  return null
+}
+
+// Real teams that have reached the Round of 32 (a knockout slot filled with an
+// actual team), sorted — the candidates for a "path to the Final" trace.
+export function knockoutTeams(byNum) {
+  const set = new Set()
+  for (const m of Object.values(byNum)) {
+    if (m.stage !== 'R32') continue
+    for (const t of [m.t1, m.t2]) if (FLAG_BY_TEAM[t]) set.add(t)
+  }
+  return [...set].sort()
+}
+
+// Trace one team's route through the knockout bracket, from its Round-of-32 tie
+// inward to the Final. The route is structural (fixed by the bracket topology),
+// so it exists whether the team is still alive or already out. Returns:
+//   nums    — the full route, R32 → Final (match numbers, outer to inner)
+//   here    — the route matches the team is actually a participant in
+//   exitNum — the match where the team was knocked out, or null (alive/champion)
+//   active  — the stretch of the route to highlight: the whole route while the
+//             team is alive, or only through its exit once eliminated
+// Returns null when the team isn't (yet) in the Round of 32.
+export function pathToFinal(team, byNum) {
+  if (!team) return null
+  const r32 = Object.values(byNum).find(
+    (m) => m.stage === 'R32' && (m.t1 === team || m.t2 === team),
+  )
+  if (!r32) return null
+  const nums = []
+  for (let cur = r32.num; cur != null; cur = KO_WINNER_PARENT[cur]) nums.push(cur)
+  const here = nums.filter((n) => {
+    const m = byNum[n]
+    return m && (m.t1 === team || m.t2 === team)
+  })
+  let exitNum = null
+  for (const n of here) {
+    const w = koWinner(byNum[n])
+    if (w && w !== team) { exitNum = n; break }
+  }
+  const active = exitNum == null ? nums : nums.slice(0, nums.indexOf(exitNum) + 1)
+  return { team, nums, here, exitNum, active }
 }

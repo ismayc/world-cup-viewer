@@ -1,11 +1,13 @@
 import { useMemo } from 'react'
-import { BRACKET, matchesByNum } from '../utils/bracket.js'
+import { BRACKET, matchesByNum, pathToFinal } from '../utils/bracket.js'
 import { MATCHES, STAGE_LABELS } from '../data/matches.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { decideMatch } from '../utils/bracketResolve.js'
 import { formatTime, tzAbbrev } from '../utils/time.js'
 import { useFollow } from '../context/follow.jsx'
+import { usePath } from '../context/path.jsx'
 import { useDetail } from '../context/detail.js'
+import PathPicker from './PathPicker.jsx'
 
 // A circular ("radial") rendering of the knockout bracket: the 32 Round-of-32
 // teams sit on the outer ring and each match's winner advances one ring inward,
@@ -74,7 +76,7 @@ const ROUND_OF = {} // match num → its winner-ring radius
 for (const r of ['R32', 'R16', 'QF', 'SF'])
   for (const n of [...BRACKET.left[r], ...BRACKET.right[r]]) ROUND_OF[n] = RING[r]
 
-function FlagNode({ x, y, team, label, followed, onClick, r = 17 }) {
+function FlagNode({ x, y, team, label, followed, onPath, onClick, r = 17 }) {
   const flag = team && FLAG_BY_TEAM[team]
   if (!flag) {
     // No team yet (undecided match / unresolved slot) → a small placeholder dot.
@@ -82,7 +84,7 @@ function FlagNode({ x, y, team, label, followed, onClick, r = 17 }) {
   }
   return (
     <g
-      className={`rb-node${followed ? ' followed' : ''}${onClick ? ' rb-click' : ''}`}
+      className={`rb-node${followed ? ' followed' : ''}${onPath ? ' on-path' : ''}${onClick ? ' rb-click' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -99,9 +101,17 @@ function FlagNode({ x, y, team, label, followed, onClick, r = 17 }) {
 
 export default function RadialBracket({ matches, tz, hideScores }) {
   const { isFollowed } = useFollow()
+  const { pathTeam } = usePath()
   const openDetail = useDetail()
   const byNum = useMemo(() => matchesByNum(matches), [matches])
   const { angle, leafAngleOf } = useMemo(buildAngles, [])
+  // The selected team's route: highlight its connectors and flags, dim the rest.
+  const path = useMemo(() => {
+    const p = pathTeam ? pathToFinal(pathTeam, byNum) : null
+    return p ? { ...p, activeSet: new Set(p.active) } : null
+  }, [pathTeam, byNum])
+  const hasPath = Boolean(path)
+  const onPathTeam = (team) => hasPath && team === pathTeam
 
   // Compact score for a played/live match (penalties or a.e.t. noted), or null.
   const scoreText = (m) => {
@@ -183,17 +193,19 @@ export default function RadialBracket({ matches, tz, hideScores }) {
   const THIRD_Y = 596
 
   return (
-    <div className="radial-wrap">
+    <div className={`radial-wrap${hasPath ? ' has-path' : ''}`}>
+      <PathPicker byNum={byNum} />
       <svg className="rb-svg" viewBox="0 0 1000 1080" role="img" aria-label="Knockout bracket, circular view">
         {/* Each matchup: the bracket join (spokes + bar) plus its match number,
             grouped into one clickable target that opens the detail popout. */}
         {matchups.map(({ num, radials, bar, label }) => {
           const m = byNum[num]
           const open = m ? () => openDetail(m) : undefined
+          const onPath = path?.activeSet.has(num)
           return (
             <g
               key={`mu${num}`}
-              className={`rb-matchup${open ? ' rb-click' : ''}`}
+              className={`rb-matchup${open ? ' rb-click' : ''}${onPath ? ' on-path' : ''}`}
               onClick={open}
               role={open ? 'button' : undefined}
               tabIndex={open ? 0 : undefined}
@@ -240,6 +252,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
                 y={y}
                 team={team}
                 followed={team ? isFollowed(team) || isChamp : false}
+                onPath={onPathTeam(team)}
                 label={team ? `${team} — ${STAGE_LABELS[byNum[n].stage]} winner (Match ${n})` : undefined}
                 onClick={byNum[n] ? () => openDetail(byNum[n]) : undefined}
                 r={round === 'SF' ? 19 : 16}
@@ -259,6 +272,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
               y={y}
               team={team}
               followed={team ? isFollowed(team) : false}
+              onPath={onPathTeam(team)}
               label={team || undefined}
               onClick={byNum[s.n] ? () => openDetail(byNum[s.n]) : undefined}
               r={18}
@@ -290,6 +304,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
           y={THIRD_Y}
           team={thirdA}
           followed={thirdA ? isFollowed(thirdA) || thirdA === thirdWinner : false}
+          onPath={onPathTeam(thirdA)}
           label={thirdA ? `${thirdA}${thirdA === thirdWinner ? ' — 3rd place' : ''}` : undefined}
           onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
           r={16}
@@ -300,6 +315,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
           y={THIRD_Y}
           team={thirdB}
           followed={thirdB ? isFollowed(thirdB) || thirdB === thirdWinner : false}
+          onPath={onPathTeam(thirdB)}
           label={thirdB ? `${thirdB}${thirdB === thirdWinner ? ' — 3rd place' : ''}` : undefined}
           onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
           r={16}
