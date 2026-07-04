@@ -90,4 +90,30 @@ describe('WeekView', () => {
     renderWeek({ allMatches: [m], shown: [m] })
     expect(screen.getByText(/1 match$/)).toBeInTheDocument()
   })
+
+  it('expands a knockout cell into its potential matchups (both sides resolved)', () => {
+    const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+    const venue = MATCHES.find((x) => x.stage === 'R32').venue
+    // Both feeding ties (Matches 73 & 74) have real teams → both slots expand.
+    const feed1 = { num: 73, stage: 'R32', venue, ko: `${todayKey}T12:00:00-04:00`, t1: 'Mexico', t2: 'Canada' }
+    const feed2 = { num: 74, stage: 'R32', venue, ko: `${todayKey}T15:00:00-04:00`, t1: 'Brazil', t2: 'Croatia' }
+    const r16 = { num: 89, stage: 'R16', venue, ko: `${todayKey}T18:00:00-04:00`, t1: 'Winner Match 73', t2: 'Winner Match 74' }
+    // r16 is the only shown cell; feeds live in allMatches so byNum can resolve them.
+    renderWeek({ allMatches: [feed1, feed2, r16], shown: [r16] })
+    expect(screen.getByText('Mexico')).toBeInTheDocument()
+    expect(screen.getByText('Canada')).toBeInTheDocument()
+    expect(screen.getByText('Brazil')).toBeInTheDocument()
+    expect(screen.getByText('Croatia')).toBeInTheDocument()
+    expect(screen.queryByText('Winner Match 73')).not.toBeInTheDocument()
+    expect(screen.queryByText('Winner Match 74')).not.toBeInTheDocument()
+  })
+
+  it('keeps the raw placeholder label when a knockout cell is unresolved', () => {
+    const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+    const venue = MATCHES.find((x) => x.stage === 'R32').venue
+    const r16 = { num: 90, stage: 'R16', venue, ko: `${todayKey}T18:00:00-04:00`, t1: 'Winner Match 75', t2: 'Winner Match 76' }
+    renderWeek({ allMatches: [r16], shown: [r16] })
+    expect(screen.getByText('Winner Match 75')).toBeInTheDocument()
+    expect(screen.getByText('Winner Match 76')).toBeInTheDocument()
+  })
 })

@@ -75,4 +75,38 @@ describe('DayMatchesModal (coverage)', () => {
     expect(screen.getByText('Schedule')).toBeInTheDocument()
     expect(screen.getByText(/0 matches/)).toBeInTheDocument()
   })
+
+  it('expands resolved knockout slots into their candidate pairs (lines 45 + 67)', () => {
+    const feeder = {
+      ...GROUP_MATCH,
+      num: 89,
+      stage: 'R16',
+      t1: 'Winner Match 73',
+      t2: 'Winner Match 74',
+    }
+    const byNum = {
+      73: { num: 73, t1: 'Mexico', t2: 'Canada' },
+      74: { num: 74, t1: 'Brazil', t2: 'Croatia' },
+    }
+    renderModal({ matches: [feeder], byNum })
+    // Both sides expand to their potential matchup rather than the raw label.
+    expect(screen.getByText('Mexico')).toBeInTheDocument()
+    expect(screen.getByText('Canada')).toBeInTheDocument()
+    expect(screen.getByText('Brazil')).toBeInTheDocument()
+    expect(screen.getByText('Croatia')).toBeInTheDocument()
+    expect(document.querySelectorAll('.feeder-slash').length).toBe(2)
+    expect(screen.queryByText('Winner Match 73')).not.toBeInTheDocument()
+  })
+
+  it('shows a Delayed badge when past kickoff with no live feed or score (line 88)', () => {
+    vi.useFakeTimers()
+    try {
+      // "now" pinned to kickoff → inside the window but no ESPN clock / score.
+      vi.setSystemTime(new Date(GROUP_MATCH.ko))
+      renderModal({ matches: [{ ...GROUP_MATCH, num: 9003 }] })
+      expect(screen.getByText('Delayed')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

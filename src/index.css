@@ -554,6 +554,42 @@ select {
   font-weight: 500;
   color: var(--text-dim);
 }
+
+/* Potential-matchup (feeder) display: an unresolved knockout slot shown as the
+   two candidate teams of the tie feeding it, joined by a slash. Shared by the
+   Schedule card (.team-feeder), Week cells (.wc-team) and the day pop-up. */
+.feeder-pair {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 5px;
+  min-width: 0;
+}
+.feeder-cand {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+.feeder-flag {
+  font-size: 1rem;
+  line-height: 1;
+}
+.feeder-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.feeder-cand.followed .feeder-name {
+  color: var(--gold);
+}
+.feeder-slash {
+  color: var(--text-faint);
+  font-size: 0.75rem;
+}
+.team-feeder {
+  min-width: 0;
+}
 .vs {
   color: var(--text-faint);
   font-size: 0.8rem;

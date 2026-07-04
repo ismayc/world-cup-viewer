@@ -4,9 +4,11 @@ import { VENUES } from '../data/venues.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { colorForMatch } from '../data/groupColors.js'
 import { formatTime, tzAbbrev, liveState, statusFlag } from '../utils/time.js'
+import { feederTeams } from '../utils/bracket.js'
 import { useModalA11y } from '../hooks/useModalA11y.js'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
+import FeederPair from './FeederPair.jsx'
 
 // Full weekday + date for the popup title, e.g. "Saturday, June 27".
 function longDate(iso, tz) {
@@ -20,8 +22,10 @@ function longDate(iso, tz) {
 
 // One compact row per match — kickoff, teams, score/status, stage, venue. Clicking
 // opens the existing full match-detail modal.
-function DayRow({ match, tz, scoreHidden, onOpen }) {
+function DayRow({ match, tz, scoreHidden, onOpen, byNum }) {
   const venue = VENUES[match.venue]
+  const f1 = feederTeams(match.t1, byNum)
+  const f2 = feederTeams(match.t2, byNum)
   const stage = match.stage === 'Group' ? `Group ${match.group}` : STAGE_LABELS[match.stage]
   const color = colorForMatch(match)
   const state = liveState(match)
@@ -37,8 +41,14 @@ function DayRow({ match, tz, scoreHidden, onOpen }) {
         </span>
         <span className="dm-matchup">
           <span className="dm-team">
-            <span className="gg-flag">{FLAG_BY_TEAM[match.t1] || '•'}</span>
-            <span className="gg-name">{match.t1}</span>
+            {f1 ? (
+              <FeederPair feeder={f1} />
+            ) : (
+              <>
+                <span className="gg-flag">{FLAG_BY_TEAM[match.t1] || '•'}</span>
+                <span className="gg-name">{match.t1}</span>
+              </>
+            )}
           </span>
           <span className="dm-result">
             {showScore ? (
@@ -53,8 +63,14 @@ function DayRow({ match, tz, scoreHidden, onOpen }) {
             )}
           </span>
           <span className="dm-team">
-            <span className="gg-flag">{FLAG_BY_TEAM[match.t2] || '•'}</span>
-            <span className="gg-name">{match.t2}</span>
+            {f2 ? (
+              <FeederPair feeder={f2} />
+            ) : (
+              <>
+                <span className="gg-flag">{FLAG_BY_TEAM[match.t2] || '•'}</span>
+                <span className="gg-name">{match.t2}</span>
+              </>
+            )}
           </span>
         </span>
         <span className="dm-meta">
@@ -81,7 +97,7 @@ function DayRow({ match, tz, scoreHidden, onOpen }) {
 
 // Pop-up listing every match scheduled on one day, opened from the Week-view date
 // header. Each row drills into the full match-detail modal.
-export default function DayMatchesModal({ matches, tz, hideScores, onClose }) {
+export default function DayMatchesModal({ matches, tz, hideScores, byNum, onClose }) {
   const cardRef = useModalA11y(onClose)
   const openDetail = useDetail()
   const [revealed, setRevealed] = useState(false)
@@ -117,7 +133,7 @@ export default function DayMatchesModal({ matches, tz, hideScores, onClose }) {
         <div className="md-section">
           <ul className="gg-list dm-list">
             {fixtures.map((m) => (
-              <DayRow key={m.num} match={m} tz={tz} scoreHidden={scoreHidden} onOpen={openMatch} />
+              <DayRow key={m.num} match={m} tz={tz} scoreHidden={scoreHidden} onOpen={openMatch} byNum={byNum} />
             ))}
           </ul>
         </div>

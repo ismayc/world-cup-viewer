@@ -116,6 +116,19 @@ describe('GroupGamesModal (coverage)', () => {
     expect(screen.getByText(/currently projected to play:/)).toBeInTheDocument()
   })
 
+  it('shows a Delayed badge when past kickoff with no live feed or score (line 65)', () => {
+    vi.useFakeTimers()
+    try {
+      const m1 = MATCHES.find((m) => m.num === 1)
+      // "now" pinned to kickoff → inside the window but no ESPN clock / score.
+      vi.setSystemTime(new Date(m1.ko))
+      renderModal()
+      expect(screen.getByText('Delayed')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('filters to a single team and shows its three group matches', () => {
     // team set → fixtures filtered; also renders the team head (lines 158-162).
     renderModal({ matches: groupAInFuture(), team: 'Mexico' })

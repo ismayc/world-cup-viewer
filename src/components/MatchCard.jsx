@@ -9,7 +9,9 @@ import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
 import ScoreCheck from './ScoreCheck.jsx'
+import FeederPair from './FeederPair.jsx'
 import { clinchBadge } from '../utils/clinch.js'
+import { feederTeams } from '../utils/bracket.js'
 
 // Tooltip describing which Round-of-32 slot this team feeds into, given its
 // group's slot map and any clinched status. Returns null when there's no slot
@@ -27,9 +29,18 @@ function slotTooltip(group, slot, clinch) {
   return `Group ${group} knockout route:\n${parts.join('\n')}`
 }
 
-function Team({ name, ko, clinch, group, slot }) {
+function Team({ name, ko, clinch, group, slot, feeder }) {
   const flag = FLAG_BY_TEAM[name]
   const { isFollowed, toggle } = useFollow()
+  // An unresolved knockout slot whose source tie is set → show the potential
+  // matchup (candidate pair) instead of a cryptic "Winner Match N".
+  if (feeder) {
+    return (
+      <div className="team team-feeder">
+        <FeederPair feeder={feeder} />
+      </div>
+    )
+  }
   const on = Boolean(flag) && isFollowed(name)
   const localKickoff = teamKickoffTooltip(ko, name)
   const badge = clinchBadge(clinch)
@@ -84,7 +95,7 @@ function Channels({ feed }) {
   )
 }
 
-export default function MatchCard({ match, tz, feed = 'both', hidden = false, clinch, slotMap }) {
+export default function MatchCard({ match, tz, feed = 'both', hidden = false, clinch, slotMap, byNum }) {
   const [showWatch, setShowWatch] = useState(false)
   const [revealScore, setRevealScore] = useState(false)
   const openDetail = useDetail()
@@ -147,7 +158,7 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
         </div>
 
         <div className="matchup">
-          <Team name={match.t1} ko={match.ko} clinch={match.stage === 'Group' ? clinch?.[match.t1] : undefined} group={match.group} slot={slotMap?.[match.group]} />
+          <Team name={match.t1} ko={match.ko} clinch={match.stage === 'Group' ? clinch?.[match.t1] : undefined} group={match.group} slot={slotMap?.[match.group]} feeder={feederTeams(match.t1, byNum)} />
           {hasScore ? (
             scoreHidden ? (
               <button
@@ -173,7 +184,7 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
           ) : (
             <span className="vs">v</span>
           )}
-          <Team name={match.t2} ko={match.ko} clinch={match.stage === 'Group' ? clinch?.[match.t2] : undefined} group={match.group} slot={slotMap?.[match.group]} />
+          <Team name={match.t2} ko={match.ko} clinch={match.stage === 'Group' ? clinch?.[match.t2] : undefined} group={match.group} slot={slotMap?.[match.group]} feeder={feederTeams(match.t2, byNum)} />
         </div>
 
         {/* Cross-source confirmation of the final score (OpenFootball / ESPN /

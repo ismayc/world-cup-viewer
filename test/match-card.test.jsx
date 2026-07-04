@@ -144,6 +144,63 @@ describe('MatchCard team follow + clinch + slot tooltip', () => {
   })
 })
 
+describe('MatchCard potential-matchup (feeder) expansion', () => {
+  // A knockout slot ("Winner Match 73") whose source tie has both real teams
+  // expands into the candidate pair, mirroring the Bracket — instead of the
+  // cryptic placeholder label.
+  const feederMatch = {
+    num: 89,
+    stage: 'R16',
+    ko: '2026-07-04T16:00:00-04:00',
+    venue: knockoutMatch.venue,
+    t1: 'Winner Match 73',
+    t2: 'Winner Match 74',
+  }
+  const byNum = {
+    73: { num: 73, t1: 'Mexico', t2: 'Canada' },
+    74: { num: 74, t1: 'Brazil', t2: 'Croatia' },
+  }
+
+  function renderFeeder(props = {}) {
+    return render(
+      <FollowProvider>
+        <DetailContext.Provider value={() => {}}>
+          <MatchCard match={feederMatch} tz="America/New_York" slotMap={SLOT_MAP} byNum={byNum} {...props} />
+        </DetailContext.Provider>
+      </FollowProvider>,
+    )
+  }
+
+  it('expands a resolved feed slot into its candidate pair', () => {
+    const { container } = renderFeeder()
+    // Both candidate teams of each feeding tie are shown, joined by a slash.
+    expect(screen.getByText('Mexico')).toBeInTheDocument()
+    expect(screen.getByText('Canada')).toBeInTheDocument()
+    expect(screen.getByText('Brazil')).toBeInTheDocument()
+    expect(screen.getByText('Croatia')).toBeInTheDocument()
+    expect(container.querySelectorAll('.feeder-slash').length).toBe(2)
+    // The pair carries a descriptive title for the source tie.
+    expect(container.querySelector('.feeder-pair').getAttribute('title')).toMatch(
+      /Winner of Match 73: Mexico or Canada/,
+    )
+    // The raw placeholder label is never rendered.
+    expect(screen.queryByText('Winner Match 73')).not.toBeInTheDocument()
+  })
+
+  it('leaves the placeholder label when the source tie is unresolved', () => {
+    // No byNum entries → nothing to expand, so the raw label shows.
+    render(
+      <FollowProvider>
+        <DetailContext.Provider value={() => {}}>
+          <MatchCard match={feederMatch} tz="America/New_York" slotMap={SLOT_MAP} byNum={{}} />
+        </DetailContext.Provider>
+      </FollowProvider>,
+    )
+    expect(screen.getByText('Winner Match 73')).toBeInTheDocument()
+    expect(screen.queryByText('Mexico')).not.toBeInTheDocument()
+  })
+})
+
 describe('MatchCard actions', () => {
   it('toggles the "How to watch" panel and shows both feeds by default', () => {
     renderCard()

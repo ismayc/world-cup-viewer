@@ -137,6 +137,9 @@ describe('App coverage', () => {
     expect(screen.getByText('Group A')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Bracket/ }))
     expect(screen.getByText(/World Cup 2026/)).toBeInTheDocument()
+    // The Radial view renders the circular bracket (RadialBracket).
+    fireEvent.click(screen.getByRole('button', { name: /Radial/ }))
+    expect(document.querySelector('.bracket-view')).toBeTruthy()
   })
 
   it('"As it stands" link in Groups jumps to the Bracket and focuses a match', async () => {

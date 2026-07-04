@@ -5,10 +5,12 @@ import { STAGE_LABELS } from '../data/matches.js'
 import { GROUP_COLORS, KNOCKOUT_COLOR, colorForMatch } from '../data/groupColors.js'
 import { dayKey, formatTime, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { weekStartOf, addDays, weekLabel, weekdayHeader } from '../utils/week.js'
+import { matchesByNum, feederTeams } from '../utils/bracket.js'
 import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
 import ScoreCheck from './ScoreCheck.jsx'
+import FeederPair from './FeederPair.jsx'
 import DayMatchesModal from './DayMatchesModal.jsx'
 
 function Legend() {
@@ -26,9 +28,11 @@ function Legend() {
   )
 }
 
-function WeekCell({ m, tz, hidden }) {
+function WeekCell({ m, tz, hidden, byNum }) {
   const { isFollowed } = useFollow()
   const openDetail = useDetail()
+  const f1 = feederTeams(m.t1, byNum)
+  const f2 = feederTeams(m.t2, byNum)
   const venue = VENUES[m.venue]
   const color = colorForMatch(m)
   const label = m.stage === 'Group' ? `Group ${m.group}` : STAGE_LABELS[m.stage]
@@ -60,18 +64,30 @@ function WeekCell({ m, tz, hidden }) {
           </>
         )}
       </div>
-      <div className="wc-team" title={teamKickoffTooltip(m.ko, m.t1) || undefined}>
-        <span className="wc-flag">{FLAG_BY_TEAM[m.t1] || '•'}</span>
-        <span className={cls(m.t1)}>{m.t1}</span>
+      <div className="wc-team" title={f1 ? undefined : teamKickoffTooltip(m.ko, m.t1) || undefined}>
+        {f1 ? (
+          <FeederPair feeder={f1} />
+        ) : (
+          <>
+            <span className="wc-flag">{FLAG_BY_TEAM[m.t1] || '•'}</span>
+            <span className={cls(m.t1)}>{m.t1}</span>
+          </>
+        )}
       </div>
       <div className="wc-mid">
         {voided && showScore && <span className="status-badge">{flag.label}</span>}
         {scoreText}
         {awarded && showScore && <span className="awarded-note">awarded</span>}
       </div>
-      <div className="wc-team" title={teamKickoffTooltip(m.ko, m.t2) || undefined}>
-        <span className="wc-flag">{FLAG_BY_TEAM[m.t2] || '•'}</span>
-        <span className={cls(m.t2)}>{m.t2}</span>
+      <div className="wc-team" title={f2 ? undefined : teamKickoffTooltip(m.ko, m.t2) || undefined}>
+        {f2 ? (
+          <FeederPair feeder={f2} />
+        ) : (
+          <>
+            <span className="wc-flag">{FLAG_BY_TEAM[m.t2] || '•'}</span>
+            <span className={cls(m.t2)}>{m.t2}</span>
+          </>
+        )}
       </div>
       <div className="wc-foot">
         <span className="wc-stage" style={{ color }}>{label}</span>
@@ -83,6 +99,8 @@ function WeekCell({ m, tz, hidden }) {
 }
 
 export default function WeekView({ allMatches, shown, tz, dayHidden }) {
+  // Lookup for expanding "Winner Match N" slots into their potential matchup.
+  const byNum = useMemo(() => matchesByNum(allMatches), [allMatches])
   // Stable list of weeks (Sundays) that contain any match — drives navigation.
   const weeks = useMemo(() => {
     const set = new Set(allMatches.map((m) => weekStartOf(dayKey(m.ko, tz))))
@@ -162,7 +180,7 @@ export default function WeekView({ allMatches, shown, tz, dayHidden }) {
               </div>
               <div className="week-col-body">
                 {matches.map((m) => (
-                  <WeekCell key={m.num} m={m} tz={tz} hidden={hidden} />
+                  <WeekCell key={m.num} m={m} tz={tz} hidden={hidden} byNum={byNum} />
                 ))}
               </div>
             </div>
@@ -175,6 +193,7 @@ export default function WeekView({ allMatches, shown, tz, dayHidden }) {
           matches={dayModal.matches}
           tz={tz}
           hideScores={dayModal.hidden}
+          byNum={byNum}
           onClose={() => setDayModal(null)}
         />
       )}

@@ -22,7 +22,7 @@ import { fetchBackup, BACKUP_SOURCE, sdbFinalScore } from './services/thesportsd
 import { annotateScoreChecks } from './services/reconcile.js'
 import { computeClinch } from './utils/clinch.js'
 import { resolveBracket } from './utils/bracketResolve.js'
-import { groupSlotMap } from './utils/bracket.js'
+import { groupSlotMap, matchesByNum } from './utils/bracket.js'
 import { detectGoals, goalNotification } from './services/goalNotify.js'
 import { useFollow } from './context/follow.jsx'
 import { DetailContext } from './context/detail.js'
@@ -240,6 +240,9 @@ export default function App() {
   // reaches every view consistently (schedule, week, bracket, detail modal,
   // calendar), not just the bracket's own rendering.
   const displayMatches = useMemo(() => resolveBracket(matches, clinch), [matches, clinch])
+  // Lookup for expanding "Winner Match N" slots into their potential matchup on
+  // the Schedule/Week cards (same as the Bracket).
+  const byNum = useMemo(() => matchesByNum(displayMatches), [displayMatches])
 
   // Auto-refresh: poll fast (30s) while a match is live so the score and clock
   // track ESPN closely, and slow (2 min) otherwise to go easy on the feeds.
@@ -619,7 +622,7 @@ export default function App() {
                   {!collapsed && (
                     <div className="day-matches">
                       {matches.map((m) => (
-                        <MatchCard key={m.num} match={m} tz={tz} feed={filters.feed} hidden={hidden} clinch={clinch} slotMap={slotMap} />
+                        <MatchCard key={m.num} match={m} tz={tz} feed={filters.feed} hidden={hidden} clinch={clinch} slotMap={slotMap} byNum={byNum} />
                       ))}
                     </div>
                   )}

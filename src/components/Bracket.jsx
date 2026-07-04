@@ -2,27 +2,12 @@ import { Fragment, useEffect, useState } from 'react'
 import { STAGE_LABELS } from '../data/matches.js'
 import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
-import { BRACKET, matchesByNum } from '../utils/bracket.js'
+import { BRACKET, matchesByNum, feederTeams } from '../utils/bracket.js'
 import { formatTime, tzAbbrev, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { useFollow } from '../context/follow.jsx'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
 import ScoreCheck from './ScoreCheck.jsx'
-
-// A still-unresolved feed slot ("Winner Match 73" / "Loser Match 73"). When the
-// match it feeds from already has BOTH its teams (e.g. an R16 slot fed by a
-// resolved R32 tie), show those two teams with a slash so the potential matchup
-// reads at a glance ("🇳🇴 Norway / 🇮🇹 Italy") instead of a cryptic "Winner Match 73".
-const FEED_LABEL = /^(Winner|Loser) Match (\d+)$/
-function feederTeams(label, byNum) {
-  const hit = FEED_LABEL.exec(label)
-  if (!hit) return null
-  const fm = byNum[Number(hit[2])]
-  // Only expand once both feeding teams are real (have a flag) — otherwise the
-  // feeder is itself a placeholder, so the plain label is clearer.
-  if (!fm || !FLAG_BY_TEAM[fm.t1] || !FLAG_BY_TEAM[fm.t2]) return null
-  return { a: fm.t1, b: fm.t2, kind: hit[1], num: fm.num }
-}
 
 // One of the two candidate teams inside a potential-matchup slot.
 function FeederTeam({ name }) {
