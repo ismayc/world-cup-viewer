@@ -136,7 +136,7 @@ export const MATCHES = [
   { num: 90, stage: 'R16', t1: 'Winner Match 73', t2: 'Winner Match 75', venue: 'nrg', ko: '2026-07-04T13:00:00-04:00' },
   { num: 89, stage: 'R16', t1: 'Winner Match 74', t2: 'Winner Match 77', venue: 'linc', ko: '2026-07-04T17:00:00-04:00' },
   { num: 91, stage: 'R16', t1: 'Winner Match 76', t2: 'Winner Match 78', venue: 'metlife', ko: '2026-07-05T16:00:00-04:00' },
-  { num: 92, stage: 'R16', t1: 'Winner Match 79', t2: 'Winner Match 80', venue: 'azteca', ko: '2026-07-05T20:00:00-04:00' },
+  { num: 92, stage: 'R16', t1: 'Winner Match 79', t2: 'Winner Match 80', venue: 'azteca', ko: '2026-07-05T21:00:00-04:00', note: 'Start delayed 1 hour' },
   { num: 93, stage: 'R16', t1: 'Winner Match 83', t2: 'Winner Match 84', venue: 'att', ko: '2026-07-06T15:00:00-04:00' },
   { num: 94, stage: 'R16', t1: 'Winner Match 81', t2: 'Winner Match 82', venue: 'lumen', ko: '2026-07-06T20:00:00-04:00' },
   { num: 95, stage: 'R16', t1: 'Winner Match 86', t2: 'Winner Match 88', venue: 'mercedes', ko: '2026-07-07T12:00:00-04:00' },
