@@ -5,10 +5,12 @@
 //
 // Shape: /leaders lists the top goal- and assist-getters as $ref links; each
 // athlete's name and season totals (totalGoals, goalAssists, minutes) then come
-// from two small per-athlete documents. Everything is fetched once and cached
-// in localStorage for CACHE_TTL_MS, so opening the Stats tab repeatedly is free.
-// All of it is best-effort: on any failure the Boot table just renders without
-// the assists/minutes columns, exactly as before.
+// from two small per-athlete documents. Results are cached in localStorage for
+// CACHE_TTL_MS; passing { force } skips that cache so callers can refresh the
+// moment a goal lands. Athlete NAMES are cached permanently (they never
+// change), so a forced refresh only re-reads the leaders list and the small
+// per-athlete statistics documents. All of it is best-effort: on any failure
+// the Boot table just renders without the assists/minutes columns.
 
 const CORE = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026'
 export const LEADERS_SOURCE = {
@@ -17,6 +19,7 @@ export const LEADERS_SOURCE = {
 }
 
 const CACHE_KEY = 'wc2026:bootExtras'
+const NAMES_KEY = 'wc2026:athleteNames'
 export const CACHE_TTL_MS = 15 * 60 * 1000
 
 // $ref links in the feed are http:// — rewrite to https:// or the browser
@@ -49,6 +52,24 @@ function writeCache(extras) {
   }
 }
 
+function readNames() {
+  try {
+    const n = JSON.parse(localStorage.getItem(NAMES_KEY) || 'null')
+    if (n && typeof n === 'object') return n
+  } catch {
+    /* ignore */
+  }
+  return {}
+}
+
+function writeNames(names) {
+  try {
+    localStorage.setItem(NAMES_KEY, JSON.stringify(names))
+  } catch {
+    /* ignore */
+  }
+}
+
 // Flatten an athlete-statistics document to { statName: value }.
 function flattenStats(doc) {
   const out = {}
@@ -60,9 +81,12 @@ function flattenStats(doc) {
 
 // [{ name, goals, assists, minutes }] for every athlete in ESPN's goals or
 // assists leader lists — enough to order any tie the Boot table can show.
-export async function fetchBootExtras(signal) {
-  const cached = readCache()
-  if (cached) return cached
+// { force: true } bypasses the freshness cache (names stay cached forever).
+export async function fetchBootExtras(signal, { force = false } = {}) {
+  if (!force) {
+    const cached = readCache()
+    if (cached) return cached
+  }
 
   const leaders = await getJson(LEADERS_SOURCE.url, signal)
   const cats = new Map((leaders.categories || []).map((c) => [c.name, c.leaders || []]))
@@ -74,17 +98,26 @@ export async function fetchBootExtras(signal) {
     }
   }
 
+  const names = readNames()
+  let namesDirty = false
   const entries = await Promise.all(
     [...ids].map(async (id) => {
       try {
-        const [athlete, stats] = await Promise.all([
-          getJson(`${CORE}/athletes/${id}?lang=en&region=us`, signal),
+        const [name, stats] = await Promise.all([
+          names[id] ||
+            getJson(`${CORE}/athletes/${id}?lang=en&region=us`, signal).then((a) => {
+              if (a.displayName) {
+                names[id] = a.displayName
+                namesDirty = true
+              }
+              return a.displayName
+            }),
           getJson(`${CORE}/types/1/athletes/${id}/statistics/0?lang=en&region=us`, signal),
         ])
-        if (!athlete.displayName) return null
+        if (!name) return null
         const s = flattenStats(stats)
         return {
-          name: athlete.displayName,
+          name,
           goals: s.totalGoals ?? null,
           assists: s.goalAssists ?? 0,
           minutes: s.minutes ?? null,
@@ -94,6 +127,7 @@ export async function fetchBootExtras(signal) {
       }
     }),
   )
+  if (namesDirty) writeNames(names)
   const extras = entries.filter(Boolean)
   if (extras.length) writeCache(extras)
   return extras

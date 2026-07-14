@@ -79,6 +79,20 @@ describe('fetchBootExtras', () => {
     expect(f.mock.calls.length).toBeGreaterThan(5)
   })
 
+  it('force bypasses the freshness cache but reuses cached athlete names', async () => {
+    const f = mockFetch()
+    vi.stubGlobal('fetch', f)
+    await fetchBootExtras() // 5 requests; names now cached permanently
+    const forced = await fetchBootExtras(undefined, { force: true })
+    expect(forced).toHaveLength(2)
+    // Forced refresh = leaders + one statistics doc per athlete (no athlete
+    // name lookups): 5 + 3 = 8 total.
+    expect(f).toHaveBeenCalledTimes(8)
+    const urls = f.mock.calls.slice(5).map(([u]) => u)
+    expect(urls.filter((u) => /athletes\/\d+\?/.test(u))).toHaveLength(0)
+    expect(urls.filter((u) => /statistics/.test(u))).toHaveLength(2)
+  })
+
   it('drops an athlete whose lookups fail without sinking the rest', async () => {
     const f = mockFetch()
     vi.stubGlobal('fetch', vi.fn(async (url) => {

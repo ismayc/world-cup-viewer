@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import {
@@ -51,16 +51,39 @@ export default function StatsView({ matches, hideScores }) {
   const pens = useMemo(() => shootoutMatches(matches), [matches])
   const toggle = (key) => setExpanded((cur) => (cur === key ? null : key))
 
-  // Official tie-breaker data, fetched once per view (served from a
-  // localStorage cache within its TTL). Best-effort — a failure just leaves
-  // the un-enriched ordering in place.
+  // Official tie-breaker data. First load is served from the localStorage
+  // cache within its TTL; after that it tracks the match feed in near-real
+  // time: assists can only change when a goal is scored, so any change in the
+  // total goal tally forces a fresh fetch, and a slower interval keeps minutes
+  // current while a match is in play. Best-effort throughout — a failure just
+  // leaves the un-enriched ordering in place.
+  const liveNow = matches.some((m) => m.live)
+  const goalCount = useMemo(
+    () => matches.reduce((n, m) => n + (m.goals?.t1?.length || 0) + (m.goals?.t2?.length || 0), 0),
+    [matches],
+  )
+  const firstLoad = useRef(true)
   useEffect(() => {
+    // No goals yet = the feeds haven't loaded (or nobody has scored) — nothing
+    // to rank, and skipping avoids a wasted fetch before the first tally lands.
+    if (goalCount === 0) return
     const ctrl = new AbortController()
-    fetchBootExtras(ctrl.signal)
+    const force = !firstLoad.current // a goal just landed → skip the cache
+    firstLoad.current = false
+    fetchBootExtras(ctrl.signal, { force })
       .then((e) => e.length && setExtras(e))
       .catch(() => {})
     return () => ctrl.abort()
-  }, [])
+  }, [goalCount])
+  useEffect(() => {
+    if (!liveNow) return
+    const id = setInterval(() => {
+      fetchBootExtras(undefined, { force: true })
+        .then((e) => e.length && setExtras(e))
+        .catch(() => {})
+    }, 5 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [liveNow])
 
   const { scorers, enriched } = useMemo(
     () => applyBootExtras(topScorers(matches, { limit: 15 }), extras),
@@ -74,12 +97,23 @@ export default function StatsView({ matches, hideScores }) {
       ),
     [scorers, enriched],
   )
-  const anyLive = scorers.some((s) => s.live)
   // Teams with football still to play — their scorers can still add to the
   // tally, so their rows read bold; eliminated players' entries are frozen.
   const active = useMemo(() => activeTeams(matches), [matches])
   const anyActive = scorers.some((s) => active.has(s.team))
   const anyFrozen = scorers.some((s) => !active.has(s.team))
+  // Players IN ACTION right now (their team's match is live) get a pulsing dot.
+  const liveTeams = useMemo(() => {
+    const t = new Set()
+    for (const m of matches) {
+      if (m.live) {
+        t.add(m.t1)
+        t.add(m.t2)
+      }
+    }
+    return t
+  }, [matches])
+  const anyInAction = scorers.some((s) => liveTeams.has(s.team))
 
   if (hideScores && !reveal) {
     return (
@@ -177,7 +211,9 @@ export default function StatsView({ matches, hideScores }) {
                   <td className="boot-rank">{ranks[i] ?? ''}</td>
                   <td className="boot-player">
                     {s.name}
-                    {s.live && <span className="boot-live" title="Includes a goal in a match still in play">●</span>}
+                    {liveTeams.has(s.team) && (
+                      <span className="boot-live" title="In action — playing right now, so this tally can change">●</span>
+                    )}
                   </td>
                   <td className="boot-team">
                     <span className="boot-flag">{FLAG_BY_TEAM[s.team] || '•'}</span> {s.team}
@@ -198,6 +234,7 @@ export default function StatsView({ matches, hideScores }) {
           {enriched
             ? 'Ranked by the official award criteria: goals, then assists, then fewest minutes played (assists & minutes via ESPN).'
             : 'Level scorers share a rank — the official award would split them on assists and minutes played.'}
+          {enriched && liveNow && ' Refreshes with every goal while a match is in play.'}
           {anyActive && anyFrozen && (
             <>
               {' '}
@@ -205,7 +242,7 @@ export default function StatsView({ matches, hideScores }) {
               the rest are final.
             </>
           )}
-          {anyLive && ' ● marks a tally that includes a goal from a match still in play.'}
+          {anyInAction && ' ● marks a player in action right now — their tally can still change.'}
         </p>
       </section>
     </div>

@@ -118,6 +118,49 @@ describe('StatsView', () => {
     expect(screen.queryByTitle('Assists')).not.toBeInTheDocument()
     expect(await screen.findByText(/official award would split them/)).toBeInTheDocument()
   })
+
+  it('force-refreshes the extras the moment the goal tally changes', async () => {
+    const { rerender } = render(<StatsView matches={matches} hideScores={false} />)
+    expect(fetchBootExtras).toHaveBeenCalledTimes(1)
+    expect(fetchBootExtras.mock.calls[0][1]).toEqual({ force: false })
+    // Same matches identity-refreshed but no new goal → no refetch.
+    rerender(<StatsView matches={[...matches]} hideScores={false} />)
+    expect(fetchBootExtras).toHaveBeenCalledTimes(1)
+    // A goal lands → refetch, skipping the cache.
+    const scored = matches.map((m) =>
+      m.num === 2
+        ? { ...m, goals: { ...m.goals, t2: [...m.goals.t2, { name: 'Alphonso Davies', minute: 80 }] } }
+        : m,
+    )
+    rerender(<StatsView matches={scored} hideScores={false} />)
+    expect(fetchBootExtras).toHaveBeenCalledTimes(2)
+    expect(fetchBootExtras.mock.calls[1][1]).toEqual({ force: true })
+  })
+
+  it('marks players whose team is in a live match with an in-action dot', () => {
+    const live = [...matches, { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], live: { minute: 10 }, goals: { t1: [], t2: [] } }]
+    render(<StatsView matches={live} hideScores={false} />)
+    const rows = screen.getAllByRole('row').slice(1)
+    const jimenez = rows.find((r) => r.textContent.includes('Raúl Jiménez'))
+    const son = rows.find((r) => r.textContent.includes('Son Heung-min'))
+    expect(jimenez.querySelector('.boot-live')).toBeTruthy() // Mexico are playing now
+    expect(son.querySelector('.boot-live')).toBeNull()
+    expect(screen.getByText(/in action right now/)).toBeInTheDocument()
+  })
+
+  it('keeps refreshing on an interval while a match is live', async () => {
+    vi.useFakeTimers()
+    try {
+      const live = [...matches, { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], live: { minute: 10 }, goals: { t1: [], t2: [] } }]
+      render(<StatsView matches={live} hideScores={false} />)
+      expect(fetchBootExtras).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1000)
+      expect(fetchBootExtras).toHaveBeenCalledTimes(2)
+      expect(fetchBootExtras.mock.calls[1][1]).toEqual({ force: true })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('StatsView tile drill-down', () => {

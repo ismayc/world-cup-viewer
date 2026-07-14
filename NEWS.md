@@ -5,6 +5,18 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Golden Boot goes (close to) real-time.** Goals already tracked the 30-second
+  live poll; now the official tie-breakers do too: assists can only change when
+  a goal is scored, so any change in the total goal tally force-refreshes the
+  ESPN extras (skipping the 15-min cache), plus a 5-minute interval keeps
+  minutes played current while a match is live. Athlete names are cached
+  permanently (they never change), so refreshes cost roughly half the requests
+  of a cold load — and the initial load no longer double-fetches while the
+  feeds are still arriving.
+- **Golden Boot: ● marks players in action right now.** A pulsing red dot next
+  to anyone whose team is playing at this moment (during the France–Spain semi:
+  Mbappé, Dembélé, Oyarzabal) — their tally can still change today. Replaces
+  the narrower "includes a live goal" marker.
 - **Radial: give "ROUND OF 32" breathing room.** The label was touching the two
   spokes flanking the top seam (half-width ~42 SVG units vs spokes at ±41.8).
   Smaller size + tighter letter-spacing brings it to ~7 units of clearance per
