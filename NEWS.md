@@ -5,6 +5,13 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Fix: the tale of the tape is now historically accurate.** Opening a PAST
+  knockout tie (e.g. Argentina–Egypt in the R32) showed the teams' records
+  TODAY ("6–0–0") under "Tournament so far" — wrong for that moment. A played
+  match now computes each record as of its kickoff (strictly-earlier matches
+  only, so simultaneous group finales and the match itself stay out) under the
+  heading **"Going into this match"**; upcoming matches keep "Tournament so
+  far". Spotted by Chester on the Argentina v Egypt detail.
 - **Goal alerts: on-page toasts + click-to-open notifications.** Every new goal
   now raises an in-app toast (top-right; scorer, minute, live score; click
   opens the match, ✕ or ~8s dismisses) alongside the browser notification —

@@ -14,7 +14,13 @@ const isFinal = (m) => Boolean(m.score) && !m.live && !m.voided
 // pensLost so the UI can note it); a group draw is a draw. Cards are best-effort
 // — they come from ESPN's event feed, not OpenFootball — so `hasCardData` says
 // whether any of the team's matches carried card events at all.
-export function teamRecord(matches, team) {
+//
+// `before` (a kickoff timestamp) limits the record to matches that KICKED OFF
+// earlier — the record "going into" a given match, historically accurate when
+// viewing a past game. Strictly earlier, so the match itself and simultaneous
+// group finales stay out.
+export function teamRecord(matches, team, { before } = {}) {
+  const cutoff = before ? new Date(before).getTime() : null
   const rec = {
     played: 0,
     w: 0,
@@ -32,6 +38,7 @@ export function teamRecord(matches, team) {
   }
   for (const m of matches) {
     if (!isFinal(m)) continue
+    if (cutoff != null && !(new Date(m.ko).getTime() < cutoff)) continue
     const side = m.t1 === team ? 't1' : m.t2 === team ? 't2' : null
     if (!side) continue
     const [gf, ga] = side === 't1' ? m.score : [m.score[1], m.score[0]]

@@ -64,9 +64,11 @@ function Timeline({ match }) {
 // "Tale of the tape" for a knockout tie: the two teams' tournament records side
 // by side, computed from the merged match list. Only rendered once both slots
 // hold real teams (a "Winner Match N" placeholder has no record to show).
-function TaleOfTheTape({ match, allMatches }) {
-  const a = teamRecord(allMatches, match.t1)
-  const b = teamRecord(allMatches, match.t2)
+// Records are AS OF this match's kickoff, so a past game shows what each team
+// had done going into it — not their record today.
+function TaleOfTheTape({ match, allMatches, label }) {
+  const a = teamRecord(allMatches, match.t1, { before: match.ko })
+  const b = teamRecord(allMatches, match.t2, { before: match.ko })
   if (!a.played || !b.played) return null
   const gd = (v) => (v > 0 ? `+${v}` : `${v}`)
   const record = (r) => `${r.w}–${r.d}–${r.l}${r.pensWon ? ` (${r.pensWon} on pens)` : ''}`
@@ -84,7 +86,7 @@ function TaleOfTheTape({ match, allMatches }) {
   ]
   return (
     <div className="md-section">
-      <h4>Tournament so far</h4>
+      <h4>{label}</h4>
       <table className="md-tape">
         <tbody>
           {rows.map(([label, va, vb]) => (
@@ -182,20 +184,25 @@ export default function MatchDetail({ match, tz, hideScores, allMatches, onClose
         )}
 
         {/* Knockout tale of the tape. A team's aggregate record reveals results,
-            so spoiler-free mode keeps it behind its own reveal. */}
+            so spoiler-free mode keeps it behind its own reveal. A played match
+            shows the records the teams took INTO it; an upcoming one, so far. */}
         {match.stage !== 'Group' &&
           allMatches &&
           FLAG_BY_TEAM[match.t1] &&
           FLAG_BY_TEAM[match.t2] &&
           (hideScores && !revealStats ? (
             <div className="md-section">
-              <h4>Tournament so far</h4>
+              <h4>{hasScore ? 'Going into this match' : 'Tournament so far'}</h4>
               <button className="md-reveal" onClick={() => setRevealStats(true)}>
                 🙈 reveal team records
               </button>
             </div>
           ) : (
-            <TaleOfTheTape match={match} allMatches={allMatches} />
+            <TaleOfTheTape
+              match={match}
+              allMatches={allMatches}
+              label={hasScore ? 'Going into this match' : 'Tournament so far'}
+            />
           ))}
 
         <div className="md-section">

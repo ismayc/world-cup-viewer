@@ -20,7 +20,7 @@ const renderDetail = (props = {}) =>
   )
 
 describe('MatchDetail tale of the tape', () => {
-  it('shows both teams’ tournament records for a knockout tie', () => {
+  it('shows both teams’ tournament records for an upcoming knockout tie', () => {
     renderDetail()
     expect(screen.getByText('Tournament so far')).toBeInTheDocument()
     // Brazil 2W (one on pens); France 1W 1D.
@@ -30,6 +30,17 @@ describe('MatchDetail tale of the tape', () => {
     // Card row appears (France has card data) and is flagged best-effort.
     expect(screen.getByText('Cards')).toBeInTheDocument()
     expect(screen.getByText(/best-effort/)).toBeInTheDocument()
+  })
+
+  it('a played match shows the records the teams took INTO it, not today’s', () => {
+    // Viewing the QF (Jul 10): only the group games (Jun 12/13) predate it —
+    // the QF itself must not count toward its own tape.
+    renderDetail({ match: allMatches[2] })
+    expect(screen.getByText('Going into this match')).toBeInTheDocument()
+    expect(screen.queryByText('Tournament so far')).not.toBeInTheDocument()
+    expect(screen.getByText('1–0–0')).toBeInTheDocument() // Brazil: group win only
+    expect(screen.getByText('0–1–0')).toBeInTheDocument() // Canada: group draw only
+    expect(screen.queryByText(/on pens/)).not.toBeInTheDocument()
   })
 
   it('does not render for a group match or a placeholder tie', () => {

@@ -69,6 +69,19 @@ describe('teamRecord', () => {
     const r = teamRecord([m({ stage: 'SF', score: [0, 0] })], 'Brazil')
     expect(r.d).toBe(1)
   })
+
+  it('`before` limits the record to matches that kicked off strictly earlier', () => {
+    const timeline = [
+      m({ ko: '2026-06-12T15:00:00-04:00', score: [1, 0] }),
+      m({ ko: '2026-06-18T15:00:00-04:00', score: [2, 0] }), // simultaneous with cutoff
+      m({ ko: '2026-06-24T15:00:00-04:00', score: [3, 0] }), // after cutoff
+    ]
+    const r = teamRecord(timeline, 'Brazil', { before: '2026-06-18T15:00:00-04:00' })
+    expect(r.played).toBe(1)
+    expect(r.gf).toBe(1)
+    // No cutoff → everything counts.
+    expect(teamRecord(timeline, 'Brazil').played).toBe(3)
+  })
 })
 
 describe('topScorers', () => {
