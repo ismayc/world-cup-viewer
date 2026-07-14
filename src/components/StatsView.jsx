@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
-import { topScorers, scorerRanks, tournamentTotals, applyBootExtras } from '../utils/tournamentStats.js'
+import { topScorers, scorerRanks, tournamentTotals, applyBootExtras, activeTeams } from '../utils/tournamentStats.js'
 import { fetchBootExtras } from '../services/espnStats.js'
 
 // Tournament stats: headline totals plus the Golden Boot race. Goals are
@@ -40,6 +40,11 @@ export default function StatsView({ matches, hideScores }) {
     [scorers, enriched],
   )
   const anyLive = scorers.some((s) => s.live)
+  // Teams with football still to play — their scorers can still add to the
+  // tally, so their rows read bold; eliminated players' entries are frozen.
+  const active = useMemo(() => activeTeams(matches), [matches])
+  const anyActive = scorers.some((s) => active.has(s.team))
+  const anyFrozen = scorers.some((s) => !active.has(s.team))
 
   if (hideScores && !reveal) {
     return (
@@ -93,7 +98,14 @@ export default function StatsView({ matches, hideScores }) {
             </thead>
             <tbody>
               {scorers.map((s, i) => (
-                <tr key={`${s.team}|${s.name}`} className={ranks[i] === 1 ? 'boot-leader' : undefined}>
+                <tr
+                  key={`${s.team}|${s.name}`}
+                  className={
+                    [ranks[i] === 1 && 'boot-leader', active.has(s.team) && 'boot-active']
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
+                >
                   <td className="boot-rank">{ranks[i] ?? ''}</td>
                   <td className="boot-player">
                     {s.name}
@@ -118,6 +130,13 @@ export default function StatsView({ matches, hideScores }) {
           {enriched
             ? 'Ranked by the official award criteria: goals, then assists, then fewest minutes played (assists & minutes via ESPN).'
             : 'Level scorers share a rank — the official award would split them on assists and minutes played.'}
+          {anyActive && anyFrozen && (
+            <>
+              {' '}
+              <strong>Bold</strong> players are still in the tournament and can add to their tally;
+              the rest are final.
+            </>
+          )}
           {anyLive && ' ● marks a tally that includes a goal from a match still in play.'}
         </p>
       </section>

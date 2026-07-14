@@ -92,6 +92,24 @@ describe('StatsView', () => {
     expect(rows[1].cells[5]).toHaveTextContent('90')
   })
 
+  it('bolds scorers whose team still has football to play', () => {
+    // Add an unplayed SF for Mexico → Jiménez & co. are active; the others frozen.
+    const withRemaining = [...matches, { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France' }]
+    render(<StatsView matches={withRemaining} hideScores={false} />)
+    const rows = screen.getAllByRole('row').slice(1)
+    const jimenez = rows.find((r) => r.textContent.includes('Raúl Jiménez'))
+    const son = rows.find((r) => r.textContent.includes('Son Heung-min'))
+    expect(jimenez.className).toContain('boot-active')
+    expect(son.className).not.toContain('boot-active')
+    expect(screen.getByText(/still in the tournament/)).toBeInTheDocument()
+  })
+
+  it('bolds nothing (and drops the legend) once the tournament is over', () => {
+    render(<StatsView matches={matches} hideScores={false} />)
+    expect(document.querySelector('.boot-active')).toBeNull()
+    expect(screen.queryByText(/still in the tournament/)).not.toBeInTheDocument()
+  })
+
   it('keeps the fallback ordering when the extras fetch fails', async () => {
     fetchBootExtras.mockImplementation(async () => { throw new Error('offline') })
     render(<StatsView matches={matches} hideScores={false} />)

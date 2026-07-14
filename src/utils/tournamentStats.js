@@ -3,6 +3,8 @@
 // race, and headline totals (the Stats view). All pure — components pass in the
 // merged `matches` array and render what comes back.
 
+import { FLAG_BY_TEAM } from '../data/teams.js'
+
 // A result counts only once FINAL — a live score is provisional and a voided
 // match has no result (same rule as the clinch engine / bracket resolution).
 const isFinal = (m) => Boolean(m.score) && !m.live && !m.voided
@@ -61,6 +63,20 @@ export function teamRecord(matches, team) {
   }
   rec.gd = rec.gf - rec.ga
   return rec
+}
+
+// Teams that can still add to a scorer's tally: any REAL team with a match
+// left to play (or in play). Pass the resolved match list so knockout slots
+// hold team names once known — placeholder labels ("Winner Match N") aren't
+// real teams and don't count. Third-place losers stay active until the
+// play-off is final; after the Final the set is empty (the race is over).
+export function activeTeams(matches) {
+  const out = new Set()
+  for (const m of matches) {
+    if (isFinal(m) || m.voided) continue
+    for (const t of [m.t1, m.t2]) if (FLAG_BY_TEAM[t]) out.add(t)
+  }
+  return out
 }
 
 // Group scorer spellings across sources: ESPN and OpenFootball occasionally

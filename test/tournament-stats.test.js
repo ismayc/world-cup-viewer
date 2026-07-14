@@ -5,6 +5,7 @@ import {
   scorerRanks,
   tournamentTotals,
   applyBootExtras,
+  activeTeams,
 } from '../src/utils/tournamentStats.js'
 
 // Minimal match shapes — only the fields the aggregators read.
@@ -190,6 +191,23 @@ describe('applyBootExtras', () => {
     const scorers = [s('A', 5)]
     expect(applyBootExtras(scorers, null)).toEqual({ scorers, enriched: false })
     expect(applyBootExtras(scorers, [])).toEqual({ scorers, enriched: false })
+  })
+})
+
+describe('activeTeams', () => {
+  it('collects real teams from unplayed and live matches only', () => {
+    const teams = activeTeams([
+      m({ stage: 'SF', t1: 'France', t2: 'Spain' }), // unplayed → both active
+      m({ stage: 'SF', t1: 'England', t2: 'Brazil', score: [1, 0], live: { minute: 70 } }), // live → active
+      m({ stage: 'QF', t1: 'Ghana', t2: 'Mexico', score: [2, 0] }), // final → not active
+      m({ stage: 'Final', t1: 'Winner Match 101', t2: 'Winner Match 102' }), // placeholders → skipped
+      m({ t1: 'Canada', t2: 'Uruguay', voided: true }), // voided → skipped
+    ])
+    expect([...teams].sort()).toEqual(['Brazil', 'England', 'France', 'Spain'])
+  })
+
+  it('is empty once every match is final (the race is over)', () => {
+    expect(activeTeams([m({ score: [1, 0] })]).size).toBe(0)
   })
 })
 

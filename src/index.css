@@ -2446,6 +2446,10 @@ select {
 .boot-table td.boot-num { color: var(--text-dim); font-weight: 600; }
 .boot-leader td.boot-num { color: var(--gold); }
 .boot-leader td { color: var(--gold); }
+/* Scorers whose team still has football to play — the tally can still grow. */
+.boot-active .boot-player, .boot-active .boot-team { font-weight: 700; }
+.boot-active .boot-player { color: var(--text); }
+.boot-leader.boot-active .boot-player { color: var(--gold); }
 .boot-leader .boot-pens, .boot-leader .boot-rank { color: var(--gold); }
 .boot-live { margin-left: 6px; color: var(--live); font-size: 0.65rem; animation: pulse 1.4s infinite; }
 .boot-flag { margin-right: 4px; }

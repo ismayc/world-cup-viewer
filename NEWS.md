@@ -5,6 +5,13 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Golden Boot: bold the scorers still in the tournament.** Players whose team
+  has a match left (or in play) render bold — their tally can still grow; the
+  rest are frozen where they finished. Data-driven (`activeTeams`: any real
+  team in a not-yet-final match), so third-place losers stay bold until the
+  play-off ends and nobody is bold after the Final. A legend line appears only
+  while the table has both kinds. Today that's Messi & Mbappé — 1st and 2nd,
+  both still playing — plus Bellingham, Kane, Dembélé and Oyarzabal.
 - **Golden Boot now ranks by the official award criteria.** ESPN's core API
   (keyless, CORS-open — verified) exposes per-athlete season totals, so the
   Boot table pulls assists AND minutes played for everyone in ESPN's goals or
