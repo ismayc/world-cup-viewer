@@ -3,6 +3,8 @@ import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { US_BROADCAST } from '../data/broadcast.js'
+import { FIFA_RANK } from '../data/fifaRanking.js'
+import { teamRecord } from '../utils/tournamentStats.js'
 import { formatTime, formatDateLong, tzAbbrev, liveState, statusFlag, teamKickoffTooltip } from '../utils/time.js'
 import { downloadICS } from '../utils/ics.js'
 import { useFollow } from '../context/follow.jsx'
@@ -59,8 +61,49 @@ function Timeline({ match }) {
   )
 }
 
-export default function MatchDetail({ match, tz, hideScores, onClose }) {
+// "Tale of the tape" for a knockout tie: the two teams' tournament records side
+// by side, computed from the merged match list. Only rendered once both slots
+// hold real teams (a "Winner Match N" placeholder has no record to show).
+function TaleOfTheTape({ match, allMatches }) {
+  const a = teamRecord(allMatches, match.t1)
+  const b = teamRecord(allMatches, match.t2)
+  if (!a.played || !b.played) return null
+  const gd = (v) => (v > 0 ? `+${v}` : `${v}`)
+  const record = (r) => `${r.w}–${r.d}–${r.l}${r.pensWon ? ` (${r.pensWon} on pens)` : ''}`
+  const cards = (r) => `🟨 ${r.yellow} · 🟥 ${r.red}`
+  const rank = (t) => (FIFA_RANK[t] ? `#${FIFA_RANK[t]}` : '—')
+  const anyCards = a.hasCardData || b.hasCardData
+  const rows = [
+    ['W–D–L', record(a), record(b)],
+    ['Goals scored', a.gf, b.gf],
+    ['Goals conceded', a.ga, b.ga],
+    ['Goal difference', gd(a.gd), gd(b.gd)],
+    ['Clean sheets', a.cleanSheets, b.cleanSheets],
+    ...(anyCards ? [['Cards', cards(a), cards(b)]] : []),
+    ['FIFA ranking', rank(match.t1), rank(match.t2)],
+  ]
+  return (
+    <div className="md-section">
+      <h4>Tournament so far</h4>
+      <table className="md-tape">
+        <tbody>
+          {rows.map(([label, va, vb]) => (
+            <tr key={label}>
+              <td className="tape-a">{va}</td>
+              <th className="tape-label">{label}</th>
+              <td className="tape-b">{vb}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {anyCards && <p className="tape-note">Cards are best-effort (ESPN event feed).</p>}
+    </div>
+  )
+}
+
+export default function MatchDetail({ match, tz, hideScores, allMatches, onClose }) {
   const [reveal, setReveal] = useState(false)
+  const [revealStats, setRevealStats] = useState(false)
   const cardRef = useModalA11y(onClose)
 
   if (!match) return null
@@ -137,6 +180,23 @@ export default function MatchDetail({ match, tz, hideScores, onClose }) {
             <Timeline match={match} />
           </div>
         )}
+
+        {/* Knockout tale of the tape. A team's aggregate record reveals results,
+            so spoiler-free mode keeps it behind its own reveal. */}
+        {match.stage !== 'Group' &&
+          allMatches &&
+          FLAG_BY_TEAM[match.t1] &&
+          FLAG_BY_TEAM[match.t2] &&
+          (hideScores && !revealStats ? (
+            <div className="md-section">
+              <h4>Tournament so far</h4>
+              <button className="md-reveal" onClick={() => setRevealStats(true)}>
+                🙈 reveal team records
+              </button>
+            </div>
+          ) : (
+            <TaleOfTheTape match={match} allMatches={allMatches} />
+          ))}
 
         <div className="md-section">
           <h4>How to watch (US)</h4>

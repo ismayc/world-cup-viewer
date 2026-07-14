@@ -1001,6 +1001,12 @@ select {
 .rank { color: var(--text-faint); margin-right: 7px; font-size: 0.75rem; }
 .row-team { color: var(--text); font-weight: 500; margin-left: 6px; }
 .tiebreak-mark { margin-left: 5px; font-size: 0.78rem; cursor: help; vertical-align: middle; }
+/* Pin marker glyphs to a color-emoji font: the inherited Inter/system chain on
+   some devices has no glyph for U+2696 (⚖), which renders as a bare "?". */
+.tiebreak-mark,
+.emoji-glyph {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+}
 .row-team-btn {
   background: none;
   border: none;
@@ -2342,3 +2348,121 @@ select {
 .ais-match-link:hover { color: var(--text); }
 .ais-out { opacity: 0.6; }
 .ais-out .ais-note { color: var(--text-faint); font-size: 0.72rem; font-style: italic; }
+
+/* ---------- Champion banner (shown once the Final is final) ---------- */
+.champ-banner {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  background: var(--card);
+  border: 1.5px solid var(--gold);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.champ-banner:hover { background: var(--card-hover); }
+.champ-text { position: relative; font-size: 1.02rem; }
+.champ-text strong { color: var(--gold); }
+.confetti {
+  position: absolute;
+  top: -12px;
+  left: calc(var(--i) * 5.7%);
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  background: hsl(calc(var(--i) * 47deg) 85% 60%);
+  opacity: 0.85;
+  transform: rotate(calc(var(--i) * 40deg));
+  animation: confetti-fall calc(2.6s + var(--i) * 0.13s) linear infinite;
+  animation-delay: calc(var(--i) * -0.35s);
+  pointer-events: none;
+}
+@keyframes confetti-fall {
+  to { transform: translateY(72px) rotate(420deg); opacity: 0.15; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti { animation: none; display: none; }
+}
+
+/* Radial centre once a champion is crowned. */
+.rb-champ-name {
+  fill: var(--gold);
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.rb-trophy-won { filter: drop-shadow(0 0 9px var(--gold)); }
+
+/* ---------- Stats view (totals strip + Golden Boot race) ---------- */
+.stats-wrap { display: flex; flex-direction: column; gap: 18px; }
+.stats-hidden {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.stats-strip { display: flex; flex-wrap: wrap; gap: 10px; }
+.stat-tile {
+  flex: 1 1 120px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  text-align: center;
+}
+.stat-num { display: block; font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+.stat-label { display: block; margin-top: 2px; font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.boot-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+.boot-section h3 { margin: 0 0 10px; font-size: 1rem; }
+.boot-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.boot-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.boot-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.boot-table tr:last-child td { border-bottom: none; }
+.boot-rank { width: 30px; text-align: right; color: var(--text-faint); font-weight: 700; }
+.boot-table th.boot-rank, .boot-table td.boot-goals { text-align: right; }
+.boot-table th:last-child { text-align: right; }
+.boot-goals { font-weight: 800; white-space: nowrap; }
+.boot-pens { margin-left: 6px; font-size: 0.68rem; font-weight: 600; color: var(--text-faint); }
+.boot-leader td { color: var(--gold); }
+.boot-leader .boot-pens, .boot-leader .boot-rank { color: var(--gold); }
+.boot-live { margin-left: 6px; color: var(--live); font-size: 0.65rem; animation: pulse 1.4s infinite; }
+.boot-flag { margin-right: 4px; }
+.boot-note, .boot-empty { margin: 10px 0 0; font-size: 0.74rem; color: var(--text-faint); }
+
+/* ---------- Tale of the tape (MatchDetail, knockout ties) ---------- */
+.md-tape { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.md-tape td, .md-tape th { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+.md-tape tr:last-child td, .md-tape tr:last-child th { border-bottom: none; }
+.tape-label {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.tape-a { text-align: right; font-weight: 700; width: 34%; }
+.tape-b { text-align: left; font-weight: 700; width: 34%; }
+.tape-note { margin: 8px 0 0; font-size: 0.7rem; color: var(--text-faint); }

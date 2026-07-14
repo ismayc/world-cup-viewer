@@ -231,11 +231,14 @@ export default function RadialBracket({ matches, tz, hideScores }) {
         })}
 
         {/* Centre: trophy (or a crowned champion). */}
-        <text className="rb-trophy" x={CX} y={CY} fontSize="46">🏆</text>
+        <text className={`rb-trophy${champion ? ' rb-trophy-won' : ''}`} x={CX} y={CY} fontSize="46">🏆</text>
         {champion && (
           <g className="rb-champ">
             <title>Champion: {champion}</title>
             <text className="rb-crown" x={CX} y={CY - 44} fontSize="22">👑</text>
+            <text className="rb-champ-name" x={CX} y={CY + 44} fontSize="15">
+              {FLAG_BY_TEAM[champion]} {champion} — Champions
+            </text>
           </g>
         )}
 

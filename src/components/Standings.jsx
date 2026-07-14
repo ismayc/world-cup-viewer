@@ -260,7 +260,7 @@ function ThirdTieNotes({ thirds }) {
   if (!pairs.length) return null
   return (
     <div className="thirds-tie-note">
-      <h4 className="thirds-tie-head">⚖️ Tie-breakers among the thirds</h4>
+      <h4 className="thirds-tie-head"><span className="emoji-glyph">⚖️</span> Tie-breakers among the thirds</h4>
       <ul>
         {pairs.map(([a, b]) => {
           // conduct decides before FIFA ranking; they're only separated by FIFA if

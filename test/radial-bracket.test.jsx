@@ -83,6 +83,9 @@ describe('RadialBracket', () => {
     // The champion is crowned, and a "Champion: …" title is present.
     expect(screen.getByText('👑')).toBeInTheDocument()
     expect(titles.some((t) => /^Champion: /.test(t))).toBe(true)
+    // The champion's name lights up under the (glowing) trophy.
+    expect(screen.getByText(/— Champions$/)).toBeInTheDocument()
+    expect(container.querySelector('.rb-trophy-won')).toBeTruthy()
   })
 
   it('pins the final (M104) above the trophy, with third place below it (no overlap)', () => {

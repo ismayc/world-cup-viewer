@@ -9,6 +9,8 @@ import Standings from './components/Standings.jsx'
 import ScenariosView from './components/ScenariosView.jsx'
 import OutlookView from './components/OutlookView.jsx'
 import WeekView from './components/WeekView.jsx'
+import StatsView from './components/StatsView.jsx'
+import ChampionBanner from './components/ChampionBanner.jsx'
 import NextMatch from './components/NextMatch.jsx'
 import MatchDetail from './components/MatchDetail.jsx'
 import CalendarModal from './components/CalendarModal.jsx'
@@ -41,6 +43,7 @@ const VIEWS = [
   { id: 'outlook', label: '🔮 R32 Outlook', groupStageOnly: true },
   { id: 'bracket', label: '🏆 Bracket' },
   { id: 'radial', label: '🎯 Radial' },
+  { id: 'stats', label: '👟 Stats' },
 ]
 
 // Stages that collapse out of the Schedule once every one of their games is final,
@@ -451,6 +454,13 @@ export default function App() {
         </div>
       </header>
 
+      {/* Once the Final is FINAL, the champion gets their banner (hidden in
+          spoiler-free mode — it's the ultimate spoiler). */}
+      <ChampionBanner
+        match={displayMatches.find((m) => m.num === 104)}
+        hideScores={hideScores}
+      />
+
       <div className={`results-bar results-${resultsState}`}>
         <span className="results-dot" />
         <span className="results-text">
@@ -669,6 +679,12 @@ export default function App() {
         </main>
       )}
 
+      {view === 'stats' && (
+        <main className="stats-view">
+          <StatsView matches={displayMatches} hideScores={hideScores} />
+        </main>
+      )}
+
       <footer className="app-footer">
         <p>
           Kickoff times convert automatically to your selected timezone. Broadcast info is for the
@@ -707,6 +723,7 @@ export default function App() {
           match={detailMatch}
           tz={tz}
           hideScores={hideScores}
+          allMatches={displayMatches}
           onClose={() => setDetailMatch(null)}
         />
       )}

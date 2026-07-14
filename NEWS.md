@@ -4,6 +4,32 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-07-14
+- **New "👟 Stats" tab: Golden Boot race + tournament totals.** A top-scorers
+  table built from the merged goal data (OpenFootball for finished matches, ESPN
+  for live ones): top 15 with ties never split, shared ranks for level scorers,
+  penalty counts noted, own goals excluded, and a pulsing dot on any tally that
+  includes a goal from a match still in play. Diacritic spellings from the two
+  feeds ("Julián"/"Julian") merge into one player. Above it, a totals strip:
+  matches played, goals, goals per match, extra-time games, shootouts. Hidden
+  behind a reveal in spoiler-free mode. (`StatsView`, `utils/tournamentStats.js`.)
+- **Tale of the tape in the match detail for knockout ties.** Once both slots
+  hold real teams, the detail popout compares their tournaments side by side:
+  W–D–L (shootout wins noted), goals scored/conceded, goal difference, clean
+  sheets, cards (best-effort, ESPN feed) and FIFA ranking — ready for today's
+  France–Spain semifinal. Spoiler-free mode keeps it behind its own reveal.
+- **Champion finale, shipped before Sunday.** The moment the Final is FINAL
+  (not merely live), a gold confetti banner crowns the winner under the header
+  (click opens the Final; hidden in spoiler-free mode; confetti respects
+  reduced-motion), and the Radial view lights up — glowing trophy, 👑, and the
+  champion's name in gold at the centre. Verified end-to-end by replaying a
+  simulated completed tournament through the real feed pipeline.
+- **Fix: ⚖️ tie-break marks rendering as "?".** The scales emoji (U+2696) is
+  missing from some devices' default font chain, so the two marks in the Best
+  third-placed table (Ghana/Ecuador, split on fair-play points) showed as bare
+  question marks. Marker glyphs now pin an explicit color-emoji font stack
+  (`.tiebreak-mark` / `.emoji-glyph`).
+
 ## 2026-07-01
 - **No premature "Delayed" badge at kickoff.** ESPN flips a match to
   `STATUS_DELAYED` right at the scheduled hour, but kickoff normally happens a
