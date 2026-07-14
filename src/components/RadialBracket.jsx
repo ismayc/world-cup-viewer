@@ -82,7 +82,9 @@ for (const r of ['R32', 'R16', 'QF', 'SF'])
 // midpoints of each round's connector zone — where its match numbers live, but
 // none sits at the seam itself.
 const ROUND_RING_LABELS = [
-  { text: 'ROUND OF 32', r: (LEAF_R + RING.R32) / 2, size: 10 },
+  // The R32 zone is the tightest: the top leaf pair's spokes sit only ~42 SVG
+  // units either side of the seam at this radius, so its label stays small.
+  { text: 'ROUND OF 32', r: (LEAF_R + RING.R32) / 2, size: 8.5 },
   { text: 'ROUND OF 16', r: (RING.R32 + RING.R16) / 2, size: 9.5 },
   { text: 'QUARTER-FINALS', r: (RING.R16 + RING.QF) / 2, size: 9 },
   { text: 'SEMI-FINALS', r: (RING.QF + RING.SF) / 2, size: 8.5 },

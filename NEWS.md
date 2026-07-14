@@ -5,6 +5,10 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Radial: give "ROUND OF 32" breathing room.** The label was touching the two
+  spokes flanking the top seam (half-width ~42 SVG units vs spokes at ±41.8).
+  Smaller size + tighter letter-spacing brings it to ~7 units of clearance per
+  side, measured via getBBox in the browser. (Reported by Chester.)
 - **Radial: four upgrades for the closing week.** (1) Eliminated teams' flags
   fade while the tournament is on (driven by `activeTeams` — nothing dims once
   the Final is done, and third-place participants stay vivid until Saturday);
