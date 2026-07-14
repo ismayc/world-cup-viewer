@@ -4,6 +4,7 @@ import {
   topScorers,
   scorerRanks,
   tournamentTotals,
+  applyBootExtras,
 } from '../src/utils/tournamentStats.js'
 
 // Minimal match shapes — only the fields the aggregators read.
@@ -141,6 +142,54 @@ describe('scorerRanks', () => {
   it('shares ranks across ties and skips past the block', () => {
     const ranks = scorerRanks([{ goals: 5 }, { goals: 4 }, { goals: 4 }, { goals: 3 }])
     expect(ranks).toEqual([1, 2, null, 4])
+  })
+
+  it('honours a custom levelling key', () => {
+    const ranks = scorerRanks(
+      [{ goals: 5, assists: 2 }, { goals: 5, assists: 1 }, { goals: 5, assists: 1 }],
+      (s) => `${s.goals}|${s.assists}`,
+    )
+    expect(ranks).toEqual([1, 2, null])
+  })
+})
+
+describe('applyBootExtras', () => {
+  const s = (name, goals, pens = 0) => ({ name, team: 'X', goals, pens, live: false })
+
+  it('joins by diacritic-insensitive name and re-sorts by the award criteria', () => {
+    const scorers = [s('Lionel Messi', 8), s('Kylian Mbappe', 8), s('Erling Haaland', 7)]
+    const extras = [
+      { name: 'Lionel Messi', goals: 8, assists: 2, minutes: 530 },
+      { name: 'Kylian Mbappé', goals: 8, assists: 4, minutes: 540 },
+      { name: 'Erling Haaland', goals: 7, assists: 0, minutes: 600 },
+    ]
+    const { scorers: out, enriched } = applyBootExtras(scorers, extras)
+    expect(enriched).toBe(true)
+    // Mbappé's 4 assists beat Messi's 2 despite equal goals.
+    expect(out.map((x) => x.name)).toEqual(['Kylian Mbappe', 'Lionel Messi', 'Erling Haaland'])
+    expect(out[0]).toMatchObject({ assists: 4, minutes: 540 })
+  })
+
+  it('splits equal goals+assists on FEWEST minutes', () => {
+    const { scorers: out } = applyBootExtras([s('A', 5), s('B', 5)], [
+      { name: 'A', assists: 1, minutes: 600 },
+      { name: 'B', assists: 1, minutes: 480 },
+    ])
+    expect(out.map((x) => x.name)).toEqual(['B', 'A'])
+  })
+
+  it('sorts unknown entries below covered ones on an otherwise-equal line', () => {
+    const { scorers: out } = applyBootExtras([s('Unknown Player', 5), s('Covered', 5)], [
+      { name: 'Covered', assists: 0, minutes: 90 },
+    ])
+    expect(out.map((x) => x.name)).toEqual(['Covered', 'Unknown Player'])
+    expect(out[1].assists).toBeUndefined()
+  })
+
+  it('is a no-op without extras', () => {
+    const scorers = [s('A', 5)]
+    expect(applyBootExtras(scorers, null)).toEqual({ scorers, enriched: false })
+    expect(applyBootExtras(scorers, [])).toEqual({ scorers, enriched: false })
   })
 })
 

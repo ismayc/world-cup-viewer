@@ -1,17 +1,44 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
-import { topScorers, scorerRanks, tournamentTotals } from '../utils/tournamentStats.js'
+import { topScorers, scorerRanks, tournamentTotals, applyBootExtras } from '../utils/tournamentStats.js'
+import { fetchBootExtras } from '../services/espnStats.js'
 
-// Tournament stats: headline totals plus the Golden Boot race. Everything is
-// derived from the merged match list — goal scorers come from OpenFootball
-// (finished matches) and ESPN (live overlay), so a goal shows here moments
-// after it lands on the scoreboard.
+// Tournament stats: headline totals plus the Golden Boot race. Goals are
+// derived from the merged match list (OpenFootball for finished matches, ESPN
+// for live ones), so a goal shows here moments after it lands on the
+// scoreboard. Assists and minutes played — the official award tie-breakers —
+// come from ESPN's leaders data (best-effort): when they load, the table is
+// ordered exactly as the award would be; until then it falls back to goals,
+// fewest penalties, name.
 
 export default function StatsView({ matches, hideScores }) {
   const [reveal, setReveal] = useState(false)
-  const scorers = useMemo(() => topScorers(matches, { limit: 15 }), [matches])
-  const ranks = useMemo(() => scorerRanks(scorers), [scorers])
+  const [extras, setExtras] = useState(null)
   const totals = useMemo(() => tournamentTotals(matches), [matches])
+
+  // Official tie-breaker data, fetched once per view (served from a
+  // localStorage cache within its TTL). Best-effort — a failure just leaves
+  // the un-enriched ordering in place.
+  useEffect(() => {
+    const ctrl = new AbortController()
+    fetchBootExtras(ctrl.signal)
+      .then((e) => e.length && setExtras(e))
+      .catch(() => {})
+    return () => ctrl.abort()
+  }, [])
+
+  const { scorers, enriched } = useMemo(
+    () => applyBootExtras(topScorers(matches, { limit: 15 }), extras),
+    [matches, extras],
+  )
+  const ranks = useMemo(
+    () =>
+      scorerRanks(
+        scorers,
+        enriched ? (s) => `${s.goals}|${s.assists ?? ''}|${s.minutes ?? ''}` : (s) => s.goals,
+      ),
+    [scorers, enriched],
+  )
   const anyLive = scorers.some((s) => s.live)
 
   if (hideScores && !reveal) {
@@ -60,6 +87,8 @@ export default function StatsView({ matches, hideScores }) {
                 <th>Player</th>
                 <th>Team</th>
                 <th className="boot-goals">Goals</th>
+                {enriched && <th className="boot-num" title="Assists">A</th>}
+                {enriched && <th className="boot-num" title="Minutes played">Min</th>}
               </tr>
             </thead>
             <tbody>
@@ -77,14 +106,18 @@ export default function StatsView({ matches, hideScores }) {
                     {s.goals}
                     {s.pens > 0 && <span className="boot-pens">{s.pens} pen{s.pens === 1 ? '' : 's'}</span>}
                   </td>
+                  {enriched && <td className="boot-num">{s.assists ?? '—'}</td>}
+                  {enriched && <td className="boot-num">{s.minutes ?? '—'}</td>}
                 </tr>
               ))}
             </tbody>
           </table>
         )}
         <p className="boot-note">
-          Top 15 (ties included). Own goals don’t count. Level scorers share a rank — the official
-          award would split them on assists and minutes played, which the feeds don’t carry.
+          Top 15 (ties included). Own goals don’t count.{' '}
+          {enriched
+            ? 'Ranked by the official award criteria: goals, then assists, then fewest minutes played (assists & minutes via ESPN).'
+            : 'Level scorers share a rank — the official award would split them on assists and minutes played.'}
           {anyLive && ' ● marks a tally that includes a goal from a match still in play.'}
         </p>
       </section>

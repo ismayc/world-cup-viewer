@@ -108,10 +108,34 @@ export function topScorers(matches, { limit = 10 } = {}) {
   return all.slice(0, end)
 }
 
-// Standard competition ranking for the scorer table: level on goals shares a
-// rank, and the next distinct tally skips past the tied block ("1, 2, 2, 4").
-export function scorerRanks(scorers) {
-  return scorers.map((s, i) => (i > 0 && s.goals === scorers[i - 1].goals ? null : i + 1))
+// Attach the official tie-breakers (assists, minutes played — via ESPN's
+// leaders data) to a scorer list and re-sort by the award criteria: goals, then
+// most assists, then FEWEST minutes. Entries ESPN didn't cover keep undefined
+// assists/minutes and sort below covered entries on an otherwise-equal line
+// (unknown can't outrank known). Join is by diacritic-insensitive name.
+export function applyBootExtras(scorers, extras) {
+  if (!extras?.length) return { scorers, enriched: false }
+  const byName = new Map(extras.map((e) => [nameKey(e.name), e]))
+  const out = scorers.map((s) => {
+    const e = byName.get(nameKey(s.name))
+    return e ? { ...s, assists: e.assists, minutes: e.minutes } : { ...s }
+  })
+  out.sort(
+    (a, b) =>
+      b.goals - a.goals ||
+      (b.assists ?? -1) - (a.assists ?? -1) ||
+      (a.minutes ?? Infinity) - (b.minutes ?? Infinity) ||
+      a.name.localeCompare(b.name),
+  )
+  return { scorers: out, enriched: true }
+}
+
+// Standard competition ranking for the scorer table: level entries share a
+// rank, and the next distinct one skips past the tied block ("1, 2, 2, 4").
+// `keyOf` decides what "level" means — bare goals by default; the enriched
+// table passes the full award key (goals + assists + minutes).
+export function scorerRanks(scorers, keyOf = (s) => s.goals) {
+  return scorers.map((s, i) => (i > 0 && keyOf(s) === keyOf(scorers[i - 1]) ? null : i + 1))
 }
 
 // Headline tournament numbers for the Stats view. Goals/averages count FINISHED

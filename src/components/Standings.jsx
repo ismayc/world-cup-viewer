@@ -9,6 +9,7 @@ import { FLAG_BY_TEAM } from '../data/teams.js'
 import { FIFA_RANK } from '../data/fifaRanking.js'
 import { useFollow } from '../context/follow.jsx'
 import GroupGamesModal from './GroupGamesModal.jsx'
+import ScalesIcon from './ScalesIcon.jsx'
 
 const GROUPS = Object.keys(TEAMS)
 
@@ -93,7 +94,7 @@ function TieMark({ tie }) {
       title={`Level with ${tie.vs} on points, goal difference and goals — separated by ${TIEBREAK_LABEL[tie.reason]}${tie.reason === 'conduct' ? ' (best-effort card data)' : ''}`}
       aria-label={`Separated from ${tie.vs} by ${TIEBREAK_LABEL[tie.reason]}`}
     >
-      ⚖️
+      <ScalesIcon />
     </span>
   )
 }
@@ -260,7 +261,7 @@ function ThirdTieNotes({ thirds }) {
   if (!pairs.length) return null
   return (
     <div className="thirds-tie-note">
-      <h4 className="thirds-tie-head"><span className="emoji-glyph">⚖️</span> Tie-breakers among the thirds</h4>
+      <h4 className="thirds-tie-head"><ScalesIcon /> Tie-breakers among the thirds</h4>
       <ul>
         {pairs.map(([a, b]) => {
           // conduct decides before FIFA ranking; they're only separated by FIFA if

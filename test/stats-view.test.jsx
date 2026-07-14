@@ -1,6 +1,16 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import StatsView from '../src/components/StatsView.jsx'
+import { fetchBootExtras } from '../src/services/espnStats.js'
+
+// The official-tiebreak enrichment is fetched on mount; default to "nothing
+// came back" so the base tests exercise the un-enriched table.
+vi.mock('../src/services/espnStats.js', () => ({ fetchBootExtras: vi.fn(async () => []) }))
+
+beforeEach(() => {
+  fetchBootExtras.mockClear()
+  fetchBootExtras.mockImplementation(async () => [])
+})
 
 const matches = [
   {
@@ -56,5 +66,37 @@ describe('StatsView', () => {
   it('shows an empty note when no goals exist yet', () => {
     render(<StatsView matches={[{ num: 1, stage: 'Group', t1: 'A', t2: 'B' }]} hideScores={false} />)
     expect(screen.getByText('No goals recorded yet.')).toBeInTheDocument()
+  })
+
+  it('adds assists/minutes columns and award ordering once ESPN extras load', async () => {
+    // Son (1 goal) gets an assist edge over Jonathan David (1 goal, 0 assists).
+    fetchBootExtras.mockImplementation(async () => [
+      { name: 'Raúl Jiménez', goals: 3, assists: 0, minutes: 180 },
+      { name: 'Son Heung-min', goals: 1, assists: 3, minutes: 90 },
+      { name: 'Jonathan David', goals: 1, assists: 0, minutes: 90 },
+    ])
+    render(<StatsView matches={matches} hideScores={false} />)
+    expect(await screen.findByTitle('Assists')).toBeInTheDocument()
+    expect(screen.getByTitle('Minutes played')).toBeInTheDocument()
+    expect(screen.getByText(/official award criteria/)).toBeInTheDocument()
+    const rows = screen.getAllByRole('row').slice(1)
+    // Award order: Jiménez (3g), then Son above David on assists; all get ranks
+    // (no shared rank — the full key differs).
+    expect(rows[0]).toHaveTextContent('Raúl Jiménez')
+    expect(rows[1]).toHaveTextContent('Son Heung-min')
+    expect(rows[1].cells[0]).toHaveTextContent('2')
+    expect(rows[2]).toHaveTextContent('Jonathan David')
+    expect(rows[2].cells[0]).toHaveTextContent('3')
+    // Son's row shows his 3 assists and 90 minutes.
+    expect(rows[1].cells[4]).toHaveTextContent('3')
+    expect(rows[1].cells[5]).toHaveTextContent('90')
+  })
+
+  it('keeps the fallback ordering when the extras fetch fails', async () => {
+    fetchBootExtras.mockImplementation(async () => { throw new Error('offline') })
+    render(<StatsView matches={matches} hideScores={false} />)
+    expect(screen.getByText('👟 Golden Boot race')).toBeInTheDocument()
+    expect(screen.queryByTitle('Assists')).not.toBeInTheDocument()
+    expect(await screen.findByText(/official award would split them/)).toBeInTheDocument()
   })
 })

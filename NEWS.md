@@ -5,6 +5,21 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Golden Boot now ranks by the official award criteria.** ESPN's core API
+  (keyless, CORS-open — verified) exposes per-athlete season totals, so the
+  Boot table pulls assists AND minutes played for everyone in ESPN's goals or
+  assists leader lists and orders the race exactly as the award would: goals,
+  then most assists, then FEWEST minutes. New A / Min columns; the results are
+  cached in localStorage (15 min TTL) so the ~100 small first-open requests
+  happen once; everything is best-effort — if ESPN is unreachable the table
+  falls back to the previous goals-then-fewest-pens ordering. It matters
+  today: Mbappé (8 goals, 3 assists) actually leads Messi (8, 2).
+  (`services/espnStats.js`, `applyBootExtras`.)
+- **Fix (properly): the ⚖️ tie-break marks render as "?" on some devices.** The
+  emoji font stack shipped this morning didn't help the affected device — its
+  font chain has no U+2696 glyph at all. The markers (Best-thirds table, tie
+  note heading, Scenarios) are now an inline SVG scales icon (`ScalesIcon`),
+  drawn in gold via currentColor — a vector can't fall back to "?".
 - **New "👟 Stats" tab: Golden Boot race + tournament totals.** A top-scorers
   table built from the merged goal data (OpenFootball for finished matches, ESPN
   for live ones): top 15 with ties never split, shared ranks for level scorers,

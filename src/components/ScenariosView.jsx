@@ -5,6 +5,7 @@ import { computeClinch } from '../utils/clinch.js'
 import { projectKnockout } from '../utils/asItStands.js'
 import { lockedOpponent, reachableThirdSets } from '../utils/opponentClinch.js'
 import { softTiebreaks, TIEBREAK_LABEL } from '../utils/tiebreakNotes.js'
+import ScalesIcon from './ScalesIcon.jsx'
 import {
   remainingGroupMatches,
   applyScenarioPicks,
@@ -77,7 +78,7 @@ function ProjectedTable({ rows, decided, ties }) {
                     title={`Level with ${tie.vs} on points, head-to-head, goal difference and goals — separated by ${TIEBREAK_LABEL[tie.reason]}${tie.reason === 'conduct' ? ' (best-effort card data)' : ''}`}
                     aria-label={`Separated from ${tie.vs} by ${TIEBREAK_LABEL[tie.reason]}`}
                   >
-                    ⚖️
+                    <ScalesIcon />
                   </span>
                 )}
                 {r.rank <= 2 && <span className="sc-tag sc-adv">advances</span>}
@@ -245,7 +246,7 @@ export default function ScenariosView({ matches }) {
         score so goal-difference tie-breakers resolve precisely. “Possible orders” counts the
         distinct final standings still reachable for a group given the results you’ve set.
         Third-place qualification and exact opponents depend on all groups together, so they update
-        as you set more results. A ⚖️ marks a placing decided by a soft tie-breaker — fair-play
+        as you set more results. A <ScalesIcon /> marks a placing decided by a soft tie-breaker — fair-play
         points (cards) or FIFA ranking — once points, head-to-head, goal difference and goals are
         all level (hover it for the decider; card data is best-effort).
       </p>

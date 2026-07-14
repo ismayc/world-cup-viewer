@@ -1000,13 +1000,11 @@ select {
 }
 .rank { color: var(--text-faint); margin-right: 7px; font-size: 0.75rem; }
 .row-team { color: var(--text); font-weight: 500; margin-left: 6px; }
-.tiebreak-mark { margin-left: 5px; font-size: 0.78rem; cursor: help; vertical-align: middle; }
-/* Pin marker glyphs to a color-emoji font: the inherited Inter/system chain on
-   some devices has no glyph for U+2696 (⚖), which renders as a bare "?". */
-.tiebreak-mark,
-.emoji-glyph {
-  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
-}
+.tiebreak-mark { margin-left: 5px; font-size: 0.78rem; cursor: help; vertical-align: middle; color: var(--gold); }
+/* The tie-breaker marker is an inline SVG (ScalesIcon) — the ⚖️ emoji renders
+   as a bare "?" on devices whose font chain lacks U+2696. Sized to the text. */
+.scales-icon { width: 1.05em; height: 1.05em; vertical-align: -0.16em; }
+.thirds-tie-head .scales-icon { color: var(--gold); }
 .row-team-btn {
   background: none;
   border: none;
@@ -2043,7 +2041,7 @@ select {
 .sc-table th { font-size: 0.66rem; text-transform: uppercase; color: var(--text-faint); text-align: center; padding: 4px 6px; font-weight: 600; }
 .sc-table td { text-align: center; padding: 5px 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; border-top: 1px solid var(--border); }
 .sc-table .qualifies td { background: rgba(0, 194, 168, 0.07); }
-.sc-tiebreak { margin-left: 5px; font-size: 0.78rem; cursor: help; vertical-align: middle; }
+.sc-tiebreak { margin-left: 5px; font-size: 0.78rem; cursor: help; vertical-align: middle; color: var(--gold); }
 .sc-tag { font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; margin-left: 6px; text-transform: uppercase; }
 .sc-adv { background: rgba(0, 194, 168, 0.18); color: var(--accent); }
 .sc-third { background: rgba(244, 197, 66, 0.2); color: var(--gold); }
@@ -2444,6 +2442,9 @@ select {
 .boot-table th:last-child { text-align: right; }
 .boot-goals { font-weight: 800; white-space: nowrap; }
 .boot-pens { margin-left: 6px; font-size: 0.68rem; font-weight: 600; color: var(--text-faint); }
+.boot-table th.boot-num, .boot-table td.boot-num { text-align: right; width: 52px; }
+.boot-table td.boot-num { color: var(--text-dim); font-weight: 600; }
+.boot-leader td.boot-num { color: var(--gold); }
 .boot-leader td { color: var(--gold); }
 .boot-leader .boot-pens, .boot-leader .boot-rank { color: var(--gold); }
 .boot-live { margin-left: 6px; color: var(--live); font-size: 0.65rem; animation: pulse 1.4s infinite; }
