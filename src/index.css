@@ -2567,3 +2567,37 @@ select {
   cursor: pointer;
 }
 .toast-x:hover { color: var(--text); background: var(--card-hover); }
+
+/* ---------- Radial: round labels, dimmed eliminated, today halo, champion trail ---------- */
+.rb-ring-label {
+  fill: var(--text-faint);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  opacity: 0.65;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+/* Kickoff time under an unplayed match number (where the score will land). */
+.rb-time {
+  fill: var(--text-faint);
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+/* Knocked-out teams fade while the tournament is still on. */
+.rb-node.out { opacity: 0.35; transition: opacity 0.2s; }
+.rb-node.out .rb-flag-bg { stroke: var(--border); }
+/* Soft pulsing glow behind the match number of anything playing TODAY. */
+.rb-halo { fill: var(--accent); opacity: 0.14; animation: rb-halo-pulse 2.2s ease-in-out infinite; }
+@keyframes rb-halo-pulse {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.22; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-halo { animation: none; opacity: 0.14; }
+}
+/* The champion's route to the trophy, in gold (auto once the Final is final). */
+.rb-matchup.champ-trail .rb-line { stroke: var(--gold); stroke-width: 2; }
+.rb-matchup.champ-trail .rb-mnum { fill: var(--gold); }
+.rb-node.on-trail { opacity: 1; }
+.rb-node.on-trail .rb-flag-bg { stroke: var(--gold); stroke-width: 3.2; }

@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Radial: four upgrades for the closing week.** (1) Eliminated teams' flags
+  fade while the tournament is on (driven by `activeTeams` — nothing dims once
+  the Final is done, and third-place participants stay vivid until Saturday);
+  (2) matches playing TODAY get a soft pulsing halo behind their match number,
+  and unplayed ties show their kickoff time where the score will land; (3) once
+  the Final is decided the champion's entire route from the outer ring to the
+  trophy lights up gold (auto, unless a manual "Path to the Final" pick is
+  active); (4) faint round labels ("ROUND OF 32" … "SEMI-FINALS") run down the
+  clear seam at the top of the circle so the geometry explains itself.
 - **Fix: the tale of the tape is now historically accurate.** Opening a PAST
   knockout tie (e.g. Argentina–Egypt in the R32) showed the teams' records
   TODAY ("6–0–0") under "Tournament so far" — wrong for that moment. A played

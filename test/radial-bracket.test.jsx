@@ -132,4 +132,72 @@ describe('RadialBracket', () => {
     fireEvent.click(group)
     expect(openDetail).toHaveBeenCalledTimes(1)
   })
+
+  it('labels the rounds down the top seam and shows kickoff times on unplayed ties', () => {
+    const { container } = renderRB(MATCHES)
+    for (const label of ['ROUND OF 32', 'ROUND OF 16', 'QUARTER-FINALS', 'SEMI-FINALS']) {
+      expect(screen.getByText(label)).toBeInTheDocument()
+    }
+    // Every knockout tie is unplayed → each shows its kickoff time (16+15+8+4+2
+    // matchups plus the third-place line).
+    expect(container.querySelectorAll('.rb-time').length).toBeGreaterThan(30)
+    // A played bracket swaps times for scores.
+    const done = renderRB(playedBracket())
+    expect(done.container.querySelectorAll('.rb-time').length).toBe(0)
+  })
+
+  it('spotlights matches playing today with a halo', () => {
+    vi.useFakeTimers()
+    try {
+      // "Today" = the semifinals' first day → M101 gets a halo, M102 (next day) doesn't.
+      vi.setSystemTime(new Date('2026-07-14T10:00:00-04:00'))
+      const { container } = renderRB(MATCHES)
+      expect(container.querySelectorAll('.rb-halo').length).toBe(1)
+      // A quiet day → no halos anywhere.
+      const quiet = renderRB(MATCHES.map((m) => ({ ...m })))
+      vi.setSystemTime(new Date('2026-08-01T10:00:00-04:00'))
+      quiet.rerender(
+        <FollowProvider>
+          <DetailContext.Provider value={() => {}}>
+            <RadialBracket matches={MATCHES.map((m) => ({ ...m }))} />
+          </DetailContext.Provider>
+        </FollowProvider>,
+      )
+      expect(quiet.container.querySelectorAll('.rb-halo').length).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('dims eliminated teams while the tournament is on, none once it is over', () => {
+    // Play everything up to (not including) the semis: only 4 semifinalists
+    // (plus unresolved slots) stay vivid, plenty of flags fade.
+    let cur = buildComplete()
+    const clinch = computeClinch(cur)
+    cur = resolveBracket(cur, clinch)
+    for (let pass = 0; pass < 10; pass++) {
+      cur = cur.map((m) => {
+        if (m.stage === 'Group' || Array.isArray(m.score)) return m
+        if ([101, 102, 103, 104].includes(m.num)) return m
+        if (!ALL.has(m.t1) || !ALL.has(m.t2)) return m
+        return { ...m, score: [1, 0] }
+      })
+      cur = resolveBracket(cur, clinch)
+    }
+    const { container } = renderRB(cur)
+    expect(container.querySelectorAll('.rb-node.out').length).toBeGreaterThan(10)
+    // Fully played → the race is over; the finished bracket stays vivid.
+    const done = renderRB(playedBracket())
+    expect(done.container.querySelectorAll('.rb-node.out').length).toBe(0)
+  })
+
+  it('lights the champion’s golden trail once the Final is decided', () => {
+    const { container } = renderRB(playedBracket())
+    // The champion's route: R32 → R16 → QF → SF → Final = 5 matchups.
+    expect(container.querySelectorAll('.rb-matchup.champ-trail').length).toBe(5)
+    expect(container.querySelectorAll('.rb-node.on-trail').length).toBeGreaterThan(0)
+    // No trail while the Final is unplayed.
+    const pending = renderRB(MATCHES)
+    expect(pending.container.querySelectorAll('.champ-trail').length).toBe(0)
+  })
 })

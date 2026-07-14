@@ -3,7 +3,8 @@ import { BRACKET, matchesByNum, pathToFinal } from '../utils/bracket.js'
 import { MATCHES, STAGE_LABELS } from '../data/matches.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { decideMatch } from '../utils/bracketResolve.js'
-import { formatTime, tzAbbrev } from '../utils/time.js'
+import { activeTeams } from '../utils/tournamentStats.js'
+import { formatTime, tzAbbrev, dayKey } from '../utils/time.js'
 import { useFollow } from '../context/follow.jsx'
 import { usePath } from '../context/path.jsx'
 import { useDetail } from '../context/detail.js'
@@ -76,7 +77,18 @@ const ROUND_OF = {} // match num → its winner-ring radius
 for (const r of ['R32', 'R16', 'QF', 'SF'])
   for (const n of [...BRACKET.left[r], ...BRACKET.right[r]]) ROUND_OF[n] = RING[r]
 
-function FlagNode({ x, y, team, label, followed, onPath, onClick, r = 17 }) {
+// Zone labels along the clear seam at the top of the circle (the two bracket
+// halves only meet at the final, so no spokes or bars cross 90°). Radii are the
+// midpoints of each round's connector zone — where its match numbers live, but
+// none sits at the seam itself.
+const ROUND_RING_LABELS = [
+  { text: 'ROUND OF 32', r: (LEAF_R + RING.R32) / 2, size: 10 },
+  { text: 'ROUND OF 16', r: (RING.R32 + RING.R16) / 2, size: 9.5 },
+  { text: 'QUARTER-FINALS', r: (RING.R16 + RING.QF) / 2, size: 9 },
+  { text: 'SEMI-FINALS', r: (RING.QF + RING.SF) / 2, size: 8.5 },
+]
+
+function FlagNode({ x, y, team, label, followed, onPath, trail, dimmed, onClick, r = 17 }) {
   const flag = team && FLAG_BY_TEAM[team]
   if (!flag) {
     // No team yet (undecided match / unresolved slot) → a small placeholder dot.
@@ -84,7 +96,7 @@ function FlagNode({ x, y, team, label, followed, onPath, onClick, r = 17 }) {
   }
   return (
     <g
-      className={`rb-node${followed ? ' followed' : ''}${onPath ? ' on-path' : ''}${onClick ? ' rb-click' : ''}`}
+      className={`rb-node${followed ? ' followed' : ''}${onPath ? ' on-path' : ''}${trail ? ' on-trail' : ''}${dimmed ? ' out' : ''}${onClick ? ' rb-click' : ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -186,6 +198,26 @@ export default function RadialBracket({ matches, tz, hideScores }) {
 
   const champion = winnerOf(104)
 
+  // Teams that still have football to play; while any remain, the flags of
+  // knocked-out sides fade so who's alive reads at a glance. Once the Final is
+  // done the set is empty and nothing dims (the finished bracket stays vivid).
+  const active = useMemo(() => activeTeams(matches), [matches])
+  const isDimmed = (team) => active.size > 0 && Boolean(team) && !active.has(team)
+
+  // The champion's golden trail: once the Final is decided (and no manual path
+  // is selected), light their whole route from the outer ring to the trophy.
+  const trailSet = useMemo(() => {
+    if (!champion || pathTeam) return null
+    const p = pathToFinal(champion, byNum)
+    return p ? new Set(p.active) : null
+  }, [champion, pathTeam, byNum])
+  const onTrailTeam = (team) => Boolean(trailSet) && team === champion
+
+  // Spotlight matches playing TODAY (viewer's tz): a soft pulsing halo behind
+  // the match number until the tie is final.
+  const todayKey = dayKey(Date.now(), tz)
+  const spotlit = (m) => m && dayKey(m.ko, tz) === todayKey && !(Array.isArray(m.score) && !m.live)
+
   // Third-place play-off, shown just below the trophy.
   const thirdA = byNum[101] ? decideMatch(byNum[101])?.loser : null
   const thirdB = byNum[102] ? decideMatch(byNum[102])?.loser : null
@@ -198,14 +230,22 @@ export default function RadialBracket({ matches, tz, hideScores }) {
       <svg className="rb-svg" viewBox="0 0 1000 1080" role="img" aria-label="Knockout bracket, circular view">
         {/* Each matchup: the bracket join (spokes + bar) plus its match number,
             grouped into one clickable target that opens the detail popout. */}
+        {/* Faint round labels down the top seam, beneath everything else. */}
+        {ROUND_RING_LABELS.map(({ text, r, size }) => (
+          <text key={text} className="rb-ring-label" x={CX} y={CY - r} fontSize={size}>
+            {text}
+          </text>
+        ))}
+
         {matchups.map(({ num, radials, bar, label }) => {
           const m = byNum[num]
           const open = m ? () => openDetail(m) : undefined
           const onPath = path?.activeSet.has(num)
+          const onTrail = trailSet?.has(num)
           return (
             <g
               key={`mu${num}`}
-              className={`rb-matchup${open ? ' rb-click' : ''}${onPath ? ' on-path' : ''}`}
+              className={`rb-matchup${open ? ' rb-click' : ''}${onPath ? ' on-path' : ''}${onTrail ? ' champ-trail' : ''}`}
               onClick={open}
               role={open ? 'button' : undefined}
               tabIndex={open ? 0 : undefined}
@@ -217,6 +257,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
               ))}
               {bar && <polyline points={bar} className="rb-line" />}
               {bar && <polyline points={bar} className="rb-hit" />}
+              {spotlit(m) && <circle className="rb-halo" cx={label[0]} cy={label[1]} r={17} />}
               {m?.live && <circle className="rb-live-dot" cx={label[0]} cy={label[1] - 11} r={3.4} />}
               <text className="rb-mnum" x={label[0]} y={label[1]} fontSize="11">
                 M{num}
@@ -224,6 +265,12 @@ export default function RadialBracket({ matches, tz, hideScores }) {
               {m && !hideScores && scoreText(m) && (
                 <text className="rb-score" x={label[0]} y={label[1] + 12} fontSize="9.5">
                   {scoreText(m)}
+                </text>
+              )}
+              {/* Unplayed tie → kickoff time where the score will land. */}
+              {m && !m.score && (
+                <text className="rb-time" x={label[0]} y={label[1] + 12} fontSize="8.5">
+                  {formatTime(m.ko, tz)}
                 </text>
               )}
             </g>
@@ -256,6 +303,8 @@ export default function RadialBracket({ matches, tz, hideScores }) {
                 team={team}
                 followed={team ? isFollowed(team) || isChamp : false}
                 onPath={onPathTeam(team)}
+                trail={onTrailTeam(team)}
+                dimmed={isDimmed(team)}
                 label={team ? `${team} — ${STAGE_LABELS[byNum[n].stage]} winner (Match ${n})` : undefined}
                 onClick={byNum[n] ? () => openDetail(byNum[n]) : undefined}
                 r={round === 'SF' ? 19 : 16}
@@ -276,6 +325,8 @@ export default function RadialBracket({ matches, tz, hideScores }) {
               team={team}
               followed={team ? isFollowed(team) : false}
               onPath={onPathTeam(team)}
+              trail={onTrailTeam(team)}
+              dimmed={isDimmed(team)}
               label={team || undefined}
               onClick={byNum[s.n] ? () => openDetail(byNum[s.n]) : undefined}
               r={18}
@@ -308,6 +359,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
           team={thirdA}
           followed={thirdA ? isFollowed(thirdA) || thirdA === thirdWinner : false}
           onPath={onPathTeam(thirdA)}
+          dimmed={isDimmed(thirdA)}
           label={thirdA ? `${thirdA}${thirdA === thirdWinner ? ' — 3rd place' : ''}` : undefined}
           onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
           r={16}
@@ -319,22 +371,31 @@ export default function RadialBracket({ matches, tz, hideScores }) {
           team={thirdB}
           followed={thirdB ? isFollowed(thirdB) || thirdB === thirdWinner : false}
           onPath={onPathTeam(thirdB)}
+          dimmed={isDimmed(thirdB)}
           label={thirdB ? `${thirdB}${thirdB === thirdWinner ? ' — 3rd place' : ''}` : undefined}
           onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
           r={16}
         />
+        {spotlit(byNum[103]) && <circle className="rb-halo" cx={CX} cy={THIRD_Y + 22} r={14} />}
         {byNum[103]?.live && <circle className="rb-live-dot" cx={CX} cy={THIRD_Y - 26} r={3.4} />}
         {!hideScores && scoreText(byNum[103]) && (
           <text className="rb-score" x={CX} y={THIRD_Y + 34} fontSize="9.5">
             {scoreText(byNum[103])}
           </text>
         )}
+        {byNum[103] && !byNum[103].score && (
+          <text className="rb-time" x={CX} y={THIRD_Y + 34} fontSize="8.5">
+            {formatTime(byNum[103].ko, tz)}
+          </text>
+        )}
       </svg>
       <p className="rb-hint">
         Outer ring = Round of 32. Each match’s winner advances one ring inward toward the trophy;
-        flags fill in as results land, with the score under each played match and a blinking red dot
-        on any match in play. Hover a flag for the country; click a matchup (its bracket join or
-        match number) to open the match details.
+        flags fill in as results land, with the score under each played match (kickoff time until
+        then), a blinking red dot on any match in play, and a soft glow on today’s matches.
+        Eliminated teams fade while the tournament is on; once it’s decided, the champion’s route
+        to the trophy lights up gold. Hover a flag for the country; click a matchup (its bracket
+        join or match number) to open the match details.
       </p>
     </div>
   )
