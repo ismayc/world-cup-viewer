@@ -88,8 +88,9 @@ export function activeTeams(matches) {
 
 // Group scorer spellings across sources: ESPN and OpenFootball occasionally
 // disagree on diacritics ("Julián" vs "Julian"), which would otherwise split
-// one player's tally in two.
-const nameKey = (name) =>
+// one player's tally in two. Exported for anything joining players by name
+// across feeds (Boot extras, per-match player lines).
+export const nameKey = (name) =>
   name
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

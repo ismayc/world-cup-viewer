@@ -7,6 +7,7 @@ import { fetchBootExtras } from '../src/services/espnStats.js'
 // The official-tiebreak enrichment is fetched on mount; default to "nothing
 // came back" so the base tests exercise the un-enriched table.
 vi.mock('../src/services/espnStats.js', () => ({ fetchBootExtras: vi.fn(async () => []) }))
+vi.mock('../src/services/espnMatchStats.js', () => ({ fetchMatchLines: vi.fn(async () => ({ length: 90, byName: {} })) }))
 
 beforeEach(() => {
   fetchBootExtras.mockClear()
@@ -135,6 +136,14 @@ describe('StatsView', () => {
     rerender(<StatsView matches={scored} hideScores={false} />)
     expect(fetchBootExtras).toHaveBeenCalledTimes(2)
     expect(fetchBootExtras.mock.calls[1][1]).toEqual({ force: true })
+  })
+
+  it('clicking a player opens their match-by-match popup', () => {
+    render(<StatsView matches={matches} hideScores={false} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Son Heung-min' }))
+    expect(screen.getByRole('dialog', { name: /Son Heung-min — match by match/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Close'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('marks players whose team is in a live match with an in-action dot', () => {

@@ -2601,3 +2601,60 @@ select {
 .rb-matchup.champ-trail .rb-mnum { fill: var(--gold); }
 .rb-node.on-trail { opacity: 1; }
 .rb-node.on-trail .rb-flag-bg { stroke: var(--gold); stroke-width: 3.2; }
+
+/* ---------- Golden Boot player popup (match-by-match breakdown) ---------- */
+.boot-player-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted transparent;
+  text-underline-offset: 3px;
+}
+.boot-player-btn:hover { text-decoration-color: var(--accent); color: var(--accent); }
+.boot-leader .boot-player-btn:hover { color: var(--gold); }
+.pd-card { max-width: 560px; }
+.pd-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pd-flag { font-size: 2rem; }
+.pd-name { margin: 0; font-size: 1.15rem; }
+.pd-sub { font-size: 0.82rem; color: var(--text-dim); margin-top: 2px; }
+.pd-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.pd-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.pd-table td { padding: 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.pd-table tr:last-child td { border-bottom: none; }
+.pd-benched td { opacity: 0.55; }
+.pd-match-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pd-match-btn:hover .pd-opp { color: var(--accent); }
+.pd-stage { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); }
+.pd-opp { font-weight: 600; }
+.pd-result { white-space: nowrap; font-weight: 700; }
+.pd-w { color: var(--accent); }
+.pd-l { color: var(--accent-2); }
+.pd-d { color: var(--text-dim); }
+.pd-pens { font-size: 0.7rem; font-weight: 600; color: var(--text-faint); }
+.pd-goals .pd-goal { display: inline-block; margin-right: 8px; white-space: nowrap; }
+.pd-goals em { font-style: normal; font-size: 0.7rem; color: var(--text-faint); }
+th.pd-num, td.pd-num { text-align: right; width: 46px; }
+td.pd-num { color: var(--text-dim); font-weight: 600; }
+.pd-note { margin: 10px 0 0; font-size: 0.7rem; color: var(--text-faint); }

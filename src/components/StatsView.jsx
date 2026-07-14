@@ -12,6 +12,7 @@ import {
 } from '../utils/tournamentStats.js'
 import { fetchBootExtras } from '../services/espnStats.js'
 import { useDetail } from '../context/detail.js'
+import PlayerDetail from './PlayerDetail.jsx'
 
 // Tournament stats: headline totals plus the Golden Boot race. Goals are
 // derived from the merged match list (OpenFootball for finished matches, ESPN
@@ -45,6 +46,8 @@ export default function StatsView({ matches, hideScores }) {
   const [extras, setExtras] = useState(null)
   // Which tile's match list is open below the strip: null | 'et' | 'pens'.
   const [expanded, setExpanded] = useState(null)
+  // Scorer whose match-by-match popup is open.
+  const [player, setPlayer] = useState(null)
   const openDetail = useDetail()
   const totals = useMemo(() => tournamentTotals(matches), [matches])
   const et = useMemo(() => extraTimeMatches(matches), [matches])
@@ -210,7 +213,13 @@ export default function StatsView({ matches, hideScores }) {
                 >
                   <td className="boot-rank">{ranks[i] ?? ''}</td>
                   <td className="boot-player">
-                    {s.name}
+                    <button
+                      className="boot-player-btn"
+                      onClick={() => setPlayer(s)}
+                      title={`${s.name} — match by match`}
+                    >
+                      {s.name}
+                    </button>
                     {liveTeams.has(s.team) && (
                       <span className="boot-live" title="In action — playing right now, so this tally can change">●</span>
                     )}
@@ -243,8 +252,11 @@ export default function StatsView({ matches, hideScores }) {
             </>
           )}
           {anyInAction && ' ● marks a player in action right now — their tally can still change.'}
+          {' Click a player for their match-by-match breakdown.'}
         </p>
       </section>
+
+      {player && <PlayerDetail scorer={player} matches={matches} onClose={() => setPlayer(null)} />}
     </div>
   )
 }

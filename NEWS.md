@@ -5,6 +5,16 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Golden Boot: click a player for their match-by-match breakdown.** A popup
+  lists every match their team has contested: opponent, oriented result (W/D/L,
+  shootouts noted), each goal with its minute (and pen flag) from the merged
+  feeds, plus per-match assists and minutes via ESPN's summary endpoint —
+  fetched on open and cached forever once a match is final. Minutes are derived
+  from starts and substitution events (labelled approximate); DNP marks a squad
+  member who didn't play, and a live match shows "—" for minutes (still
+  running). Clicking a row opens the full match detail. Merged matches now
+  carry `espnId` (the summary handle) from the ESPN overlay.
+  (`PlayerDetail`, `services/espnMatchStats.js`.)
 - **Golden Boot goes (close to) real-time.** Goals already tracked the 30-second
   live poll; now the official tie-breakers do too: assists can only change when
   a goal is scored, so any change in the total goal tally force-refreshes the

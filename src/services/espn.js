@@ -185,6 +185,9 @@ export async function fetchLive(signal, dates) {
     const state = st.type?.state || 'pre' // 'pre' | 'in' | 'post'
     const events = parseEspnEvents(comp, home.team.id, away.team.id)
     const rec = {
+      // ESPN's event id — the handle for the per-match summary endpoint
+      // (player stats popups). Carried onto the merged match as `espnId`.
+      id: ev.id ?? ev.uid ?? null,
       home: normEspn(home.team.displayName),
       away: normEspn(away.team.displayName),
       state,
@@ -251,6 +254,7 @@ export function applyLive(matches, liveMap, now = Date.now()) {
       const alignedOf = normalizeTeam(m.t1) === rec.home
       const orientOf = (o) => (alignedOf ? { t1: o.home, t2: o.away } : { t1: o.away, t2: o.home })
       const out = { ...m }
+      if (rec.id) out.espnId = rec.id
       for (const key of ['cards', 'subs']) {
         const o = rec[key]
         if (o && (o.home.length || o.away.length)) out[key] = orientOf(o)
@@ -283,6 +287,7 @@ export function applyLive(matches, liveMap, now = Date.now()) {
     }
 
     const out = { ...m }
+    if (rec.id) out.espnId = rec.id
     // Whether ESPN's (home, away) order already matches our (t1, t2). For a
     // knockout placeholder we adopt ESPN's order outright, so it's aligned.
     const aligned = !bothReal || normalizeTeam(m.t1) === rec.home
