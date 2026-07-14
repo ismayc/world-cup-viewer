@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Fix: live goals credited under the scorer's SHORT name split players in
+  two.** ESPN's event feed carries both spellings; the parser preferred
+  `shortName` ("M. Oyarzabal") while OpenFootball records full names ("Mikel
+  Oyarzabal") — so Oyarzabal's live 22' penalty in the semi belonged to a
+  phantom 1-goal "M. Oyarzabal" (below the Boot table's cut) and his popup's
+  name join missed it. The parser now prefers `displayName` for goals, cards
+  and subs, keying every feed by full name. Locked in with a regression test
+  using the real "Penalty - Scored" event shape (in-match pens kept, shootout
+  kicks still excluded). Spotted by Chester mid-match.
 - **Golden Boot: click a player for their match-by-match breakdown.** A popup
   lists every match their team has contested: opponent, oriented result (W/D/L,
   shootouts noted), each goal with its minute (and pen flag) from the merged

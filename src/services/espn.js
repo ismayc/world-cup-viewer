@@ -92,13 +92,18 @@ function parseEspnEvents(comp, homeId, awayId) {
     if (!side) continue
     const { minute, extra } = parseClock(ev.clock?.displayValue)
     const athletes = ev.athletesInvolved || []
-    const name = athletes[0]?.shortName || athletes[0]?.displayName || ''
+    // Full name first: OpenFootball records scorers by full name ("Mikel
+    // Oyarzabal"), so ESPN's live goals must use the same spelling or the
+    // Golden Boot table splits one player in two ("M. Oyarzabal" got his live
+    // penalty, "Mikel Oyarzabal" his earlier goals) and the player popup's
+    // name join misses live goals entirely.
+    const name = athletes[0]?.displayName || athletes[0]?.shortName || ''
     if (ev.scoringPlay) {
       goals[side].push({ name, minute, extra, penalty: Boolean(ev.penaltyKick), og: Boolean(ev.ownGoal) })
     } else if (ev.redCard || ev.yellowCard) {
       cards[side].push({ name, minute, extra, color: ev.redCard ? 'red' : 'yellow' })
     } else if (/substitution/i.test(ev.type?.text || '')) {
-      subs[side].push({ minute, extra, names: athletes.map((a) => a.shortName || a.displayName).filter(Boolean) })
+      subs[side].push({ minute, extra, names: athletes.map((a) => a.displayName || a.shortName).filter(Boolean) })
     }
   }
   return { goals, cards, subs }

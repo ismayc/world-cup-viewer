@@ -65,6 +65,51 @@ const goal = ({ team, min, name, pen = false, og = false }) => ({
 })
 
 describe('fetchLive (parsing ESPN shape)', () => {
+  it('prefers the FULL athlete name and keeps in-match penalty goals (Oyarzabal bug)', async () => {
+    // Real shape from the France–Spain semi: type "Penalty - Scored",
+    // penaltyKick true, shootout false, short + full names both present.
+    const feed = {
+      events: [
+        event({
+          date: '2026-07-14T19:00Z',
+          state: 'in',
+          clock: "82'",
+          home: 'France',
+          hs: '0',
+          away: 'Spain',
+          as: '2',
+          details: [
+            {
+              type: { id: '98', text: 'Penalty - Scored' },
+              clock: { displayValue: "22'" },
+              team: { id: 'A' },
+              scoringPlay: true,
+              penaltyKick: true,
+              shootout: false,
+              athletesInvolved: [{ shortName: 'M. Oyarzabal', displayName: 'Mikel Oyarzabal' }],
+            },
+            // A shootout kick must STILL be excluded from the goal list.
+            {
+              type: { id: '98', text: 'Penalty - Scored' },
+              clock: { displayValue: "120'" },
+              team: { id: 'A' },
+              scoringPlay: true,
+              penaltyKick: true,
+              shootout: true,
+              athletesInvolved: [{ shortName: 'P. Kicker', displayName: 'Pen Kicker' }],
+            },
+          ],
+        }),
+      ],
+    }
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => feed }))
+    const map = await fetchLive()
+    const rec = map.get(pairKey('France', 'Spain'))
+    expect(rec.goals.away).toEqual([
+      { name: 'Mikel Oyarzabal', minute: 22, extra: undefined, penalty: true, og: false },
+    ])
+  })
+
   it('parses live score, clock, and keys by pair + instant; maps ESPN aliases', async () => {
     const feed = {
       events: [
