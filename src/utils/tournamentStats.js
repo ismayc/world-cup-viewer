@@ -154,6 +154,14 @@ export function scorerRanks(scorers, keyOf = (s) => s.goals) {
   return scorers.map((s, i) => (i > 0 && keyOf(s) === keyOf(scorers[i - 1]) ? null : i + 1))
 }
 
+// The finished matches behind the Stats-view tiles, kickoff order. Shootouts
+// are a subset of the extra-time list in a World Cup knockout, so both lists
+// can show the same tie — that's informative, not a bug.
+export const extraTimeMatches = (matches) =>
+  matches.filter((m) => isFinal(m) && m.aet).sort((a, b) => new Date(a.ko) - new Date(b.ko))
+export const shootoutMatches = (matches) =>
+  matches.filter((m) => isFinal(m) && m.pens).sort((a, b) => new Date(a.ko) - new Date(b.ko))
+
 // Headline tournament numbers for the Stats view. Goals/averages count FINISHED
 // matches only (a live score is provisional); `live` is how many are in play.
 export function tournamentTotals(matches) {

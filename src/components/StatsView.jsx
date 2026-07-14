@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FLAG_BY_TEAM } from '../data/teams.js'
-import { topScorers, scorerRanks, tournamentTotals, applyBootExtras, activeTeams } from '../utils/tournamentStats.js'
+import { STAGE_LABELS } from '../data/matches.js'
+import {
+  topScorers,
+  scorerRanks,
+  tournamentTotals,
+  applyBootExtras,
+  activeTeams,
+  extraTimeMatches,
+  shootoutMatches,
+} from '../utils/tournamentStats.js'
 import { fetchBootExtras } from '../services/espnStats.js'
+import { useDetail } from '../context/detail.js'
 
 // Tournament stats: headline totals plus the Golden Boot race. Goals are
 // derived from the merged match list (OpenFootball for finished matches, ESPN
@@ -11,10 +21,35 @@ import { fetchBootExtras } from '../services/espnStats.js'
 // ordered exactly as the award would be; until then it falls back to goals,
 // fewest penalties, name.
 
+// One row of the tile drill-down: the tie, its decisive score, and how it was
+// settled. Clicking opens the full match detail.
+function StatMatchRow({ match, onOpen }) {
+  return (
+    <li>
+      <button className="stat-match-row" onClick={() => onOpen(match)}>
+        <span className="smr-stage">{STAGE_LABELS[match.stage]}</span>
+        <span className="smr-line">
+          {FLAG_BY_TEAM[match.t1]} {match.t1} {match.score[0]}–{match.score[1]} {match.t2}{' '}
+          {FLAG_BY_TEAM[match.t2]}
+        </span>
+        <span className="smr-extra">
+          {match.pens ? `pens ${match.pens[0]}–${match.pens[1]}` : 'after extra time'}
+        </span>
+      </button>
+    </li>
+  )
+}
+
 export default function StatsView({ matches, hideScores }) {
   const [reveal, setReveal] = useState(false)
   const [extras, setExtras] = useState(null)
+  // Which tile's match list is open below the strip: null | 'et' | 'pens'.
+  const [expanded, setExpanded] = useState(null)
+  const openDetail = useDetail()
   const totals = useMemo(() => tournamentTotals(matches), [matches])
+  const et = useMemo(() => extraTimeMatches(matches), [matches])
+  const pens = useMemo(() => shootoutMatches(matches), [matches])
+  const toggle = (key) => setExpanded((cur) => (cur === key ? null : key))
 
   // Official tie-breaker data, fetched once per view (served from a
   // localStorage cache within its TTL). Best-effort — a failure just leaves
@@ -57,28 +92,61 @@ export default function StatsView({ matches, hideScores }) {
 
   return (
     <div className="stats-wrap">
-      <div className="stats-strip" role="list">
-        <div className="stat-tile" role="listitem">
+      <div className="stats-strip">
+        <div className="stat-tile">
           <span className="stat-num">{totals.played}</span>
           <span className="stat-label">matches played</span>
         </div>
-        <div className="stat-tile" role="listitem">
+        <div className="stat-tile">
           <span className="stat-num">{totals.goals}</span>
           <span className="stat-label">goals</span>
         </div>
-        <div className="stat-tile" role="listitem">
+        <div className="stat-tile">
           <span className="stat-num">{totals.perMatch.toFixed(2)}</span>
           <span className="stat-label">goals / match</span>
         </div>
-        <div className="stat-tile" role="listitem">
+        {/* These two drill down: clicking lists the matches behind the number. */}
+        <button
+          className={`stat-tile stat-tile-btn${expanded === 'et' ? ' open' : ''}`}
+          onClick={() => toggle('et')}
+          disabled={et.length === 0}
+          aria-expanded={expanded === 'et'}
+          title={et.length ? 'Show the matches that went to extra time' : undefined}
+        >
           <span className="stat-num">{totals.et}</span>
-          <span className="stat-label">extra-time games</span>
-        </div>
-        <div className="stat-tile" role="listitem">
+          <span className="stat-label">extra-time games{et.length > 0 && <span className="stat-chev">{expanded === 'et' ? ' ▴' : ' ▾'}</span>}</span>
+        </button>
+        <button
+          className={`stat-tile stat-tile-btn${expanded === 'pens' ? ' open' : ''}`}
+          onClick={() => toggle('pens')}
+          disabled={pens.length === 0}
+          aria-expanded={expanded === 'pens'}
+          title={pens.length ? 'Show the matches decided by a shootout' : undefined}
+        >
           <span className="stat-num">{totals.shootouts}</span>
-          <span className="stat-label">shootouts</span>
-        </div>
+          <span className="stat-label">shootouts{pens.length > 0 && <span className="stat-chev">{expanded === 'pens' ? ' ▴' : ' ▾'}</span>}</span>
+        </button>
       </div>
+
+      {expanded && (
+        <section className="stat-detail">
+          <h4>
+            {expanded === 'et'
+              ? `Went to extra time (${et.length})`
+              : `Decided from the spot (${pens.length})`}
+          </h4>
+          <ul className="stat-match-list">
+            {(expanded === 'et' ? et : pens).map((m) => (
+              <StatMatchRow key={m.num} match={m} onOpen={openDetail} />
+            ))}
+          </ul>
+          {expanded === 'et' && pens.length > 0 && (
+            <p className="stat-detail-note">
+              {pens.length} of these went all the way to penalties.
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="boot-section">
         <h3>👟 Golden Boot race</h3>

@@ -5,6 +5,12 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Stats tiles drill down.** The EXTRA-TIME GAMES and SHOOTOUTS tiles are now
+  buttons: clicking lists the matches behind the number (stage, tie, decisive
+  score, and "after extra time" / the shootout score), each row opening the
+  full match detail. The extra-time list notes how many of its ties went all
+  the way to penalties; tiles disable when the count is 0.
+  (`extraTimeMatches` / `shootoutMatches`, `StatsView`.)
 - **Golden Boot: bold the scorers still in the tournament.** Players whose team
   has a match left (or in play) render bold — their tally can still grow; the
   rest are frozen where they finished. Data-driven (`activeTeams`: any real

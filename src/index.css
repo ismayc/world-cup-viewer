@@ -2418,6 +2418,45 @@ select {
 }
 .stat-num { display: block; font-size: 1.5rem; font-weight: 800; color: var(--accent); }
 .stat-label { display: block; margin-top: 2px; font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+/* Tiles that drill down to their match list. */
+.stat-tile-btn { font: inherit; color: inherit; cursor: pointer; }
+.stat-tile-btn:hover:not(:disabled), .stat-tile-btn.open { background: var(--card-hover); border-color: var(--accent); }
+.stat-tile-btn:disabled { cursor: default; }
+.stat-chev { color: var(--text-faint); }
+.stat-detail {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.stat-detail h4 { margin: 0 0 8px; font-size: 0.86rem; }
+.stat-match-list { list-style: none; margin: 0; padding: 0; }
+.stat-match-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.stat-match-list li:last-child .stat-match-row { border-bottom: none; }
+.stat-match-row:hover { background: var(--card-hover); }
+.smr-stage { flex: 0 0 108px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); }
+.smr-line { font-weight: 600; }
+.smr-extra { margin-left: auto; font-size: 0.72rem; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+.stat-detail-note { margin: 8px 0 0; font-size: 0.74rem; color: var(--text-faint); }
+@media (max-width: 560px) {
+  .smr-stage { flex-basis: 72px; }
+  .stat-match-row { flex-wrap: wrap; }
+  .smr-extra { margin-left: 0; flex-basis: 100%; padding-left: 82px; }
+}
 .boot-section {
   background: var(--card);
   border: 1px solid var(--border);

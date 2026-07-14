@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import StatsView from '../src/components/StatsView.jsx'
+import { DetailContext } from '../src/context/detail.js'
 import { fetchBootExtras } from '../src/services/espnStats.js'
 
 // The official-tiebreak enrichment is fetched on mount; default to "nothing
@@ -116,5 +117,47 @@ describe('StatsView', () => {
     expect(screen.getByText('👟 Golden Boot race')).toBeInTheDocument()
     expect(screen.queryByTitle('Assists')).not.toBeInTheDocument()
     expect(await screen.findByText(/official award would split them/)).toBeInTheDocument()
+  })
+})
+
+describe('StatsView tile drill-down', () => {
+  const knockout = [
+    ...matches,
+    { num: 90, stage: 'R16', t1: 'France', t2: 'Ghana', ko: '2026-07-06T15:00:00-04:00', score: [2, 1], aet: true },
+    { num: 97, stage: 'QF', t1: 'Spain', t2: 'Brazil', ko: '2026-07-10T15:00:00-04:00', score: [1, 1], aet: true, pens: [4, 2] },
+  ]
+
+  it('expands the extra-time tile into its match list (shootout noted)', () => {
+    render(<StatsView matches={knockout} hideScores={false} />)
+    const tile = screen.getByRole('button', { name: /extra-time games/ })
+    expect(tile).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(tile)
+    expect(screen.getByText(/Went to extra time \(2\)/)).toBeInTheDocument()
+    expect(screen.getByText(/France 2–1 Ghana/)).toBeInTheDocument()
+    expect(screen.getByText(/Spain 1–1 Brazil/)).toBeInTheDocument()
+    expect(screen.getByText('pens 4–2')).toBeInTheDocument()
+    expect(screen.getByText(/1 of these went all the way to penalties/)).toBeInTheDocument()
+    fireEvent.click(tile) // toggles closed
+    expect(screen.queryByText(/Went to extra time/)).not.toBeInTheDocument()
+  })
+
+  it('expands shootouts separately, and a row opens the match detail', () => {
+    const openDetail = vi.fn()
+    render(
+      <DetailContext.Provider value={openDetail}>
+        <StatsView matches={knockout} hideScores={false} />
+      </DetailContext.Provider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /shootouts/ }))
+    expect(screen.getByText(/Decided from the spot \(1\)/)).toBeInTheDocument()
+    expect(screen.queryByText(/France 2–1 Ghana/)).not.toBeInTheDocument() // ET-only tie stays out
+    fireEvent.click(screen.getByText(/Spain 1–1 Brazil/))
+    expect(openDetail).toHaveBeenCalledWith(expect.objectContaining({ num: 97 }))
+  })
+
+  it('disables the tiles when there is nothing behind them', () => {
+    render(<StatsView matches={matches} hideScores={false} />)
+    expect(screen.getByRole('button', { name: /extra-time games/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /shootouts/ })).toBeDisabled()
   })
 })
