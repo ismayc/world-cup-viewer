@@ -2510,3 +2510,60 @@ select {
 .tape-a { text-align: right; font-weight: 700; width: 34%; }
 .tape-b { text-align: left; font-weight: 700; width: 34%; }
 .tape-note { margin: 8px 0 0; font-size: 0.7rem; color: var(--text-faint); }
+
+/* ---------- On-page goal toasts (in-app twin of the browser notification) ---------- */
+.toast-stack {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 60; /* above content, below the match-detail overlay (z 100) */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(340px, calc(100vw - 28px));
+}
+.goal-toast {
+  display: flex;
+  align-items: stretch;
+  background: var(--card);
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: toast-in 0.25s ease-out;
+}
+@keyframes toast-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .goal-toast { animation: none; }
+}
+.toast-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.toast-body:hover { background: var(--card-hover); }
+.toast-title { font-size: 0.9rem; }
+.toast-line { font-size: 0.8rem; color: var(--text-dim); }
+.toast-score { font-weight: 700; color: var(--text); }
+.toast-x {
+  flex: 0 0 auto;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.toast-x:hover { color: var(--text); background: var(--card-hover); }

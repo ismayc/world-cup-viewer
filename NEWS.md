@@ -5,6 +5,15 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-14
+- **Goal alerts: on-page toasts + click-to-open notifications.** Every new goal
+  now raises an in-app toast (top-right; scorer, minute, live score; click
+  opens the match, ✕ or ~8s dismisses) alongside the browser notification —
+  the OS often mutes notifications for the tab you're actively watching, and
+  toasts also work when permission was denied, so enabling goal alerts no
+  longer requires it (the permission is still requested so the OS channel
+  joins when allowed). Clicking a browser notification now focuses the app
+  and opens that match's detail. Same detection pipeline, dedup, and flood
+  suppression for both channels. (`GoalToasts`, `App.jsx`.)
 - **Stats tiles drill down.** The EXTRA-TIME GAMES and SHOOTOUTS tiles are now
   buttons: clicking lists the matches behind the number (stage, tie, decisive
   score, and "after extra time" / the shootout score), each row opening the

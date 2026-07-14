@@ -14,6 +14,7 @@ import ChampionBanner from './components/ChampionBanner.jsx'
 import NextMatch from './components/NextMatch.jsx'
 import MatchDetail from './components/MatchDetail.jsx'
 import CalendarModal from './components/CalendarModal.jsx'
+import GoalToasts from './components/GoalToasts.jsx'
 import { groupStageArchived, stageArchived } from './utils/scenarios.js'
 import { detectTimezone, formatDateLong, dayKey, liveState } from './utils/time.js'
 import { readState, writeState } from './utils/urlState.js'
@@ -71,15 +72,14 @@ const INITIAL_FILTERS = {
   myTeams: false,
 }
 
-// Goal-alert preferences, persisted to localStorage. `enabled` is only honoured
-// if the browser still grants Notification permission (it may have been revoked
-// since), so the toggle reflects reality rather than a stale "on".
+// Goal-alert preferences, persisted to localStorage. Alerts no longer require
+// Notification permission to be "on": the on-page toasts always work, and the
+// browser-notification channel simply joins in when permission is granted.
 const GOAL_ALERTS_KEY = 'wc2026:goalAlerts'
 function readGoalAlerts() {
   try {
     const v = JSON.parse(localStorage.getItem(GOAL_ALERTS_KEY) || '{}')
-    const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted'
-    return { enabled: Boolean(v.enabled) && granted, scope: v.scope === 'all' ? 'all' : 'followed' }
+    return { enabled: Boolean(v.enabled), scope: v.scope === 'all' ? 'all' : 'followed' }
   } catch {
     return { enabled: false, scope: 'followed' }
   }
@@ -155,6 +155,13 @@ export default function App() {
   const [updatedAt, setUpdatedAt] = useState(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [goalAlerts, setGoalAlerts] = useState(readGoalAlerts)
+  // On-page goal toasts (the in-app twin of the browser notification); ids are
+  // the notification tag so one goal can never stack twice.
+  const [toasts, setToasts] = useState([])
+  const dismissToast = useCallback(
+    (id) => setToasts((t) => t.filter((x) => x.id !== id)),
+    [],
+  )
   const abortRef = useRef(null)
   // Last seen goal-key snapshot (match num -> Set), for diffing new goals.
   const goalSnapRef = useRef(null)
@@ -264,56 +271,70 @@ export default function App() {
     }
   }, [goalAlerts])
 
-  // Goal alerts: diff each merged snapshot against the last and raise a browser
-  // notification for any new goal in a live match within scope. The snapshot is
-  // always advanced (even when alerts are off) so enabling mid-match doesn't
-  // replay the goals already on the board. Fires only while this tab is open —
-  // the static site has no backend for true background push.
+  // Goal alerts: diff each merged snapshot against the last and, for any new
+  // goal in a live match within scope, raise BOTH an on-page toast (always —
+  // the OS often mutes notifications for the focused tab, which is exactly
+  // when you're watching) and a browser notification (when permission allows;
+  // clicking it focuses the app and opens that match). The snapshot is always
+  // advanced (even when alerts are off) so enabling mid-match doesn't replay
+  // the goals already on the board. Fires only while this tab is open — the
+  // static site has no backend for true background push.
   useEffect(() => {
     const { next, events } = detectGoals(goalSnapRef.current, matches, {
       scope: goalAlerts.scope,
       followed,
     })
     goalSnapRef.current = next
-    if (!goalAlerts.enabled) return
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    if (!goalAlerts.enabled || events.length === 0) return
     // Defense-in-depth: a healthy poll yields at most a couple of new goals. A
     // large batch means the snapshot desynced (e.g. a feed gap restoring many
     // matches at once) — suppress rather than spam. The snapshot is already
     // advanced above, so these stay silent and won't re-fire.
     if (events.length > 5) return
+    setToasts((t) => {
+      const have = new Set(t.map((x) => x.id))
+      const fresh = events
+        .map((ev) => ({ id: `${goalNotification(ev).tag}`, ev }))
+        .filter((x) => !have.has(x.id))
+      return fresh.length ? [...t, ...fresh] : t
+    })
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const icon = `${import.meta.env.BASE_URL}icon-192.png`
     for (const ev of events) {
       const n = goalNotification(ev)
       try {
-        new Notification(n.title, { body: n.body, tag: n.tag, icon, renotify: true })
+        const note = new Notification(n.title, { body: n.body, tag: n.tag, icon, renotify: true })
+        note.onclick = () => {
+          try {
+            window.focus()
+          } catch {
+            /* ignore */
+          }
+          setDetailMatch(ev.match)
+          note.close()
+        }
       } catch {
         /* some browsers throw if constructed outside a SW; ignore */
       }
     }
   }, [matches, goalAlerts, followed])
 
-  // Turn goal alerts on/off. Enabling needs Notification permission, which must be
-  // requested from a user gesture (this click) — if denied, the toggle stays off.
+  // Turn goal alerts on/off. Toasts work regardless of Notification permission,
+  // so enabling never blocks on it — but we still ask (from this user gesture,
+  // as required) so the OS notification channel comes along when allowed.
   const toggleGoalAlerts = useCallback(async () => {
     if (goalAlerts.enabled) {
       setGoalAlerts((s) => ({ ...s, enabled: false }))
       return
     }
-    if (typeof Notification === 'undefined') {
-      alert('This browser does not support notifications.')
-      return
-    }
-    let perm = Notification.permission
-    if (perm === 'default') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       try {
-        perm = await Notification.requestPermission()
+        await Notification.requestPermission()
       } catch {
-        perm = 'denied'
+        /* denied or unsupported — toasts still work */
       }
     }
-    if (perm === 'granted') setGoalAlerts((s) => ({ ...s, enabled: true }))
-    else alert('Notifications are blocked. Allow them for this site in your browser settings.')
+    setGoalAlerts((s) => ({ ...s, enabled: true }))
   }, [goalAlerts.enabled])
 
   // Keep the URL in sync with shareable state.
@@ -506,7 +527,7 @@ export default function App() {
         </label>
         <label
           className="results-alerts"
-          title="Browser notification when a goal is scored (while this tab is open)"
+          title="On-page toast + browser notification when a goal is scored (while the app is open)"
         >
           <input type="checkbox" checked={goalAlerts.enabled} onChange={toggleGoalAlerts} />
           🔔 goals
@@ -717,6 +738,8 @@ export default function App() {
           </a>
         </p>
       </footer>
+
+      <GoalToasts items={toasts} onOpen={setDetailMatch} onDismiss={dismissToast} />
 
       {detailMatch && (
         <MatchDetail

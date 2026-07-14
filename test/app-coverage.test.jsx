@@ -286,7 +286,8 @@ describe('App coverage', () => {
   })
 
   // --- goal alerts --------------------------------------------------------
-  it('toggleGoalAlerts: no Notification support -> alert shown, stays off', () => {
+  // Toasts don't need Notification permission, so enabling never blocks on it.
+  it('toggleGoalAlerts: no Notification support -> still enables (toasts-only)', async () => {
     const origNotif = global.Notification
     const origWinNotif = window.Notification
     delete global.Notification
@@ -294,15 +295,17 @@ describe('App coverage', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     try {
       render(<App />)
-      fireEvent.click(screen.getByRole('checkbox', { name: /goals/ }))
-      expect(alertSpy).toHaveBeenCalledWith('This browser does not support notifications.')
+      const cb = screen.getByRole('checkbox', { name: /goals/ })
+      fireEvent.click(cb)
+      await waitFor(() => expect(cb).toBeChecked())
+      expect(alertSpy).not.toHaveBeenCalled()
     } finally {
       global.Notification = origNotif
       window.Notification = origWinNotif
     }
   })
 
-  it('toggleGoalAlerts: requestPermission rejects -> treated as denied (blocked alert)', async () => {
+  it('toggleGoalAlerts: requestPermission rejects -> still enables, no alert', async () => {
     class FakeNotification {
       static permission = 'default'
       static requestPermission = vi.fn(async () => {
@@ -314,10 +317,11 @@ describe('App coverage', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     try {
       render(<App />)
-      fireEvent.click(screen.getByRole('checkbox', { name: /goals/ }))
-      await waitFor(() =>
-        expect(alertSpy).toHaveBeenCalledWith(expect.stringMatching(/blocked/i)),
-      )
+      const cb = screen.getByRole('checkbox', { name: /goals/ })
+      fireEvent.click(cb)
+      await waitFor(() => expect(cb).toBeChecked())
+      expect(FakeNotification.requestPermission).toHaveBeenCalled()
+      expect(alertSpy).not.toHaveBeenCalled()
     } finally {
       delete global.Notification
       delete window.Notification
@@ -390,6 +394,11 @@ describe('App coverage', () => {
       await vi.advanceTimersByTimeAsync(31000)
       await vi.waitFor(() => expect(fired.length).toBeGreaterThan(0))
       expect(fired[0].title).toMatch(/GOAL/)
+      // …and the same goal raises an on-page toast; its ✕ dismisses it.
+      const toast = screen.getByRole('region', { name: /Goal alerts/ })
+      expect(toast.textContent).toMatch(/Jimenez/)
+      fireEvent.click(screen.getByLabelText('Dismiss'))
+      expect(screen.queryByRole('region', { name: /Goal alerts/ })).toBeNull()
     } finally {
       vi.useRealTimers()
       delete global.Notification
