@@ -6,12 +6,13 @@ import {
   scorerRanks,
   tournamentTotals,
   applyBootExtras,
-  applyAssistOverrides,
+  applyPlayerStatOverrides,
+  nameKey,
   activeTeams,
   extraTimeMatches,
   shootoutMatches,
 } from '../utils/tournamentStats.js'
-import { fetchBootExtras, fetchRecentAssists } from '../services/espnStats.js'
+import { fetchBootExtras, fetchRecentPlayerStats } from '../services/espnStats.js'
 
 // A match's assists can lag ESPN's season aggregate for a while after the final
 // whistle, so we recompute them from live/recent box scores for this long after
@@ -50,9 +51,9 @@ function StatMatchRow({ match, onOpen }) {
 export default function StatsView({ matches, hideScores }) {
   const [reveal, setReveal] = useState(false)
   const [extras, setExtras] = useState(null)
-  // Authoritative real-time assist totals for players in live/recent matches,
-  // overriding the lagging aggregate in `extras`.
-  const [assistOverrides, setAssistOverrides] = useState(null)
+  // Authoritative real-time assists + minutes for scorers in live/recent
+  // matches, overriding the lagging (or absent) aggregate figure in `extras`.
+  const [statOverrides, setStatOverrides] = useState(null)
   // Which tile's match list is open below the strip: null | 'et' | 'pens'.
   const [expanded, setExpanded] = useState(null)
   // Scorer whose match-by-match popup is open.
@@ -118,19 +119,21 @@ export default function StatsView({ matches, hideScores }) {
     }, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [liveNow])
-  // Real-time assist overrides: recompute the true totals for players in
-  // live/recent matches whenever a goal lands or the recent set changes, plus a
-  // 60s interval while anything is live. Clear once nothing is recent so the
-  // (now caught-up) aggregate stands on its own.
+  const rawScorers = useMemo(() => topScorers(matches, { limit: 15 }), [matches])
+  // Real-time tie-breaker overrides: recompute assists + minutes for the shown
+  // scorers who played a live/recent match whenever a goal lands or the recent
+  // set changes, plus a 60s interval while anything is live. Clear once nothing
+  // is recent so the (now caught-up) aggregate stands on its own.
   useEffect(() => {
     if (!recentKey) {
-      setAssistOverrides(null)
+      setStatOverrides(null)
       return
     }
     const ctrl = new AbortController()
+    const wantKeys = new Set(rawScorers.map((s) => nameKey(s.name)))
     const run = () =>
-      fetchRecentAssists(recentMatches, ctrl.signal)
-        .then((a) => setAssistOverrides(a.length ? a : null))
+      fetchRecentPlayerStats(recentMatches, wantKeys, ctrl.signal)
+        .then((a) => setStatOverrides(a.length ? a : null))
         .catch(() => {})
     run()
     const id = recentMatches.some((m) => m.live) ? setInterval(run, 60 * 1000) : null
@@ -138,18 +141,18 @@ export default function StatsView({ matches, hideScores }) {
       ctrl.abort()
       if (id) clearInterval(id)
     }
-    // `recentMatches` is read fresh inside; recentKey + goalCount capture every
-    // change that can move an assist tally.
+    // `recentMatches`/`rawScorers` are read fresh inside; recentKey + goalCount
+    // capture every change that can move a scorer's tally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recentKey, goalCount])
 
   const bootExtras = useMemo(
-    () => applyAssistOverrides(extras, assistOverrides),
-    [extras, assistOverrides],
+    () => applyPlayerStatOverrides(extras, statOverrides),
+    [extras, statOverrides],
   )
   const { scorers, enriched } = useMemo(
-    () => applyBootExtras(topScorers(matches, { limit: 15 }), bootExtras),
-    [matches, bootExtras],
+    () => applyBootExtras(rawScorers, bootExtras),
+    [rawScorers, bootExtras],
   )
   const ranks = useMemo(
     () =>

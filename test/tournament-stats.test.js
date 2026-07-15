@@ -5,7 +5,7 @@ import {
   scorerRanks,
   tournamentTotals,
   applyBootExtras,
-  applyAssistOverrides,
+  applyPlayerStatOverrides,
   activeTeams,
 } from '../src/utils/tournamentStats.js'
 
@@ -208,37 +208,40 @@ describe('applyBootExtras', () => {
   })
 })
 
-describe('applyAssistOverrides', () => {
+describe('applyPlayerStatOverrides', () => {
   const extras = [
     { name: 'Lionel Messi', goals: 8, assists: 2, minutes: 530 },
     { name: 'Erling Haaland', goals: 7, assists: 0, minutes: 600 },
   ]
 
-  it('REPLACES the aggregate assists with the authoritative total by name', () => {
-    // Aggregate still reads 2 (lagging); the real total is 4.
-    const out = applyAssistOverrides(extras, [{ name: 'Lionel Messi', assists: 4 }])
-    const messi = out.find((e) => e.name === 'Lionel Messi')
-    expect(messi).toMatchObject({ assists: 4, goals: 8, minutes: 530 })
-    // Untouched players keep their aggregate figure.
-    expect(out.find((e) => e.name === 'Erling Haaland').assists).toBe(0)
+  it('REPLACES aggregate assists + minutes with the authoritative totals by name', () => {
+    // Aggregate still reads 2/530 (lagging); the real totals are 4/547.
+    const out = applyPlayerStatOverrides(extras, [{ name: 'Lionel Messi', assists: 4, minutes: 547 }])
+    expect(out.find((e) => e.name === 'Lionel Messi')).toMatchObject({ assists: 4, minutes: 547, goals: 8 })
+    // Untouched players keep their aggregate figures.
+    expect(out.find((e) => e.name === 'Erling Haaland')).toMatchObject({ assists: 0, minutes: 600 })
   })
 
-  it('joins diacritic-insensitively and adds scorers the aggregate omits', () => {
-    const out = applyAssistOverrides([{ name: 'Kylian Mbappé', assists: 1, goals: 3, minutes: 200 }], [
-      { name: 'Kylian Mbappe', assists: 3 }, // no accent from the feed
-      { name: 'Morgan Rogers', assists: 1 }, // not in the aggregate at all
-    ])
-    expect(out.find((e) => e.name === 'Kylian Mbappé').assists).toBe(3)
-    expect(out.find((e) => e.name === 'Morgan Rogers')).toMatchObject({
+  it('adds a scorer the aggregate omits entirely (outside ESPN leaders)', () => {
+    // Lautaro: 2 goals, below the leaders cut, so no aggregate entry at all.
+    const out = applyPlayerStatOverrides(extras, [{ name: 'Lautaro Martínez', assists: 1, minutes: 311 }])
+    expect(out.find((e) => e.name === 'Lautaro Martínez')).toMatchObject({
       assists: 1,
+      minutes: 311,
       goals: null,
-      minutes: null,
     })
   })
 
+  it('joins diacritic-insensitively and leaves a null field untouched', () => {
+    const out = applyPlayerStatOverrides([{ name: 'Kylian Mbappé', assists: 1, goals: 3, minutes: 200 }], [
+      { name: 'Kylian Mbappe', assists: 3, minutes: null }, // minutes null → keep 200
+    ])
+    expect(out.find((e) => e.name === 'Kylian Mbappé')).toMatchObject({ assists: 3, minutes: 200 })
+  })
+
   it('returns the aggregate untouched when there is nothing to override', () => {
-    expect(applyAssistOverrides(extras, null)).toBe(extras)
-    expect(applyAssistOverrides(extras, [])).toBe(extras)
+    expect(applyPlayerStatOverrides(extras, null)).toBe(extras)
+    expect(applyPlayerStatOverrides(extras, [])).toBe(extras)
   })
 })
 

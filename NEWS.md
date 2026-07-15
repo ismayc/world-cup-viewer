@@ -5,6 +5,17 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-15
+- **Golden Boot: minutes (and assists) now fill in for scorers outside ESPN's
+  top-25 leaders.** The tie-breaker columns came only from ESPN's leaders lists,
+  so a scorer below the cut — Lautaro Martínez (3G/1A) — had NO aggregate row and
+  showed "—" for both assists and minutes. Extended the real-time reconciliation
+  (below) to sum per-match **minutes** as well as assists, and to cover every
+  Boot-table scorer who played a live/recent match (not just assisters), keyed by
+  the shown scorer set so the fan-out stays small. `fetchRecentAssists` →
+  `fetchRecentPlayerStats` (returns `{name, assists, minutes}`); `applyAssist-
+  Overrides` → `applyPlayerStatOverrides`. Verified live: Lautaro now shows
+  311'; as a bonus, leaders' minutes go real-time too (Messi 530'→620'). Spotted
+  by Chester.
 - **Golden Boot: assists now update in real time, from per-match box scores.**
   The Boot table sourced assists from ESPN's SEASON aggregate, which ignores a
   match until ESPN finalises it into the per-athlete totals — a lag of minutes

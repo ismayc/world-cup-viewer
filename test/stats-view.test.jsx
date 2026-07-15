@@ -2,13 +2,13 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import StatsView from '../src/components/StatsView.jsx'
 import { DetailContext } from '../src/context/detail.js'
-import { fetchBootExtras, fetchRecentAssists } from '../src/services/espnStats.js'
+import { fetchBootExtras, fetchRecentPlayerStats } from '../src/services/espnStats.js'
 
 // The official-tiebreak enrichment is fetched on mount; default to "nothing
 // came back" so the base tests exercise the un-enriched table.
 vi.mock('../src/services/espnStats.js', () => ({
   fetchBootExtras: vi.fn(async () => []),
-  fetchRecentAssists: vi.fn(async () => []),
+  fetchRecentPlayerStats: vi.fn(async () => []),
 }))
 vi.mock('../src/services/espnMatchStats.js', () => ({
   fetchMatchLines: vi.fn(async () => ({ length: 90, byName: {} })),
@@ -17,8 +17,8 @@ vi.mock('../src/services/espnMatchStats.js', () => ({
 beforeEach(() => {
   fetchBootExtras.mockClear()
   fetchBootExtras.mockImplementation(async () => [])
-  fetchRecentAssists.mockClear()
-  fetchRecentAssists.mockImplementation(async () => [])
+  fetchRecentPlayerStats.mockClear()
+  fetchRecentPlayerStats.mockImplementation(async () => [])
 })
 
 // A kickoff recent enough that StatsView treats the match as still reconcilable.
@@ -148,38 +148,39 @@ describe('StatsView', () => {
     expect(fetchBootExtras.mock.calls[1][1]).toEqual({ force: true })
   })
 
-  it('overrides the lagging aggregate assists with the real-time total for a live match', async () => {
-    // Aggregate still credits Jiménez 2 assists; his true total (per-match box
-    // scores) is 4 — the table should show 4.
+  it('overrides the lagging aggregate assists + minutes for a live match', async () => {
+    // Aggregate credits Jiménez 2 assists / 300 min; his true totals are 4 / 320.
     fetchBootExtras.mockImplementation(async () => [
       { name: 'Raúl Jiménez', goals: 3, assists: 2, minutes: 300 },
     ])
-    fetchRecentAssists.mockImplementation(async () => [{ name: 'Raúl Jiménez', assists: 4 }])
+    fetchRecentPlayerStats.mockImplementation(async () => [{ name: 'Raúl Jiménez', assists: 4, minutes: 320 }])
     const live = [
       ...matches,
       { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], live: { minute: 80 }, espnId: '999', ko: recentKo(), goals: { t1: [], t2: [] } },
     ]
     render(<StatsView matches={live} hideScores={false} />)
     const row = (await screen.findByText('Raúl Jiménez')).closest('tr')
-    expect(row.cells[4]).toHaveTextContent('4')
-    expect(fetchRecentAssists).toHaveBeenCalled()
+    expect(row.cells[4]).toHaveTextContent('4') // assists
+    expect(row.cells[5]).toHaveTextContent('320') // minutes
+    expect(fetchRecentPlayerStats).toHaveBeenCalled()
   })
 
-  it('shows the corrected total on a fresh load after the match, while the aggregate still lags', async () => {
-    // The reported bug: match is FINAL, no live overlay, no session history — the
-    // aggregate reads a stale 2, but the override recomputes the true 4.
+  it('fills in minutes for a scorer the aggregate omits entirely (outside ESPN leaders)', async () => {
+    // Lautaro-style: 2 goals, not in the leader lists, so no aggregate row — but
+    // a recent match lets us recompute his assists + minutes from box scores.
     fetchBootExtras.mockImplementation(async () => [
-      { name: 'Raúl Jiménez', goals: 3, assists: 2, minutes: 300 },
+      { name: 'Raúl Jiménez', goals: 3, assists: 5, minutes: 300 },
     ])
-    fetchRecentAssists.mockImplementation(async () => [{ name: 'Raúl Jiménez', assists: 4 }])
+    fetchRecentPlayerStats.mockImplementation(async () => [{ name: 'Lautaro Martínez', assists: 1, minutes: 311 }])
     const finished = [
-      ...matches,
-      { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [1, 0], ko: recentKo(), espnId: '999', goals: { t1: [{ name: 'Someone' }], t2: [] } },
+      { num: 1, stage: 'Group', t1: 'Argentina', t2: 'Chile', score: [2, 0], ko: recentKo(), espnId: '999',
+        goals: { t1: [{ name: 'Lautaro Martínez' }, { name: 'Lautaro Martínez' }], t2: [] } },
     ]
     render(<StatsView matches={finished} hideScores={false} />)
-    const row = (await screen.findByText('Raúl Jiménez')).closest('tr')
-    expect(row.cells[4]).toHaveTextContent('4')
-    expect(fetchRecentAssists).toHaveBeenCalled()
+    const row = (await screen.findByText('Lautaro Martínez')).closest('tr')
+    expect(row.cells[4]).toHaveTextContent('1') // assists filled in
+    expect(row.cells[5]).toHaveTextContent('311') // minutes filled in — not '—'
+    expect(fetchRecentPlayerStats).toHaveBeenCalled()
   })
 
   it('clicking a player opens their match-by-match popup', () => {

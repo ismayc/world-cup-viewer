@@ -132,22 +132,27 @@ export function topScorers(matches, { limit = 10 } = {}) {
   return all.slice(0, end)
 }
 
-// Override the season-aggregate assists (espnStats.fetchBootExtras) with the
-// authoritative real-time totals from espnStats.fetchRecentAssists for the
-// players who assisted in a recent match. The aggregate lags a match by minutes
-// even past the final whistle; each override is a full recomputed total (per-
-// match box scores summed), so it REPLACES rather than adds — no double-count,
-// and correct on a cold load. Join is by diacritic-insensitive name; a scorer
-// the aggregate never listed is added fresh (minutes unknown). Returns `extras`
-// untouched when there's nothing to override.
-export function applyAssistOverrides(extras, overrides) {
+// Override the season-aggregate tie-breakers (espnStats.fetchBootExtras) with
+// the authoritative real-time totals from espnStats.fetchRecentPlayerStats for
+// the scorers who played a recent match. The aggregate lags a match by minutes
+// even past the final whistle — and omits scorers outside ESPN's top-25 leaders
+// entirely — so each override is a full recomputed figure (per-match box scores
+// summed) and REPLACES rather than adds: no double-count, correct on a cold
+// load. Join is by diacritic-insensitive name; a scorer the aggregate never
+// listed is added fresh. A null field leaves the existing value untouched.
+// Returns `extras` untouched when there's nothing to override.
+export function applyPlayerStatOverrides(extras, overrides) {
   if (!overrides?.length) return extras
   const byKey = new Map((extras || []).map((e) => [nameKey(e.name), { ...e }]))
-  for (const { name, assists } of overrides) {
+  for (const { name, assists, minutes } of overrides) {
     const k = nameKey(name)
     const e = byKey.get(k)
-    if (e) e.assists = assists
-    else byKey.set(k, { name, goals: null, assists, minutes: null })
+    if (e) {
+      if (assists != null) e.assists = assists
+      if (minutes != null) e.minutes = minutes
+    } else {
+      byKey.set(k, { name, goals: null, assists: assists ?? undefined, minutes: minutes ?? undefined })
+    }
   }
   return [...byKey.values()]
 }

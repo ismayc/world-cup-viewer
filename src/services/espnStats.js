@@ -13,6 +13,7 @@
 // the Boot table just renders without the assists/minutes columns.
 
 import { fetchMatchLines } from './espnMatchStats.js'
+import { nameKey } from '../utils/tournamentStats.js'
 
 const CORE = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026'
 export const LEADERS_SOURCE = {
@@ -22,7 +23,6 @@ export const LEADERS_SOURCE = {
 
 const CACHE_KEY = 'wc2026:bootExtras'
 const NAMES_KEY = 'wc2026:athleteNames'
-const MATCH_ASSIST_PREFIX = 'wc2026:matchAssist:' // `${eventId}:${athleteId}` → assists (final games only)
 export const CACHE_TTL_MS = 15 * 60 * 1000
 
 // $ref links in the feed are http:// — rewrite to https:// or the browser
@@ -136,77 +136,87 @@ export async function fetchBootExtras(signal, { force = false } = {}) {
   return extras
 }
 
-// ── Real-time assists ────────────────────────────────────────────────────────
-// The season aggregate above ignores a match until ESPN finalises it into the
-// per-athlete totals — a lag of minutes that outlasts the final whistle, so a
-// just-finished match's assists don't show. ESPN's per-MATCH box scores update
-// the instant a goal is posted, though, so we recompute the assist total for the
-// players who actually assisted in a recent match by summing their per-match
-// figures (via the athlete eventlog) — bypassing the aggregate entirely. This is
-// authoritative on a cold load too, where a session high-water mark can't help.
+// ── Real-time player stats (assists + minutes) ───────────────────────────────
+// The season aggregate above only covers ESPN's top-25 goal/assist LEADERS, and
+// even for them it ignores a match until ESPN finalises it into the per-athlete
+// totals — a lag of minutes that outlasts the final whistle. So a scorer outside
+// the leader lists (e.g. a 2-goal player) has NO assists/minutes at all, and a
+// leader's just-finished match doesn't count yet. ESPN's per-MATCH box scores
+// update the instant a goal is posted, though, so for the Boot-table scorers who
+// played a recent match we recompute assists + minutes by summing their per-match
+// figures (via the athlete eventlog), bypassing the aggregate. Authoritative on a
+// cold load too, where a session high-water mark can't help.
 
 const EVENT_ID = /\/events\/(\d+)/
+const MATCH_STAT_PREFIX = 'wc2026:matchStat:' // `${eventId}:${athleteId}` → {a, m} (final games only)
 
-function readMatchAssist(key) {
+function readMatchStat(key) {
   try {
     const v = localStorage.getItem(key)
-    return v == null ? null : Number(v)
+    return v == null ? null : JSON.parse(v)
   } catch {
     return null
   }
 }
-function writeMatchAssist(key, val) {
+function writeMatchStat(key, val) {
   try {
-    localStorage.setItem(key, String(val))
+    localStorage.setItem(key, JSON.stringify(val))
   } catch {
     /* ignore quota / privacy-mode errors */
   }
 }
 
-// Sum an athlete's assists across their FINISHED matches, read from the
-// per-match box scores the eventlog links (not the lagging season aggregate).
-// Matches in `liveIds` are skipped — the caller folds those in from the live box
-// score — so nothing is double-counted. A finished match's line never changes,
-// so each is cached permanently by event + athlete.
-async function athleteFinalAssists(id, liveIds, signal) {
+// Sum an athlete's assists + minutes across their FINISHED matches, read from
+// the per-match box scores the eventlog links (not the lagging season
+// aggregate). Matches in `liveIds` are skipped — the caller folds live assists
+// in from the box score — so nothing is double-counted. A finished match's line
+// never changes, so each is cached permanently by event + athlete.
+async function athleteFinalStats(id, liveIds, signal) {
   const log = await getJson(`${CORE}/athletes/${id}/eventlog?lang=en&region=us`, signal)
   const items = log.events?.items || []
   const parts = await Promise.all(
     items.map(async (it) => {
-      if (!it.played || !it.statistics?.$ref) return 0
+      if (!it.played || !it.statistics?.$ref) return { a: 0, m: 0 }
       const eventId = EVENT_ID.exec(it.event?.$ref || '')?.[1]
-      if (!eventId || liveIds.has(eventId)) return 0
-      const ck = `${MATCH_ASSIST_PREFIX}${eventId}:${id}`
-      const cached = readMatchAssist(ck)
-      if (cached != null) return cached
-      const stats = await getJson(toHttps(it.statistics.$ref), signal)
-      const ga = flattenStats(stats).goalAssists ?? 0
-      writeMatchAssist(ck, ga)
-      return ga
+      if (!eventId || liveIds.has(eventId)) return { a: 0, m: 0 }
+      const ck = `${MATCH_STAT_PREFIX}${eventId}:${id}`
+      const cached = readMatchStat(ck)
+      if (cached) return cached
+      const stats = flattenStats(await getJson(toHttps(it.statistics.$ref), signal))
+      const val = { a: stats.goalAssists ?? 0, m: stats.minutes ?? 0 }
+      writeMatchStat(ck, val)
+      return val
     }),
   )
-  return parts.reduce((a, b) => a + b, 0)
+  return parts.reduce((acc, p) => ({ assists: acc.assists + p.a, minutes: acc.minutes + p.m }), {
+    assists: 0,
+    minutes: 0,
+  })
 }
 
-// Authoritative, real-time assist totals for the players who assisted in the
-// given recent matches (live or finished within the caller's window). Returns
-// [{ name, assists }] to OVERRIDE the aggregate for those players; everyone else
-// keeps their aggregate figure, which by then is correct. Best-effort — a failed
-// athlete or match is simply left to the aggregate.
-export async function fetchRecentAssists(recentMatches, signal) {
+// Authoritative, real-time assists + minutes for the Boot-table scorers who
+// played a recent match (live or finished within the caller's window). `wantKeys`
+// is the set of scorer name keys the table shows — only those are reconciled, so
+// the fan-out stays small. Returns [{ name, assists, minutes }] to OVERRIDE the
+// aggregate for those players; everyone else keeps their (by then correct)
+// aggregate figure. Best-effort — a failed athlete or match falls back silently.
+export async function fetchRecentPlayerStats(recentMatches, wantKeys, signal) {
   const items = (recentMatches || []).filter((m) => m.espnId)
-  if (!items.length) return []
+  const want = wantKeys instanceof Set ? wantKeys : new Set(wantKeys || [])
+  if (!items.length || !want.size) return []
   const liveIds = new Set(items.filter((m) => m.live).map((m) => String(m.espnId)))
   const names = new Map() // athleteId → displayName
-  const liveDelta = new Map() // athleteId → assists in matches still in play
+  const liveAssists = new Map() // athleteId → assists in matches still in play
   await Promise.all(
     items.map(async (m) => {
       try {
         const { byName } = await fetchMatchLines(m.espnId, { final: !m.live, signal })
         for (const line of Object.values(byName)) {
-          if (!line.id || !line.assists) continue
+          if (!line.id || !want.has(nameKey(line.name))) continue
           names.set(line.id, line.name)
-          if (m.live) liveDelta.set(line.id, (liveDelta.get(line.id) || 0) + line.assists)
+          if (m.live && line.assists) {
+            liveAssists.set(line.id, (liveAssists.get(line.id) || 0) + line.assists)
+          }
         }
       } catch {
         /* one match failing shouldn't sink the rest */
@@ -216,8 +226,8 @@ export async function fetchRecentAssists(recentMatches, signal) {
   const out = await Promise.all(
     [...names].map(async ([id, name]) => {
       try {
-        const finals = await athleteFinalAssists(id, liveIds, signal)
-        return { name, assists: finals + (liveDelta.get(id) || 0) }
+        const { assists, minutes } = await athleteFinalStats(id, liveIds, signal)
+        return { name, assists: assists + (liveAssists.get(id) || 0), minutes: minutes || null }
       } catch {
         return null
       }
