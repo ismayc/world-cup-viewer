@@ -5,6 +5,7 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-15
+- **Golden Boot: race trimmed to the top 10** (ties still included), down from 15.
 - **Golden Boot: minutes (and assists) now fill in for scorers outside ESPN's
   top-25 leaders.** The tie-breaker columns came only from ESPN's leaders lists,
   so a scorer below the cut — Lautaro Martínez (3G/1A) — had NO aggregate row and

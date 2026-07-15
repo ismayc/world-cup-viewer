@@ -119,7 +119,7 @@ export default function StatsView({ matches, hideScores }) {
     }, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [liveNow])
-  const rawScorers = useMemo(() => topScorers(matches, { limit: 15 }), [matches])
+  const rawScorers = useMemo(() => topScorers(matches, { limit: 10 }), [matches])
   // Real-time tie-breaker overrides: recompute assists + minutes for the shown
   // scorers who played a live/recent match whenever a goal lands or the recent
   // set changes, plus a 60s interval while anything is live. Clear once nothing
@@ -301,7 +301,7 @@ export default function StatsView({ matches, hideScores }) {
           </table>
         )}
         <p className="boot-note">
-          Top 15 (ties included). Own goals don’t count.{' '}
+          Top 10 (ties included). Own goals don’t count.{' '}
           {enriched
             ? 'Ranked by the official award criteria: goals, then assists, then fewest minutes played (assists & minutes via ESPN).'
             : 'Level scorers share a rank — the official award would split them on assists and minutes played.'}
