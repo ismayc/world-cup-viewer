@@ -4,6 +4,22 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-07-15
+- **Golden Boot: assists now update in real time, not minutes late.** The Boot
+  table sourced assists from ESPN's SEASON aggregate, which ignores an
+  in-progress match until it goes final — so an assist could lag its goal by
+  minutes (Messi set up two goals vs England before the table moved off his
+  pre-match total of 2). New `fetchLiveAssists` reads each live match's
+  real-time box score (`goalAssists` per player, credited the moment a goal is
+  posted) and `mergeLiveAssists` folds it onto the aggregate. No double-count:
+  the aggregate excludes live matches, so the two sum exactly, and the live
+  tally drops to zero once ESPN moves the match into the aggregate. Refetched on
+  every goal + a 60s backstop while a match is live; cleared when nothing's in
+  play. A per-session high-water mark keeps a live-confirmed total from dipping
+  at full time, since ESPN's aggregate can lag the match even past the final
+  whistle (it still read Messi 2, not 4, minutes after full time). Covered by
+  new unit + integration tests. Spotted by Chester mid-match.
+
 ## 2026-07-14
 - **Fix: live goals credited under the scorer's SHORT name split players in
   two.** ESPN's event feed carries both spellings; the parser preferred

@@ -118,3 +118,32 @@ export async function fetchMatchLines(espnId, { final = false, signal } = {}) {
   }
   return lines
 }
+
+// Real-time assist tallies from the matches in play. ESPN credits the assister
+// in each roster's per-match `goalAssists` the moment a goal is posted — well
+// ahead of the season aggregate (espnStats.fetchBootExtras), which ignores
+// in-progress matches entirely until they go final. Summing the two therefore
+// never double-counts. Returns [{ name, assists }] across the given live
+// matches; best-effort, so one match failing doesn't sink the rest.
+export async function fetchLiveAssists(liveMatches, signal) {
+  const ids = (liveMatches || []).map((m) => m.espnId).filter(Boolean)
+  if (!ids.length) return []
+  const counts = new Map() // nameKey -> { name, assists }
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const { byName } = await fetchMatchLines(id, { final: false, signal })
+        for (const line of Object.values(byName)) {
+          if (!line.assists) continue
+          const k = nameKey(line.name)
+          const e = counts.get(k)
+          if (e) e.assists += line.assists
+          else counts.set(k, { name: line.name, assists: line.assists })
+        }
+      } catch {
+        /* one match failing shouldn't sink the rest */
+      }
+    }),
+  )
+  return [...counts.values()]
+}

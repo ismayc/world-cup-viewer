@@ -132,6 +132,27 @@ export function topScorers(matches, { limit = 10 } = {}) {
   return all.slice(0, end)
 }
 
+// Fold real-time live-match assists (espnMatchStats.fetchLiveAssists) into the
+// season-aggregate extras (espnStats.fetchBootExtras) before ranking. The
+// aggregate ignores in-progress matches, so adding the live count is exact, not
+// double-counting: once a match goes final ESPN moves those assists into the
+// aggregate and the live tally for it drops back to zero. Join is by
+// diacritic-insensitive name; a live assister ESPN's aggregate hasn't listed
+// yet is added fresh (goals/minutes unknown). Returns `extras` untouched when
+// there's nothing live to fold in.
+export function mergeLiveAssists(extras, live) {
+  if (!live?.length) return extras
+  const byKey = new Map((extras || []).map((e) => [nameKey(e.name), { ...e }]))
+  for (const { name, assists } of live) {
+    if (!assists) continue
+    const k = nameKey(name)
+    const e = byKey.get(k)
+    if (e) e.assists = (e.assists ?? 0) + assists
+    else byKey.set(k, { name, goals: null, assists, minutes: null })
+  }
+  return [...byKey.values()]
+}
+
 // Attach the official tie-breakers (assists, minutes played — via ESPN's
 // leaders data) to a scorer list and re-sort by the award criteria: goals, then
 // most assists, then FEWEST minutes. Entries ESPN didn't cover keep undefined

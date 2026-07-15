@@ -3,15 +3,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import StatsView from '../src/components/StatsView.jsx'
 import { DetailContext } from '../src/context/detail.js'
 import { fetchBootExtras } from '../src/services/espnStats.js'
+import { fetchLiveAssists } from '../src/services/espnMatchStats.js'
 
 // The official-tiebreak enrichment is fetched on mount; default to "nothing
 // came back" so the base tests exercise the un-enriched table.
 vi.mock('../src/services/espnStats.js', () => ({ fetchBootExtras: vi.fn(async () => []) }))
-vi.mock('../src/services/espnMatchStats.js', () => ({ fetchMatchLines: vi.fn(async () => ({ length: 90, byName: {} })) }))
+vi.mock('../src/services/espnMatchStats.js', () => ({
+  fetchMatchLines: vi.fn(async () => ({ length: 90, byName: {} })),
+  fetchLiveAssists: vi.fn(async () => []),
+}))
 
 beforeEach(() => {
   fetchBootExtras.mockClear()
   fetchBootExtras.mockImplementation(async () => [])
+  fetchLiveAssists.mockClear()
+  fetchLiveAssists.mockImplementation(async () => [])
 })
 
 const matches = [
@@ -136,6 +142,43 @@ describe('StatsView', () => {
     rerender(<StatsView matches={scored} hideScores={false} />)
     expect(fetchBootExtras).toHaveBeenCalledTimes(2)
     expect(fetchBootExtras.mock.calls[1][1]).toEqual({ force: true })
+  })
+
+  it('folds real-time live-match assists onto the lagging season aggregate', async () => {
+    // Aggregate still credits Jiménez 2 assists; he has set up 2 more in a match
+    // in play — the table should show the live total of 4, not the stale 2.
+    fetchBootExtras.mockImplementation(async () => [
+      { name: 'Raúl Jiménez', goals: 3, assists: 2, minutes: 300 },
+    ])
+    fetchLiveAssists.mockImplementation(async () => [{ name: 'Raúl Jiménez', assists: 2 }])
+    const live = [
+      ...matches,
+      { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], live: { minute: 80 }, espnId: '999', goals: { t1: [], t2: [] } },
+    ]
+    render(<StatsView matches={live} hideScores={false} />)
+    const jimenez = await screen.findByText('Raúl Jiménez')
+    const row = jimenez.closest('tr')
+    expect(row.cells[4]).toHaveTextContent('4') // 2 aggregate + 2 live
+    expect(fetchLiveAssists).toHaveBeenCalled()
+  })
+
+  it('holds a live-confirmed assist total when the match ends before the aggregate catches up', async () => {
+    fetchBootExtras.mockImplementation(async () => [
+      { name: 'Raúl Jiménez', goals: 3, assists: 2, minutes: 300 },
+    ])
+    fetchLiveAssists.mockImplementation(async () => [{ name: 'Raúl Jiménez', assists: 2 }])
+    const live = [
+      ...matches,
+      { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], live: { minute: 90 }, espnId: '999', goals: { t1: [], t2: [] } },
+    ]
+    const { rerender } = render(<StatsView matches={live} hideScores={false} />)
+    expect((await screen.findByText('Raúl Jiménez')).closest('tr').cells[4]).toHaveTextContent('4')
+    // Full time: no match is live, so the live overlay clears — but the
+    // aggregate hasn't absorbed the two assists yet (still 2). The total must
+    // NOT dip back to 2.
+    const final = live.map((m) => (m.num === 101 ? { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], goals: { t1: [], t2: [] } } : m))
+    rerender(<StatsView matches={final} hideScores={false} />)
+    expect(screen.getByText('Raúl Jiménez').closest('tr').cells[4]).toHaveTextContent('4')
   })
 
   it('clicking a player opens their match-by-match popup', () => {

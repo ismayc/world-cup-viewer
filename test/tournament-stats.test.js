@@ -5,6 +5,7 @@ import {
   scorerRanks,
   tournamentTotals,
   applyBootExtras,
+  mergeLiveAssists,
   activeTeams,
 } from '../src/utils/tournamentStats.js'
 
@@ -204,6 +205,40 @@ describe('applyBootExtras', () => {
     const scorers = [s('A', 5)]
     expect(applyBootExtras(scorers, null)).toEqual({ scorers, enriched: false })
     expect(applyBootExtras(scorers, [])).toEqual({ scorers, enriched: false })
+  })
+})
+
+describe('mergeLiveAssists', () => {
+  const extras = [
+    { name: 'Lionel Messi', goals: 8, assists: 2, minutes: 530 },
+    { name: 'Erling Haaland', goals: 7, assists: 0, minutes: 600 },
+  ]
+
+  it('adds live-match assists onto the season aggregate by name', () => {
+    // Messi has assisted twice in a live match; aggregate still reads 2.
+    const out = mergeLiveAssists(extras, [{ name: 'Lionel Messi', assists: 2 }])
+    const messi = out.find((e) => e.name === 'Lionel Messi')
+    expect(messi).toMatchObject({ assists: 4, goals: 8, minutes: 530 })
+    // Untouched players stay put.
+    expect(out.find((e) => e.name === 'Erling Haaland').assists).toBe(0)
+  })
+
+  it('joins diacritic-insensitively and adds live assisters the aggregate omits', () => {
+    const out = mergeLiveAssists([{ name: 'Kylian Mbappé', assists: 1, goals: 3, minutes: 200 }], [
+      { name: 'Kylian Mbappe', assists: 1 }, // no accent from the live feed
+      { name: 'Morgan Rogers', assists: 1 }, // not in the aggregate at all
+    ])
+    expect(out.find((e) => e.name === 'Kylian Mbappé').assists).toBe(2)
+    expect(out.find((e) => e.name === 'Morgan Rogers')).toMatchObject({
+      assists: 1,
+      goals: null,
+      minutes: null,
+    })
+  })
+
+  it('returns the aggregate untouched when nothing is live', () => {
+    expect(mergeLiveAssists(extras, null)).toBe(extras)
+    expect(mergeLiveAssists(extras, [])).toBe(extras)
   })
 })
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { parseSummary, fetchMatchLines } from '../src/services/espnMatchStats.js'
+import { parseSummary, fetchMatchLines, fetchLiveAssists } from '../src/services/espnMatchStats.js'
 import { applyLive } from '../src/services/espn.js'
 import { pairKey } from '../src/services/results.js'
 
@@ -72,6 +72,55 @@ describe('fetchMatchLines', () => {
 
   it('rejects without an event id', async () => {
     await expect(fetchMatchLines(null)).rejects.toThrow(/event id/)
+  })
+})
+
+describe('fetchLiveAssists', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.unstubAllGlobals()
+  })
+
+  const docFor = (assists) => ({
+    keyEvents: [],
+    rosters: [roster(assists.map(([name, a]) => ({ name, starter: true, assists: a })))],
+  })
+
+  it('sums real-time per-match assists across the live matches', async () => {
+    const byEvent = {
+      A: docFor([['Lionel Messi', 2], ['Enzo Fernández', 0]]),
+      B: docFor([['Lionel Messi', 1], ['Bukayo Saka', 1]]),
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        const id = new URL(url).searchParams.get('event')
+        return { ok: true, json: async () => byEvent[id] }
+      }),
+    )
+    const out = await fetchLiveAssists([{ espnId: 'A' }, { espnId: 'B' }])
+    // Messi's assists add across both live matches; zero-assist players drop out.
+    expect(out.find((e) => e.name === 'Lionel Messi').assists).toBe(3)
+    expect(out.find((e) => e.name === 'Bukayo Saka').assists).toBe(1)
+    expect(out.find((e) => e.name === 'Enzo Fernández')).toBeUndefined()
+  })
+
+  it('is best-effort — one match failing keeps the rest', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        const id = new URL(url).searchParams.get('event')
+        if (id === 'bad') return { ok: false, status: 500 }
+        return { ok: true, json: async () => docFor([['Messi', 1]]) }
+      }),
+    )
+    const out = await fetchLiveAssists([{ espnId: 'bad' }, { espnId: 'ok' }])
+    expect(out).toEqual([{ name: 'Messi', assists: 1 }])
+  })
+
+  it('returns nothing without live event ids', async () => {
+    expect(await fetchLiveAssists([])).toEqual([])
+    expect(await fetchLiveAssists([{ espnId: null }])).toEqual([])
   })
 })
 

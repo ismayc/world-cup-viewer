@@ -6,11 +6,14 @@ import {
   scorerRanks,
   tournamentTotals,
   applyBootExtras,
+  mergeLiveAssists,
+  nameKey,
   activeTeams,
   extraTimeMatches,
   shootoutMatches,
 } from '../utils/tournamentStats.js'
 import { fetchBootExtras } from '../services/espnStats.js'
+import { fetchLiveAssists } from '../services/espnMatchStats.js'
 import { useDetail } from '../context/detail.js'
 import PlayerDetail from './PlayerDetail.jsx'
 
@@ -44,6 +47,8 @@ function StatMatchRow({ match, onOpen }) {
 export default function StatsView({ matches, hideScores }) {
   const [reveal, setReveal] = useState(false)
   const [extras, setExtras] = useState(null)
+  // Real-time assist delta from matches in play, folded onto `extras` below.
+  const [liveAssists, setLiveAssists] = useState(null)
   // Which tile's match list is open below the strip: null | 'et' | 'pens'.
   const [expanded, setExpanded] = useState(null)
   // Scorer whose match-by-match popup is open.
@@ -54,15 +59,29 @@ export default function StatsView({ matches, hideScores }) {
   const pens = useMemo(() => shootoutMatches(matches), [matches])
   const toggle = (key) => setExpanded((cur) => (cur === key ? null : key))
 
-  // Official tie-breaker data. First load is served from the localStorage
-  // cache within its TTL; after that it tracks the match feed in near-real
-  // time: assists can only change when a goal is scored, so any change in the
-  // total goal tally forces a fresh fetch, and a slower interval keeps minutes
-  // current while a match is in play. Best-effort throughout — a failure just
-  // leaves the un-enriched ordering in place.
+  // Official tie-breaker data. Assists + minutes come from ESPN's SEASON
+  // aggregate (`extras`), which serves first load from the localStorage cache
+  // within its TTL, then tracks the match feed in near-real time: assists can
+  // only change when a goal is scored, so any change in the total goal tally
+  // forces a fresh fetch, and a slower interval keeps minutes current while a
+  // match is in play. The aggregate ignores in-progress matches, though, so its
+  // assists lag by minutes during live play — `liveAssists` closes that gap by
+  // reading each live match's real-time box score and is folded on below. Both
+  // are best-effort: a failure just leaves the un-enriched ordering in place.
   const liveNow = matches.some((m) => m.live)
   const goalCount = useMemo(
     () => matches.reduce((n, m) => n + (m.goals?.t1?.length || 0) + (m.goals?.t2?.length || 0), 0),
+    [matches],
+  )
+  // The in-play matches ESPN can give a box score for, as a stable signature so
+  // the live-assist effect re-fires when the live set changes, not every poll.
+  const liveKey = useMemo(
+    () =>
+      matches
+        .filter((m) => m.live && m.espnId)
+        .map((m) => m.espnId)
+        .sort()
+        .join(','),
     [matches],
   )
   const firstLoad = useRef(true)
@@ -87,10 +106,56 @@ export default function StatsView({ matches, hideScores }) {
     }, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [liveNow])
+  // Real-time assists: refetch the live box scores whenever a goal lands (an
+  // assist can only arrive with one) or the live set changes, plus a slow
+  // interval as a backstop; clear once nothing is in play so we fall back to
+  // the now-caught-up aggregate.
+  useEffect(() => {
+    if (!liveKey) {
+      setLiveAssists(null)
+      return
+    }
+    const ctrl = new AbortController()
+    const run = () =>
+      fetchLiveAssists(
+        matches.filter((m) => m.live && m.espnId),
+        ctrl.signal,
+      )
+        .then((a) => setLiveAssists(a.length ? a : null))
+        .catch(() => {})
+    run()
+    const id = setInterval(run, 60 * 1000)
+    return () => {
+      ctrl.abort()
+      clearInterval(id)
+    }
+    // `matches` is read fresh inside but intentionally not a dep — liveKey and
+    // goalCount capture every change that can move a live assist tally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveKey, goalCount])
+
+  // Once we've shown a live-confirmed assist total, never let it dip: ESPN's
+  // aggregate lags a match even past the final whistle, so when the live
+  // overlay clears at full time the raw aggregate would briefly drop the count
+  // back down until it catches up. A per-session high-water mark keyed by
+  // player holds the higher figure (max is idempotent, so re-runs are safe); it
+  // resets on reload, which is also how a genuine downward correction heals.
+  const assistFloor = useRef(new Map())
+  const bootExtras = useMemo(() => {
+    const merged = mergeLiveAssists(extras, liveAssists)
+    if (!merged) return merged
+    const floor = assistFloor.current
+    return merged.map((e) => {
+      const k = nameKey(e.name)
+      const shown = Math.max(e.assists ?? 0, floor.get(k) ?? 0)
+      floor.set(k, shown)
+      return shown === e.assists ? e : { ...e, assists: shown }
+    })
+  }, [extras, liveAssists])
 
   const { scorers, enriched } = useMemo(
-    () => applyBootExtras(topScorers(matches, { limit: 15 }), extras),
-    [matches, extras],
+    () => applyBootExtras(topScorers(matches, { limit: 15 }), bootExtras),
+    [matches, bootExtras],
   )
   const ranks = useMemo(
     () =>
