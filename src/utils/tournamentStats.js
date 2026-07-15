@@ -132,22 +132,21 @@ export function topScorers(matches, { limit = 10 } = {}) {
   return all.slice(0, end)
 }
 
-// Fold real-time live-match assists (espnMatchStats.fetchLiveAssists) into the
-// season-aggregate extras (espnStats.fetchBootExtras) before ranking. The
-// aggregate ignores in-progress matches, so adding the live count is exact, not
-// double-counting: once a match goes final ESPN moves those assists into the
-// aggregate and the live tally for it drops back to zero. Join is by
-// diacritic-insensitive name; a live assister ESPN's aggregate hasn't listed
-// yet is added fresh (goals/minutes unknown). Returns `extras` untouched when
-// there's nothing live to fold in.
-export function mergeLiveAssists(extras, live) {
-  if (!live?.length) return extras
+// Override the season-aggregate assists (espnStats.fetchBootExtras) with the
+// authoritative real-time totals from espnStats.fetchRecentAssists for the
+// players who assisted in a recent match. The aggregate lags a match by minutes
+// even past the final whistle; each override is a full recomputed total (per-
+// match box scores summed), so it REPLACES rather than adds — no double-count,
+// and correct on a cold load. Join is by diacritic-insensitive name; a scorer
+// the aggregate never listed is added fresh (minutes unknown). Returns `extras`
+// untouched when there's nothing to override.
+export function applyAssistOverrides(extras, overrides) {
+  if (!overrides?.length) return extras
   const byKey = new Map((extras || []).map((e) => [nameKey(e.name), { ...e }]))
-  for (const { name, assists } of live) {
-    if (!assists) continue
+  for (const { name, assists } of overrides) {
     const k = nameKey(name)
     const e = byKey.get(k)
-    if (e) e.assists = (e.assists ?? 0) + assists
+    if (e) e.assists = assists
     else byKey.set(k, { name, goals: null, assists, minutes: null })
   }
   return [...byKey.values()]

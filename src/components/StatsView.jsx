@@ -6,14 +6,17 @@ import {
   scorerRanks,
   tournamentTotals,
   applyBootExtras,
-  mergeLiveAssists,
-  nameKey,
+  applyAssistOverrides,
   activeTeams,
   extraTimeMatches,
   shootoutMatches,
 } from '../utils/tournamentStats.js'
-import { fetchBootExtras } from '../services/espnStats.js'
-import { fetchLiveAssists } from '../services/espnMatchStats.js'
+import { fetchBootExtras, fetchRecentAssists } from '../services/espnStats.js'
+
+// A match's assists can lag ESPN's season aggregate for a while after the final
+// whistle, so we recompute them from live/recent box scores for this long after
+// kickoff — comfortably past the lag, then the aggregate is trusted again.
+const RECENT_MS = 24 * 60 * 60 * 1000
 import { useDetail } from '../context/detail.js'
 import PlayerDetail from './PlayerDetail.jsx'
 
@@ -47,8 +50,9 @@ function StatMatchRow({ match, onOpen }) {
 export default function StatsView({ matches, hideScores }) {
   const [reveal, setReveal] = useState(false)
   const [extras, setExtras] = useState(null)
-  // Real-time assist delta from matches in play, folded onto `extras` below.
-  const [liveAssists, setLiveAssists] = useState(null)
+  // Authoritative real-time assist totals for players in live/recent matches,
+  // overriding the lagging aggregate in `extras`.
+  const [assistOverrides, setAssistOverrides] = useState(null)
   // Which tile's match list is open below the strip: null | 'et' | 'pens'.
   const [expanded, setExpanded] = useState(null)
   // Scorer whose match-by-match popup is open.
@@ -64,25 +68,33 @@ export default function StatsView({ matches, hideScores }) {
   // within its TTL, then tracks the match feed in near-real time: assists can
   // only change when a goal is scored, so any change in the total goal tally
   // forces a fresh fetch, and a slower interval keeps minutes current while a
-  // match is in play. The aggregate ignores in-progress matches, though, so its
-  // assists lag by minutes during live play — `liveAssists` closes that gap by
-  // reading each live match's real-time box score and is folded on below. Both
-  // are best-effort: a failure just leaves the un-enriched ordering in place.
+  // match is in play. The aggregate lags a match by minutes even past the final
+  // whistle, though, so `assistOverrides` recomputes the true totals from box
+  // scores for players in live/recent matches (below). Both are best-effort: a
+  // failure just leaves the un-enriched (or un-overridden) ordering in place.
   const liveNow = matches.some((m) => m.live)
   const goalCount = useMemo(
     () => matches.reduce((n, m) => n + (m.goals?.t1?.length || 0) + (m.goals?.t2?.length || 0), 0),
     [matches],
   )
-  // The in-play matches ESPN can give a box score for, as a stable signature so
-  // the live-assist effect re-fires when the live set changes, not every poll.
-  const liveKey = useMemo(
+  // Matches whose assists might still be lagging the aggregate: in play, or
+  // finished within RECENT_MS. A stable signature (id + live flag) so the
+  // override effect re-fires on real changes, not every poll.
+  const recentMatches = useMemo(() => {
+    const now = Date.now()
+    return matches.filter(
+      (m) =>
+        m.espnId &&
+        (m.live || (m.score && !m.voided && now - new Date(m.ko).getTime() < RECENT_MS)),
+    )
+  }, [matches])
+  const recentKey = useMemo(
     () =>
-      matches
-        .filter((m) => m.live && m.espnId)
-        .map((m) => m.espnId)
+      recentMatches
+        .map((m) => `${m.espnId}${m.live ? '*' : ''}`)
         .sort()
         .join(','),
-    [matches],
+    [recentMatches],
   )
   const firstLoad = useRef(true)
   useEffect(() => {
@@ -106,53 +118,35 @@ export default function StatsView({ matches, hideScores }) {
     }, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [liveNow])
-  // Real-time assists: refetch the live box scores whenever a goal lands (an
-  // assist can only arrive with one) or the live set changes, plus a slow
-  // interval as a backstop; clear once nothing is in play so we fall back to
-  // the now-caught-up aggregate.
+  // Real-time assist overrides: recompute the true totals for players in
+  // live/recent matches whenever a goal lands or the recent set changes, plus a
+  // 60s interval while anything is live. Clear once nothing is recent so the
+  // (now caught-up) aggregate stands on its own.
   useEffect(() => {
-    if (!liveKey) {
-      setLiveAssists(null)
+    if (!recentKey) {
+      setAssistOverrides(null)
       return
     }
     const ctrl = new AbortController()
     const run = () =>
-      fetchLiveAssists(
-        matches.filter((m) => m.live && m.espnId),
-        ctrl.signal,
-      )
-        .then((a) => setLiveAssists(a.length ? a : null))
+      fetchRecentAssists(recentMatches, ctrl.signal)
+        .then((a) => setAssistOverrides(a.length ? a : null))
         .catch(() => {})
     run()
-    const id = setInterval(run, 60 * 1000)
+    const id = recentMatches.some((m) => m.live) ? setInterval(run, 60 * 1000) : null
     return () => {
       ctrl.abort()
-      clearInterval(id)
+      if (id) clearInterval(id)
     }
-    // `matches` is read fresh inside but intentionally not a dep — liveKey and
-    // goalCount capture every change that can move a live assist tally.
+    // `recentMatches` is read fresh inside; recentKey + goalCount capture every
+    // change that can move an assist tally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveKey, goalCount])
+  }, [recentKey, goalCount])
 
-  // Once we've shown a live-confirmed assist total, never let it dip: ESPN's
-  // aggregate lags a match even past the final whistle, so when the live
-  // overlay clears at full time the raw aggregate would briefly drop the count
-  // back down until it catches up. A per-session high-water mark keyed by
-  // player holds the higher figure (max is idempotent, so re-runs are safe); it
-  // resets on reload, which is also how a genuine downward correction heals.
-  const assistFloor = useRef(new Map())
-  const bootExtras = useMemo(() => {
-    const merged = mergeLiveAssists(extras, liveAssists)
-    if (!merged) return merged
-    const floor = assistFloor.current
-    return merged.map((e) => {
-      const k = nameKey(e.name)
-      const shown = Math.max(e.assists ?? 0, floor.get(k) ?? 0)
-      floor.set(k, shown)
-      return shown === e.assists ? e : { ...e, assists: shown }
-    })
-  }, [extras, liveAssists])
-
+  const bootExtras = useMemo(
+    () => applyAssistOverrides(extras, assistOverrides),
+    [extras, assistOverrides],
+  )
   const { scorers, enriched } = useMemo(
     () => applyBootExtras(topScorers(matches, { limit: 15 }), bootExtras),
     [matches, bootExtras],

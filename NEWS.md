@@ -5,20 +5,24 @@ calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
 ## 2026-07-15
-- **Golden Boot: assists now update in real time, not minutes late.** The Boot
-  table sourced assists from ESPN's SEASON aggregate, which ignores an
-  in-progress match until it goes final — so an assist could lag its goal by
-  minutes (Messi set up two goals vs England before the table moved off his
-  pre-match total of 2). New `fetchLiveAssists` reads each live match's
-  real-time box score (`goalAssists` per player, credited the moment a goal is
-  posted) and `mergeLiveAssists` folds it onto the aggregate. No double-count:
-  the aggregate excludes live matches, so the two sum exactly, and the live
-  tally drops to zero once ESPN moves the match into the aggregate. Refetched on
-  every goal + a 60s backstop while a match is live; cleared when nothing's in
-  play. A per-session high-water mark keeps a live-confirmed total from dipping
-  at full time, since ESPN's aggregate can lag the match even past the final
-  whistle (it still read Messi 2, not 4, minutes after full time). Covered by
-  new unit + integration tests. Spotted by Chester mid-match.
+- **Golden Boot: assists now update in real time, from per-match box scores.**
+  The Boot table sourced assists from ESPN's SEASON aggregate, which ignores a
+  match until ESPN finalises it into the per-athlete totals — a lag of minutes
+  that outlasts the final whistle. So Messi's two assists vs England didn't show
+  during the match, and *still* read a stale 2 (not 4) on a fresh page load
+  after full time. New `fetchRecentAssists` (espnStats) recomputes the true
+  total for the players who actually assisted in a live or recently-finished
+  match by summing their per-match `goalAssists` via the athlete eventlog — the
+  box scores update the instant a goal is posted — and `applyAssistOverrides`
+  REPLACES the lagging aggregate figure for just those players (no double-count,
+  authoritative on a cold load). The live match is excluded from the eventlog
+  sum and folded in from its box score instead. Reconciles for 24h after
+  kickoff, then trusts the caught-up aggregate; finished-match lines cache
+  permanently. Verified end-to-end against the live Argentina–England feed
+  (table showed Messi 8G/4A). New unit + integration tests. Spotted by Chester.
+  - _(Supersedes the first cut earlier today, which folded a live-only box-score
+    delta onto the aggregate — correct during play but it fell back to the stale
+    aggregate once the match was final, which is the case Chester hit.)_
 
 ## 2026-07-14
 - **Fix: live goals credited under the scorer's SHORT name split players in

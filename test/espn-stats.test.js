@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { fetchBootExtras, LEADERS_SOURCE, CACHE_TTL_MS } from '../src/services/espnStats.js'
+import { fetchBootExtras, fetchRecentAssists, LEADERS_SOURCE, CACHE_TTL_MS } from '../src/services/espnStats.js'
 
 // Minimal core-API documents. $refs are deliberately http:// (as ESPN serves
 // them) to prove the https rewrite happens.
@@ -111,5 +111,65 @@ describe('fetchBootExtras', () => {
 
   it('exposes the leaders source URL', () => {
     expect(LEADERS_SOURCE.url).toMatch(/^https:\/\/sports\.core\.api\.espn\.com\//)
+  })
+})
+
+describe('fetchRecentAssists', () => {
+  const COREH = `http://${CORE}`
+  // Authoritative per-match goalAssists, keyed by event then athlete id.
+  const perMatch = { 700: { 45843: 2 }, 701: { 45843: 2, 265653: 1 } }
+  const statDoc = (ga) => ({ splits: { categories: [{ name: 'off', stats: [{ name: 'goalAssists', value: ga }] }] } })
+  const logItem = (event, athlete) => ({
+    played: true,
+    event: { $ref: `${COREH}/events/${event}?lang=en` },
+    statistics: { $ref: `${COREH}/events/${event}/competitions/${event}/competitors/200/roster/${athlete}/statistics/0?lang=en` },
+  })
+  const eventlogs = {
+    45843: { events: { items: [logItem(700, 45843), logItem(701, 45843)] } },
+    265653: { events: { items: [logItem(701, 265653)] } },
+  }
+  // Match 701's box score: Messi 2, Rogers 1, and a non-assister that must be
+  // left alone.
+  const summary701 = {
+    keyEvents: [],
+    rosters: [{ roster: [
+      { athlete: { id: '45843', displayName: 'Lionel Messi' }, starter: true, stats: [{ name: 'goalAssists', value: 2 }] },
+      { athlete: { id: '265653', displayName: 'Morgan Rogers' }, starter: true, stats: [{ name: 'goalAssists', value: 1 }] },
+      { athlete: { id: '999', displayName: 'No Assist' }, starter: true, stats: [{ name: 'goalAssists', value: 0 }] },
+    ] }],
+  }
+  const route = (url) => {
+    if (url.includes('/summary')) return summary701
+    if (url.includes('/eventlog')) return eventlogs[/athletes\/(\d+)\/eventlog/.exec(url)[1]]
+    if (url.includes('/statistics')) {
+      const ev = /events\/(\d+)/.exec(url)[1]
+      const ath = /roster\/(\d+)/.exec(url)[1]
+      return statDoc(perMatch[ev]?.[ath] ?? 0)
+    }
+    throw new Error('unexpected url ' + url)
+  }
+
+  it('overrides with per-match totals summed across a finished recent match', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      expect(url.startsWith('https://')).toBe(true) // never mixed-content http
+      return { ok: true, json: async () => route(url) }
+    }))
+    const out = await fetchRecentAssists([{ espnId: '701', live: false }])
+    expect(out).toContainEqual({ name: 'Lionel Messi', assists: 4 }) // 2 prior + 2 this match
+    expect(out).toContainEqual({ name: 'Morgan Rogers', assists: 1 })
+    expect(out.find((e) => e.name === 'No Assist')).toBeUndefined()
+  })
+
+  it('for a LIVE match, skips the live event in the eventlog and folds it in from the box score', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({ ok: true, json: async () => route(url) })))
+    const out = await fetchRecentAssists([{ espnId: '701', live: true }])
+    // Messi: eventlog finals skip 701 → 700 (2), plus live box 701 (2) = 4 — no double-count.
+    expect(out.find((e) => e.name === 'Lionel Messi').assists).toBe(4)
+    expect(out.find((e) => e.name === 'Morgan Rogers').assists).toBe(1)
+  })
+
+  it('returns nothing without a recent match that has an event id', async () => {
+    expect(await fetchRecentAssists([])).toEqual([])
+    expect(await fetchRecentAssists([{ live: true }])).toEqual([])
   })
 })
