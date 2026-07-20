@@ -4,6 +4,23 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-07-20
+- **Tagged `v2026-final`** (annotated, at `99036e9`) as the tournament archive.
+- **Verified the tournament-conclusion features against real Final data** in a
+  browser, not a simulated feed: champions banner + confetti, the crowned
+  NextMatch block ("🇪🇸 Spain … Runners-up: 🇦🇷 Argentina"), the radial gold trail
+  along Spain's route with the glowing trophy and "— Champions" label, empty
+  dimming set, and a frozen Golden Boot (no in-action dots). Confirmed the poll
+  loop is stopped: 0 feed requests over 25s idle after the mount fetch.
+- **Fix: the `auto` checkbox no longer advertises a refresh that can't fire.**
+  Polling stops for good once the tournament concludes, but the box stayed
+  ticked and clickable. It now renders unticked + disabled + dimmed, with a
+  "Tournament complete" tooltip.
+- **`/verify` skill notes refreshed**: the Playwright browser cache gets cleared
+  periodically (install step added), `innerText` returns null on SVG `<text>`
+  so the radial needs `textContent`, and loose `[class*="…"]` globs produce
+  false passes (`active` matches the nav button). Champion-state selectors added.
+
 ## 2026-07-15
 - **Golden Boot: race trimmed to the top 10** (ties still included), down from 15.
 - **Golden Boot: minutes (and assists) now fill in for scorers outside ESPN's

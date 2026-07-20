@@ -811,6 +811,9 @@ select {
   font-size: 0.76rem; color: var(--text-faint); cursor: pointer;
   margin-left: auto;
 }
+/* Tournament over: the poll loop is stopped, so the toggle reads as inert. */
+.results-auto-off { cursor: default; opacity: 0.55; }
+.results-auto-off input { cursor: default; }
 .results-alerts {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 0.76rem; color: var(--text-faint); cursor: pointer;
