@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, within, fireEvent } from '@testing-library/react'
 import { FollowProvider } from '../src/context/follow.jsx'
 import { DetailContext } from '../src/context/detail.js'
@@ -27,19 +27,32 @@ const snapshot = MATCHES.map((m) =>
 )
 
 describe('Group games pop-up', () => {
+  // Pinned between Mexico's first game (M1, Jun 11) and their second (M28,
+  // Jun 18): on the real clock every fixture is in the past, so "Still to play"
+  // renders empty and the assertion below passes against an unconditional
+  // heading rather than against actual upcoming fixtures.
   it('shows only the selected team’s three matches when a team is clicked', () => {
-    renderStandings(withGroupAResult())
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-15T12:00:00Z'))
+    try {
+      renderStandings(withGroupAResult())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mexico' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Mexico' }))
 
-    const dialog = screen.getByRole('dialog')
-    expect(dialog.querySelector('.gg-head-team')).toHaveTextContent('Mexico')
-    // A team plays exactly three group-stage games.
-    expect(dialog.querySelectorAll('.gg-fixture')).toHaveLength(3)
-    // Played section shows the finished result; still-to-play lists the rest.
-    expect(within(dialog).getByText('Results')).toBeInTheDocument()
-    expect(within(dialog).getByText('Still to play')).toBeInTheDocument()
-    expect(within(dialog).getByText('2–1')).toBeInTheDocument()
+      const dialog = screen.getByRole('dialog')
+      expect(dialog.querySelector('.gg-head-team')).toHaveTextContent('Mexico')
+      // A team plays exactly three group-stage games.
+      expect(dialog.querySelectorAll('.gg-fixture')).toHaveLength(3)
+      // Played section shows the finished result; still-to-play lists the rest.
+      expect(within(dialog).getByText('Results')).toBeInTheDocument()
+      expect(within(dialog).getByText('Still to play')).toBeInTheDocument()
+      expect(within(dialog).getByText('2–1')).toBeInTheDocument()
+      // The section is genuinely populated: M28 and M53 are still ahead.
+      const upcoming = dialog.querySelectorAll('.md-section')[1]
+      expect(upcoming.querySelectorAll('.gg-fixture')).toHaveLength(2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('shows the whole group’s six matches when the group title is clicked', () => {

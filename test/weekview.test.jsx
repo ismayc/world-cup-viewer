@@ -39,13 +39,27 @@ describe('WeekView', () => {
     expect(screen.queryByText('3–0')).not.toBeInTheDocument()
   })
 
+  // Pinned mid-tournament so BOTH arrows are live. WeekView mounts on the week
+  // containing today; on the real clock that's the last week, where `Next ▶` is
+  // disabled and the forward click is a silent no-op.
   it('navigates between weeks with prev/next', () => {
-    renderWeek({ allMatches: MATCHES, shown: MATCHES })
-    const next = screen.getByRole('button', { name: /Next/ })
-    fireEvent.click(next)
-    const prev = screen.getByRole('button', { name: /Prev/ })
-    fireEvent.click(prev)
-    expect(screen.getByText(/match/)).toBeInTheDocument()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-20T16:00:00Z'))
+    try {
+      renderWeek({ allMatches: MATCHES, shown: MATCHES })
+      const next = screen.getByRole('button', { name: /Next/ })
+      const prev = screen.getByRole('button', { name: /Prev/ })
+      expect(next).toBeEnabled()
+      expect(prev).toBeEnabled()
+      const weekTitle = () => document.querySelector('.week-title').textContent
+      const start = weekTitle()
+      fireEvent.click(next)
+      expect(weekTitle()).not.toBe(start) // the week actually advanced
+      fireEvent.click(prev)
+      expect(weekTitle()).toBe(start)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('opens detail when a cell is clicked', () => {
