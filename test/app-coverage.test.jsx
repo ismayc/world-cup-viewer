@@ -109,13 +109,35 @@ describe('App coverage', () => {
     }
   })
 
+  // Pinned mid-tournament: the toggle is only interactive while matches remain
+  // (once concluded it renders unticked + disabled — covered below).
   it('toggles auto-refresh checkbox and the manual Refresh button', () => {
-    render(<App />)
-    const auto = screen.getByRole('checkbox', { name: /auto/i })
-    expect(auto).toBeChecked()
-    fireEvent.click(auto)
-    expect(auto).not.toBeChecked()
-    fireEvent.click(screen.getByRole('button', { name: /Refresh/ }))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-20T16:00:00Z'))
+    try {
+      render(<App />)
+      const auto = screen.getByRole('checkbox', { name: /auto/i })
+      expect(auto).toBeChecked()
+      expect(auto).toBeEnabled()
+      fireEvent.click(auto)
+      expect(auto).not.toBeChecked()
+      fireEvent.click(screen.getByRole('button', { name: /Refresh/ }))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('disables the auto-refresh toggle once the tournament has concluded', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-01T00:00:00Z')) // after the Final
+    try {
+      render(<App />)
+      const auto = screen.getByRole('checkbox', { name: /auto/i })
+      expect(auto).toBeDisabled()
+      expect(auto).not.toBeChecked()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('hydrates state from the URL (view, tz, hide, filters)', () => {

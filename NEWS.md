@@ -4,6 +4,50 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-07-20
+- **Champions banner.** Once the Final is FINAL (a live score stays provisional —
+  `decideMatch` enforces it), a celebration strip appears under the header:
+  "👑 🇪🇸 **Spain** are the 2026 World Champions! 🏆" with pure-CSS confetti that
+  respects `prefers-reduced-motion`. Clicking it opens the Final. Hidden in
+  spoiler-free mode — the champion is the biggest spoiler of all.
+- **The concluded "next match" banner now crowns the winner** (flag + name, with
+  runners-up beneath) instead of a generic end-of-tournament message, derived
+  from the resolved Final; falls back to the generic line until it's recorded.
+- **Auto-refresh polling stops once the tournament is over** (nothing live and no
+  non-voided match ahead). The one-shot mount fetch still runs, so a fresh load
+  post-Final still pulls the results.
+- **Retired the recurring monitors** — the daily schedule-drift check, hourly
+  feed-freshness backstop and OpenFootball score-autofill loop are now
+  manual-dispatch only.
+- **Pinned system time in three date-fragile smoke tests** so they stay green now
+  that the real clock is past the Final.
+- **Tagged `v2026-final`** (annotated, at `99036e9`) as the tournament archive.
+- **Verified the tournament-conclusion features against real Final data** in a
+  browser, not a simulated feed: champions banner + confetti, the crowned
+  NextMatch block ("🇪🇸 Spain … Runners-up: 🇦🇷 Argentina"), the radial gold trail
+  along Spain's route with the glowing trophy and "— Champions" label, empty
+  dimming set, and a frozen Golden Boot (no in-action dots). Confirmed the poll
+  loop is stopped: 0 feed requests over 25s idle after the mount fetch.
+- **Fix: the `auto` checkbox no longer advertises a refresh that can't fire.**
+  Polling stops for good once the tournament concludes, but the box stayed
+  ticked and clickable. It now renders unticked + disabled + dimmed, with a
+  "Tournament complete" tooltip.
+- **Swept the suite for time-fragile tests.** No test is at risk of breaking as
+  the clock advances — now that every fixture is in the past, App rendering is
+  stable. But three tests had gone semantically stale, passing without testing
+  what they claimed:
+  - `group-games-modal` asserted "Still to play" is present; that heading renders
+    unconditionally, and on the real clock the section is empty. Pinned to
+    2026-06-15 (between Mexico's 1st and 2nd games) and now asserts 2 fixtures.
+  - `weekview` / `status-week` clicked `Next ▶` to test week navigation, but
+    WeekView mounts on the week containing today — the last week — where that
+    button is disabled and the click was a silent no-op. Pinned to 2026-06-20
+    and now asserts the week title actually changes.
+- **`/verify` skill notes refreshed**: the Playwright browser cache gets cleared
+  periodically (install step added), `innerText` returns null on SVG `<text>`
+  so the radial needs `textContent`, and loose `[class*="…"]` globs produce
+  false passes (`active` matches the nav button). Champion-state selectors added.
+
 ## 2026-07-15
 - **Golden Boot: race trimmed to the top 10** (ties still included), down from 15.
 - **Golden Boot: minutes (and assists) now fill in for scorers outside ESPN's

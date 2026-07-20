@@ -526,10 +526,21 @@ export default function App() {
             {BACKUP_SOURCE.name}
           </a>
         </span>
-        <label className="results-auto">
+        {/* Once the tournament has concluded the poll loop is stopped for good,
+            so show the box unticked and disabled rather than advertising an
+            auto-refresh that can never fire. */}
+        <label
+          className={`results-auto${concluded ? ' results-auto-off' : ''}`}
+          title={
+            concluded
+              ? 'Tournament complete — auto-refresh is off for good'
+              : 'Re-fetch scores periodically (faster while a match is live)'
+          }
+        >
           <input
             type="checkbox"
-            checked={autoRefresh}
+            checked={autoRefresh && !concluded}
+            disabled={concluded}
             onChange={(e) => setAutoRefresh(e.target.checked)}
           />
           auto

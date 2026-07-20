@@ -72,12 +72,24 @@ describe('WeekView normal coverage', () => {
     expect(screen.queryByText('3–0')).not.toBeInTheDocument()
   })
 
+  // Pinned mid-tournament so `Next ▶` isn't disabled — see weekview.test.jsx.
   it('navigates between weeks (prev/next) and renders the legend', () => {
-    renderWeek(MATCHES)
-    fireEvent.click(screen.getByRole('button', { name: /Next/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Prev/ }))
-    expect(screen.getByText(/match/)).toBeInTheDocument()
-    expect(screen.getByText('Knockout')).toBeInTheDocument()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-20T16:00:00Z'))
+    try {
+      renderWeek(MATCHES)
+      const next = screen.getByRole('button', { name: /Next/ })
+      expect(next).toBeEnabled()
+      const weekTitle = () => document.querySelector('.week-title').textContent
+      const start = weekTitle()
+      fireEvent.click(next)
+      expect(weekTitle()).not.toBe(start)
+      fireEvent.click(screen.getByRole('button', { name: /Prev/ }))
+      expect(weekTitle()).toBe(start)
+      expect(screen.getByText('Knockout')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('opens detail on cell click', () => {
