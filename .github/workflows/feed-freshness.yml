@@ -6,8 +6,8 @@ name: Feed freshness
 # Manually runnable any time via the Actions tab ("Run workflow").
 
 on:
-  schedule:
-    - cron: '17 * * * *' # hourly, on the :17
+  # Retired after the 2026 tournament concluded — no more finals to wait on, so
+  # the hourly freshness backstop no longer runs on a cron. Manual dispatch only.
   workflow_dispatch:
 
 jobs:

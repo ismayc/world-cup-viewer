@@ -3,6 +3,7 @@ import { VENUES } from '../data/venues.js'
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { dayKey, formatTime, tzAbbrev, liveState, teamKickoffTooltip } from '../utils/time.js'
+import { decideMatch } from '../utils/bracketResolve.js'
 import { useFollow } from '../context/follow.jsx'
 import LiveBadge from './LiveBadge.jsx'
 
@@ -58,6 +59,27 @@ export default function NextMatch({ matches, tz }) {
   }
 
   if (!list.length) {
+    // Tournament over: crown the winner of the Final if it's decided, otherwise
+    // fall back to a generic message (final not yet recorded).
+    const final = matches.find((m) => m.stage === 'Final')
+    const result = final ? decideMatch(final) : null
+    if (result?.winner) {
+      return (
+        <div className="nextmatch done nextmatch-champ">
+          <span className="nm-champ-line">
+            <span className="nm-champ-trophy" aria-hidden="true">🏆</span>
+            <span className="nm-champ-flag">{FLAG_BY_TEAM[result.winner] || ''}</span>
+            <span className="nm-champ-name">{result.winner}</span>
+            <span className="nm-champ-title">2026 World Champions!</span>
+          </span>
+          {result.loser && (
+            <span className="nm-champ-runner">
+              Runners-up: {FLAG_BY_TEAM[result.loser] || ''} {result.loser}
+            </span>
+          )}
+        </div>
+      )
+    }
     return (
       <div className="nextmatch done">🏆 The tournament has concluded — champions crowned!</div>
     )

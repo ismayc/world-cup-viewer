@@ -149,6 +149,43 @@ data/source updates, deployment). Newest day on top.
   third-placed table (Ghana/Ecuador, split on fair-play points) showed as bare
   question marks. Marker glyphs now pin an explicit color-emoji font stack
   (`.tiebreak-mark` / `.emoji-glyph`).
+## 2026-07-06
+- **🏆 Tournament wrap-up.** The 2026 World Cup has concluded. The "next match"
+  banner now crowns the winner of the Final — champions' flag + name, with the
+  runners-up beneath — deriving it from the resolved Final result
+  (`NextMatch` + `decideMatch`), falling back to the generic concluded message
+  until the Final is recorded.
+- **Live-polling freezes when the tournament is over.** Once nothing is live and
+  no non-voided match remains ahead, the auto-refresh interval stops (the one-shot
+  mount fetch still runs, so a fresh load post-final still shows results). No more
+  pointless 2-minute polls against the feeds. (`concluded` gate in `App`.)
+- **Retired the tournament-time automation.** The daily FIFA schedule-drift check,
+  the hourly feed-freshness backstop and the OpenFootball score-autofill loop no
+  longer run on a cron now that the schedule and every final are settled — each is
+  kept as manual `workflow_dispatch` only.
+- **Mexico v England (M92) start delayed 1 hour → 21:00 ET (weather).** Storms and
+  lightning at Estadio Azteca pushed the Round-of-16 kickoff back an hour;
+  confirmed via broadcast + press. Card note reflects the weather cause; drift
+  fixture kept in sync.
+
+## 2026-07-05
+- **Path to the Final highlight (Bracket + Radial).** Pick a knockout team — from a
+  dropdown or a one-click chip for a followed team — and its route through the
+  bracket lights up (R32 → Final) while everything off-route dims, on both bracket
+  views, with the selection shared and persisted. A status line reads "Up next —
+  Round of 16", "Through to the Quarterfinal", "Out — lost in the …" or
+  "🏆 Champions!". The route is traced by the winner-advancement edges and stops at
+  the elimination match once a team is knocked out. (`pathToFinal`, `PathPicker`,
+  `PathContext`.)
+- **Potential matchups on the Week view.** The Week grid and its day pop-up now
+  expand an unresolved knockout slot into its candidate pairing, matching the
+  Schedule and Bracket. (`FeederPair` in `WeekView` / `DayMatchesModal`.)
+
+## 2026-07-04
+- **Potential matchups on the Schedule.** An unresolved knockout slot ("Winner
+  Match N") on a Schedule card now shows the two candidate teams of the feeding
+  tie, joined by a slash, the moment that tie has both real teams — the same read
+  the Bracket gives. Shared `feederTeams` + `FeederPair`. (`MatchCard`.)
 
 ## 2026-07-01
 - **No premature "Delayed" badge at kickoff.** ESPN flips a match to

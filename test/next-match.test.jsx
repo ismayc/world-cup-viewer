@@ -31,6 +31,32 @@ describe('NextMatch', () => {
     expect(screen.getByText(/tournament has concluded/)).toBeInTheDocument()
   })
 
+  it('crowns the champion (and runners-up) once the Final is decided', () => {
+    vi.setSystemTime(new Date('2026-08-01T00:00:00Z'))
+    const final = {
+      num: 104,
+      stage: 'Final',
+      t1: 'Argentina',
+      t2: 'France',
+      venue: 'metlife',
+      ko: '2026-07-19T15:00:00-04:00',
+      score: [3, 2],
+    }
+    renderNM([final])
+    expect(screen.getByText('Argentina')).toBeInTheDocument()
+    expect(screen.getByText('2026 World Champions!')).toBeInTheDocument()
+    expect(screen.getByText(/Runners-up:.*France/)).toBeInTheDocument()
+  })
+
+  it('falls back to the generic message when the Final is not yet decided', () => {
+    vi.setSystemTime(new Date('2026-08-01T00:00:00Z'))
+    // Final in the past but no score recorded → no champion to crown.
+    const final = { num: 104, stage: 'Final', t1: 'Argentina', t2: 'France', venue: 'metlife', ko: '2026-07-19T15:00:00-04:00' }
+    renderNM([final])
+    expect(screen.getByText(/tournament has concluded/)).toBeInTheDocument()
+    expect(screen.queryByText('2026 World Champions!')).not.toBeInTheDocument()
+  })
+
   it('shows the next upcoming match with a multi-day countdown', () => {
     // Pin before the tournament so the opener is the next match (days > 0).
     vi.setSystemTime(new Date('2026-06-01T12:00:00Z'))

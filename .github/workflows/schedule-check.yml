@@ -16,8 +16,8 @@ name: Daily schedule check
 # Secrets: MAIL_USERNAME + MAIL_PASSWORD (Gmail App Password) for the email.
 
 on:
-  schedule:
-    - cron: '0 12 * * *'
+  # Retired after the 2026 tournament concluded — the schedule is final, so the
+  # daily FIFA drift check no longer runs on a cron. Still runnable on demand.
   workflow_dispatch:
 
 permissions:

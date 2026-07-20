@@ -77,12 +77,25 @@ describe('App renders (smoke test)', () => {
   })
 
   it('opens the match-detail modal from a card', () => {
-    render(<App />)
-    fireEvent.click(screen.getAllByRole('button', { name: /Details/ })[0])
-    const dialog = screen.getByRole('dialog')
-    expect(dialog).toBeInTheDocument()
-    expect(within(dialog).getByText(/How to watch/)).toBeInTheDocument()
-    expect(within(dialog).getByText(/Stadium local/)).toBeInTheDocument()
+    // Pin mid-tournament so the schedule shows match cards regardless of the
+    // real date (post-tournament, every day is collapsed/complete).
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-20T16:00:00Z'))
+    try {
+      render(<App />)
+      // Expand a collapsed day if no card is currently visible.
+      if (screen.queryAllByRole('button', { name: /Details/ }).length === 0) {
+        const toggle = document.querySelector('.day-toggle')
+        if (toggle) fireEvent.click(toggle)
+      }
+      fireEvent.click(screen.getAllByRole('button', { name: /Details/ })[0])
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toBeInTheDocument()
+      expect(within(dialog).getByText(/How to watch/)).toBeInTheDocument()
+      expect(within(dialog).getByText(/Stadium local/)).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('toggles the color theme', () => {
@@ -94,8 +107,16 @@ describe('App renders (smoke test)', () => {
   })
 
   it('shows a NextMatch countdown hero', () => {
-    render(<App />)
-    expect(screen.getByText(/Next match|Your next match|Live now/)).toBeInTheDocument()
+    // Pin mid-tournament so there's an upcoming match to count down to (post-
+    // tournament the hero shows the champions banner instead).
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-20T16:00:00Z'))
+    try {
+      render(<App />)
+      expect(screen.getByText(/Next match|Your next match|Live now/)).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('shows past days folded by default, expandable per-day, and hideable entirely', () => {

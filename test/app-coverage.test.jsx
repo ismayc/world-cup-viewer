@@ -285,6 +285,24 @@ describe('App coverage', () => {
     }
   })
 
+  it('stops polling once the tournament has concluded', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-01T00:00:00Z')) // after the Final — nothing left to play
+    try {
+      global.fetch = fetchWith([])
+      render(<App />)
+      // Let the one-shot mount fetches settle.
+      await vi.advanceTimersByTimeAsync(1000)
+      const before = global.fetch.mock.calls.length
+      // Advance well past the slow (2 min) poll interval: no new fetches, because
+      // the auto-refresh interval is never armed once the tournament is over.
+      await vi.advanceTimersByTimeAsync(200000)
+      expect(global.fetch.mock.calls.length).toBe(before)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // --- goal alerts --------------------------------------------------------
   // Toasts don't need Notification permission, so enabling never blocks on it.
   it('toggleGoalAlerts: no Notification support -> still enables (toasts-only)', async () => {
@@ -503,11 +521,23 @@ describe('App coverage', () => {
   })
 
   it('opens detail modal and closes it', () => {
-    render(<App />)
-    fireEvent.click(screen.getAllByRole('button', { name: /Details/ })[0])
-    const dialog = screen.getByRole('dialog')
-    expect(dialog).toBeInTheDocument()
-    fireEvent.click(within(dialog).getByRole('button', { name: /Close/ }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    // Pin mid-tournament so match cards are on the schedule regardless of the
+    // real date (post-tournament every day is collapsed/complete).
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-20T16:00:00Z'))
+    try {
+      render(<App />)
+      if (screen.queryAllByRole('button', { name: /Details/ }).length === 0) {
+        const toggle = document.querySelector('.day-toggle')
+        if (toggle) fireEvent.click(toggle)
+      }
+      fireEvent.click(screen.getAllByRole('button', { name: /Details/ })[0])
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toBeInTheDocument()
+      fireEvent.click(within(dialog).getByRole('button', { name: /Close/ }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -227,6 +227,14 @@ export default function App() {
   }, [results, live, history, backup])
   const finishedCount = useMemo(() => matches.filter((m) => m.score).length, [matches])
   const liveCount = useMemo(() => matches.filter((m) => m.live).length, [matches])
+  // Tournament over: nothing live and no non-voided match still to come. Once
+  // true there's nothing left for the feeds to add, so we stop the auto-refresh
+  // interval (the one-shot mount fetch still runs, so a fresh load post-final
+  // still gets the results).
+  const concluded = useMemo(
+    () => liveCount === 0 && !matches.some((m) => !m.voided && new Date(m.ko).getTime() > Date.now()),
+    [matches, liveCount],
+  )
   // The group-stage tools (Scenarios, R32 Outlook) drop out of the nav a day
   // after the last group game, once the knockouts take over.
   const archived = useMemo(() => groupStageArchived(matches), [matches])
@@ -256,11 +264,12 @@ export default function App() {
 
   // Auto-refresh: poll fast (30s) while a match is live so the score and clock
   // track ESPN closely, and slow (2 min) otherwise to go easy on the feeds.
+  // Once the tournament has concluded there's nothing left to fetch, so we stop.
   useEffect(() => {
-    if (!autoRefresh) return
+    if (!autoRefresh || concluded) return
     const id = setInterval(loadResults, liveCount > 0 ? LIVE_REFRESH_MS : REFRESH_MS)
     return () => clearInterval(id)
-  }, [autoRefresh, loadResults, liveCount])
+  }, [autoRefresh, loadResults, liveCount, concluded])
 
   // Persist goal-alert preferences.
   useEffect(() => {

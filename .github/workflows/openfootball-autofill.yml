@@ -21,8 +21,8 @@ name: OpenFootball autofill
 # MAIL_USERNAME + MAIL_PASSWORD (Gmail App Password) for notifications — optional.
 
 on:
-  schedule:
-    - cron: '*/15 * * * *' # coarse; the in-job window gate decides when to actually loop
+  # Retired after the 2026 tournament concluded — every final is synced, so the
+  # score-sync loop no longer runs on a cron. Manual dispatch only.
   workflow_dispatch:
     inputs:
       dry_run:
