@@ -201,3 +201,102 @@ describe('RadialBracket', () => {
     expect(pending.container.querySelectorAll('.champ-trail').length).toBe(0)
   })
 })
+
+describe('RadialBracket — keyboard and the rest of the ring', () => {
+  // Every clickable node in the ring is also a focusable button, so the same
+  // matchups have to open from the keyboard. Space and Enter both activate;
+  // anything else must be left alone so the page still scrolls.
+  const keyOpens = (el, key) => {
+    fireEvent.keyDown(el, { key })
+  }
+
+  it('opens a matchup from the keyboard with Enter and Space, and ignores other keys', () => {
+    const { container, openDetail } = renderRB(playedBracket())
+    const group = container.querySelector('.rb-matchup.rb-click')
+    expect(group).toBeTruthy()
+
+    keyOpens(group, 'Enter')
+    expect(openDetail).toHaveBeenCalledTimes(1)
+    keyOpens(group, ' ')
+    expect(openDetail).toHaveBeenCalledTimes(2)
+    // Arrow keys and Tab belong to the page, not to this control.
+    keyOpens(group, 'ArrowDown')
+    keyOpens(group, 'Tab')
+    expect(openDetail).toHaveBeenCalledTimes(2)
+  })
+
+  it('opens a team node from the keyboard too', () => {
+    const { container, openDetail } = renderRB(playedBracket())
+    const node = container.querySelector('.rb-node.rb-click')
+    expect(node).toBeTruthy()
+    keyOpens(node, 'Enter')
+    expect(openDetail).toHaveBeenCalledTimes(1)
+    keyOpens(node, ' ')
+    expect(openDetail).toHaveBeenCalledTimes(2)
+    keyOpens(node, 'Escape')
+    expect(openDetail).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('RadialBracket — every clickable, and the shapes it guards against', () => {
+  it('opens the detail from every clickable node and matchup, by mouse and by key', () => {
+    // The ring, the final, and the third-place play-off each wire their own
+    // opener, so exercising one of them proves nothing about the others. Drive
+    // all of them, both ways round, and count the openings rather than trusting
+    // that the first one found is representative.
+    const { container, openDetail } = renderRB(playedBracket())
+    const clickables = [
+      ...container.querySelectorAll('.rb-node.rb-click'),
+      ...container.querySelectorAll('.rb-matchup.rb-click'),
+    ]
+    expect(clickables.length).toBeGreaterThan(8)
+
+    for (const el of clickables) fireEvent.click(el)
+    const afterClicks = openDetail.mock.calls.length
+    expect(afterClicks).toBe(clickables.length)
+
+    for (const el of clickables) {
+      fireEvent.keyDown(el, { key: 'Enter' })
+      fireEvent.keyDown(el, { key: ' ' })
+      fireEvent.keyDown(el, { key: 'ArrowRight' }) // must be ignored
+    }
+    expect(openDetail.mock.calls.length).toBe(afterClicks + clickables.length * 2)
+  })
+
+  it('notes extra time on a tie that went to a.e.t. without penalties', () => {
+    // A knockout can be settled in extra time on its own; the score then carries
+    // an "aet" note rather than a shootout line.
+    const played = playedBracket().map((m) => {
+      if (m.stage === 'Group' || !Array.isArray(m.score)) return m
+      const { pens, ...rest } = m
+      return { ...rest, score: [2, 1], aet: true }
+    })
+    const { container } = renderRB(played)
+    const scores = [...container.querySelectorAll('.rb-score')].map((t) => t.textContent)
+    expect(scores.some((s) => /aet$/.test(s))).toBe(true)
+    expect(scores.some((s) => /p\d/.test(s))).toBe(false)
+  })
+
+  it('notes a shootout on a tie decided from the spot', () => {
+    // The other half of the same line: penalties are appended in place of the
+    // a.e.t. note, so a ring full of shootouts shows p-scores and no "aet".
+    const played = playedBracket().map((m) =>
+      m.stage === 'Group' || !Array.isArray(m.score)
+        ? m
+        : { ...m, score: [1, 1], aet: true, pens: [4, 2] },
+    )
+    const { container } = renderRB(played)
+    const scores = [...container.querySelectorAll('.rb-score')].map((t) => t.textContent)
+    expect(scores.some((s) => /p4–2$/.test(s))).toBe(true)
+    expect(scores.some((s) => /aet$/.test(s))).toBe(false)
+  })
+
+  it('renders a ring whose matches are not on the board', () => {
+    // The ring is laid out from the format, so a board missing its knockout
+    // records still has to draw an empty bracket rather than throw.
+    const groupOnly = MATCHES.filter((m) => m.stage === 'Group')
+    const { container } = renderRB(groupOnly)
+    expect(container.querySelector('.rb-svg')).toBeTruthy()
+    expect(container.querySelectorAll('.rb-node.rb-click').length).toBe(0)
+  })
+})

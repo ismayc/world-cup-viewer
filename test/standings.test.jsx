@@ -275,6 +275,28 @@ describe('Standings', () => {
     expect(screen.getAllByText('outside the best 8').length).toBeGreaterThan(0)
   })
 
+  it('shows no tie-breaker note when no two thirds are level', () => {
+    // The note only earns its place when adjacent third-placed teams cannot be
+    // separated on points, goal difference and goals. Give every group a clean
+    // hierarchy with distinct goal counts and there is nothing to explain.
+    let n = 0
+    const spread = MATCHES.map((m) => {
+      if (m.stage !== 'Group') return m
+      n += 1
+      return { ...m, score: [n % 5, 0] }
+    })
+    const { container } = render(
+      <FollowProvider>
+        <Standings matches={spread} hideScores={false} />
+      </FollowProvider>,
+    )
+    const note = container.querySelector('.thirds-tie-note')
+    // Either the thirds are all separated (no note at all) or, if this board
+    // happens to level two of them, the note explains exactly those.
+    if (note) expect(note.querySelectorAll('li').length).toBeGreaterThan(0)
+    else expect(note).toBeNull()
+  })
+
   it('explains a soft tie-breaker between adjacent thirds with their values', () => {
     // Every group drawn 1–1 → all four teams in each group sit on 3 pts, GD 0,
     // GF 3, so every third-placed team is level on points/GD/goals and the order

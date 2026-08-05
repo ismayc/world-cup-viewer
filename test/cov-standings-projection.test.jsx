@@ -64,3 +64,36 @@ describe('Standings — projected-matchup dest selector', () => {
     clickTeam(container, 'South Korea') // top2, current rank 2 → proj.second
   })
 })
+
+describe('Standings — projection off, and a clinch the table cannot place', () => {
+  it('hides the "as it stands" block when the projection is switched off', () => {
+    const scores = Object.assign({}, ...Object.values(FINAL_GROUP_RESULTS).map((r) => r.scores))
+    const complete = MATCHES.map((m) => (scores[m.num] ? { ...m, score: scores[m.num] } : m))
+
+    const { container: on } = renderWith(complete)
+    expect(on.querySelector('.as-it-stands')).toBeTruthy()
+
+    // The preference persists across visits, so a returning viewer who turned it
+    // off last time gets a table with no projection attached.
+    localStorage.setItem('wc2026:asItStands', '0')
+    const { container: off } = renderWith(complete)
+    expect(off.querySelector('.as-it-stands')).toBeNull()
+    localStorage.removeItem('wc2026:asItStands')
+  })
+
+  it('offers no projected matchup for a clinched team the group table does not list', () => {
+    // clinch arrives as a prop from App. If it ever names a team that is not in
+    // the computed group rows — a stale verdict against a refreshed board — the
+    // projection has nothing to hang off and must simply not be offered.
+    const scores = Object.assign({}, ...Object.values(FINAL_GROUP_RESULTS).map((r) => r.scores))
+    const complete = MATCHES.map((m) => (scores[m.num] ? { ...m, score: scores[m.num] } : m))
+    const clinch = { ...computeClinch(complete), 'Nowhere United': 'won-group' }
+    const { container } = render(
+      <FollowProvider>
+        <Standings matches={complete} hideScores={false} clinch={clinch} />
+      </FollowProvider>,
+    )
+    // The phantom team is not in any group, so nothing about it is rendered.
+    expect(container.textContent).not.toMatch(/Nowhere United/)
+  })
+})

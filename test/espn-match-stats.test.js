@@ -51,6 +51,38 @@ describe('parseSummary', () => {
     expect(byName['full ninety'].minutes).toBe(120)
     expect(byName['super sub'].minutes).toBe(60)
   })
+
+  it('reads a minute off the display label, and skips events and entries it cannot name', () => {
+    const doc = {
+      keyEvents: [
+        // No running-clock seconds, so the minute comes from the label instead.
+        {
+          type: { text: 'Substitution' },
+          clock: { displayValue: "73'" },
+          participants: [{ athlete: { displayName: 'Late Sub' } }, { athlete: {} }],
+        },
+        // Neither a clock value nor a readable label: nothing to place it at.
+        { type: { text: 'Substitution' }, clock: { displayValue: 'HT' }, participants: [] },
+        // On at 30, off at 75 — two minutes for one player, which is the only
+        // time the per-player minute list has anything to sort.
+        sub(30, 'Two Spell'),
+        sub(75, 'Two Spell'),
+      ],
+      rosters: [
+        roster([
+          { name: 'Late Sub', subbedIn: true },
+          { name: 'Two Spell', subbedIn: true, subbedOut: true },
+        ]),
+        // A roster entry with no athlete name at all is skipped rather than keyed
+        // under an empty string, which would collide with the next nameless one.
+        { roster: [{ athlete: {}, starter: true }] },
+      ],
+    }
+    const { byName } = parseSummary(doc)
+    expect(byName['late sub'].minutes).toBe(90 - 73)
+    expect(byName['two spell'].minutes).toBe(75 - 30)
+    expect(byName['']).toBeUndefined()
+  })
 })
 
 describe('fetchMatchLines', () => {
@@ -68,6 +100,11 @@ describe('fetchMatchLines', () => {
     expect(f).toHaveBeenCalledTimes(1) // cached
     await fetchMatchLines('760512', { final: false })
     expect(f).toHaveBeenCalledTimes(2) // live → fresh
+  })
+
+  it('throws when the summary endpoint answers with an error status', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503 })))
+    await expect(fetchMatchLines('760999', { final: false })).rejects.toThrow(/HTTP 503/)
   })
 
   it('rejects without an event id', async () => {
@@ -95,6 +132,15 @@ describe('applyLive carries the ESPN event id onto merged matches', () => {
     const [m] = applyLive([base], liveMap)
     expect(m.espnId).toBe('760512')
     expect(m.score).toEqual([2, 0])
+  })
+
+  it('carries a shootout result through the overlay', () => {
+    // A knockout settled from the spot: the penalties travel with the merged
+    // match, copied rather than shared with the feed record.
+    const shootout = { ...rec, score: [1, 1], pens: [4, 2] }
+    const [m] = applyLive([base], new Map([[pairKey(base.t1, base.t2), shootout]]))
+    expect(m.pens).toEqual([4, 2])
+    expect(m.pens).not.toBe(shootout.pens)
   })
 
   it('on the OpenFootball-already-scored branch', () => {

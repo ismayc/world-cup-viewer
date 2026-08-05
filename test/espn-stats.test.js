@@ -105,6 +105,21 @@ describe('fetchBootExtras', () => {
     expect(extras[0].name).toBe('Lionel Messi')
   })
 
+  it('drops an athlete the feed will not name', async () => {
+    // A leader whose athlete document comes back without a display name has
+    // nothing to key the boot table by, so the row is dropped rather than shown
+    // as a blank line beside a goal tally.
+    const f = mockFetch()
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (/athletes\/286831(\?|$)/.test(url) || (url.includes('286831') && !url.includes('/statistics'))) {
+        return { ok: true, json: async () => ({}) }
+      }
+      return f(url)
+    }))
+    const extras = await fetchBootExtras()
+    expect(extras.map((e) => e.name)).toEqual(['Lionel Messi'])
+  })
+
   it('propagates a leaders failure (caller treats it as best-effort)', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404 })))
     await expect(fetchBootExtras()).rejects.toThrow(/HTTP 404/)
@@ -175,6 +190,42 @@ describe('fetchRecentPlayerStats', () => {
     const out = await fetchRecentPlayerStats([{ espnId: '701', live: true }], wantKeys)
     // Messi assists: eventlog finals skip 701 → 700 (2), plus live box 701 (2) = 4. Minutes = finals only (90).
     expect(out.find((e) => e.name === 'Lionel Messi')).toMatchObject({ assists: 4, minutes: 90 })
+  })
+
+  it('trusts a cached per-match line, skips an appearance-less log item, and survives unreadable cache', async () => {
+    // A cached entry short-circuits the per-match statistics request entirely.
+    localStorage.setItem('wc2026:matchStat:700:45843', JSON.stringify({ a: 9, m: 9 }))
+    // …and one written by an older version (or half-flushed) is treated as absent
+    // rather than thrown out of the whole reconciliation.
+    localStorage.setItem('wc2026:matchStat:700:219713', 'not json')
+    const seen = []
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      seen.push(url)
+      if (url.includes('/eventlog')) {
+        const id = /athletes\/(\d+)\/eventlog/.exec(url)[1]
+        const base = eventlogs[id].events.items
+        // An unplayed call-up contributes nothing and is never fetched for.
+        return { ok: true, json: async () => ({ events: { items: [...base, { played: false }] } }) }
+      }
+      return { ok: true, json: async () => route(url) }
+    }))
+    const out = await fetchRecentPlayerStats([{ espnId: '701', live: false }], wantKeys)
+    const messi = out.find((e) => e.name === 'Lionel Messi')
+    // 9 from the cache for match 700 instead of the real 2, proving it was used.
+    expect(messi).toMatchObject({ assists: 9 + 2, minutes: 9 + 95 })
+    expect(seen.some((u) => u.includes('/events/700/') && u.includes('45843'))).toBe(false)
+    // The unreadable entry was refetched rather than poisoning the total.
+    expect(out.find((e) => e.name === 'Lautaro Martínez')).toMatchObject({ assists: 1 })
+  })
+
+  it('drops an athlete whose per-match reconciliation fails, keeping the rest', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url.includes('/eventlog') && url.includes('219713')) return { ok: false, status: 500 }
+      return { ok: true, json: async () => route(url) }
+    }))
+    const out = await fetchRecentPlayerStats([{ espnId: '701', live: false }], wantKeys)
+    expect(out.find((e) => e.name === 'Lionel Messi')).toBeTruthy()
+    expect(out.find((e) => e.name === 'Lautaro Martínez')).toBeUndefined()
   })
 
   it('returns nothing without recent matches or wanted scorers', async () => {

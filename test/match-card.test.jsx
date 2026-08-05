@@ -123,6 +123,15 @@ describe('MatchCard team follow + clinch + slot tooltip', () => {
     expect(screen.getByText(/Won group/)).toBeInTheDocument()
   })
 
+  it('shows the runner-up slot tooltip', () => {
+    // A clinched runner-up feeds a different Round-of-32 tie than the winner, so
+    // the tooltip has to name that slot rather than repeat the winner's.
+    renderCard({ clinch: { Mexico: 'runner-up' } })
+    expect(screen.getByText('Mexico').getAttribute('title')).toMatch(
+      /Clinched Group A runner-up → Round of 32/,
+    )
+  })
+
   it('shows the eliminated slot tooltip', () => {
     renderCard({ clinch: { Mexico: 'eliminated' } })
     expect(screen.getByText('Mexico').getAttribute('title')).toMatch(

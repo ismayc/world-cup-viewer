@@ -217,6 +217,42 @@ describe('StatsView', () => {
   })
 })
 
+describe('StatsView enrichment failures', () => {
+  // Both enrichment calls are best-effort: the boot table is built from the
+  // committed goals and stands on its own. A refused or offline request must
+  // leave the rendered table exactly as it was, not blank it or surface an error.
+  it('keeps the table when the interval refresh is refused', async () => {
+    vi.useFakeTimers()
+    try {
+      const live = [...matches, { num: 61, stage: 'SF', t1: 'Japan', t2: 'Colombia', score: [0, 0], live: { minute: 10 }, goals: { t1: [], t2: [] } }]
+      render(<StatsView matches={live} hideScores={false} />)
+      const before = screen.getAllByRole('row').length
+      fetchBootExtras.mockImplementation(async () => {
+        throw new Error('offline')
+      })
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1000)
+      expect(fetchBootExtras).toHaveBeenCalledTimes(2)
+      expect(screen.getAllByRole('row')).toHaveLength(before)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps the table when the per-match reconciliation is refused', async () => {
+    fetchRecentPlayerStats.mockImplementation(async () => {
+      throw new Error('offline')
+    })
+    const recent = [
+      ...matches,
+      { num: 62, stage: 'SF', t1: 'Japan', t2: 'Colombia', ko: recentKo(), score: [1, 0], espnId: 'e62', goals: { t1: [{ name: 'Hinata Miyazawa' }], t2: [] } },
+    ]
+    render(<StatsView matches={recent} hideScores={false} />)
+    await vi.waitFor(() => expect(fetchRecentPlayerStats).toHaveBeenCalled())
+    // The committed aggregate still stands behind the failed override.
+    expect(screen.getByText('Hinata Miyazawa')).toBeInTheDocument()
+  })
+})
+
 describe('StatsView tile drill-down', () => {
   const knockout = [
     ...matches,

@@ -28,6 +28,44 @@ beforeEach(() => {
   global.URL.revokeObjectURL = vi.fn()
 })
 
+describe('MatchDetail tale of the tape', () => {
+  // The comparison is a knockout-round feature between two named teams, and it
+  // only appears once both sides actually have a record behind them — two empty
+  // records say nothing, so the section is left out rather than rendered blank.
+  const group = MATCHES.filter((m) => m.stage === 'Group')
+  const [teamA, teamB] = [group[0].t1, group[0].t2]
+  const base = {
+    num: 9000,
+    stage: 'QF',
+    t1: teamA,
+    t2: teamB,
+    ko: '2027-01-01T15:00:00.000Z',
+    venue: group[0].venue,
+  }
+  // One earlier, finished match for each side, so both carry a record into it.
+  const earlier = (num, t1, t2, score) => ({
+    num,
+    stage: 'Group',
+    group: group[0].group,
+    t1,
+    t2,
+    ko: '2026-12-01T15:00:00.000Z',
+    venue: group[0].venue,
+    score,
+  })
+
+  it('omits the comparison before either side has played', () => {
+    renderDetail({ match: base, allMatches: [base] })
+    expect(screen.queryByText('W–D–L')).not.toBeInTheDocument()
+  })
+
+  it('shows the comparison once both sides have a record', () => {
+    const withForm = [base, earlier(9001, teamA, teamB, [2, 0]), earlier(9002, teamB, teamA, [1, 1])]
+    renderDetail({ match: base, allMatches: withForm })
+    expect(screen.getByText('W–D–L')).toBeInTheDocument()
+  })
+})
+
 describe('MatchDetail null + basic render', () => {
   it('returns null when no match is given', () => {
     const { container } = render(

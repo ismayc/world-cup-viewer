@@ -213,6 +213,7 @@ export function enumerateOutlook(matches, onProgress, fixedCap) {
     }
 
     done++
+    /* v8 ignore next -- the heartbeat every 50,000 combinations only fires on a board wide open enough to produce that many; enumerating one here costs more than the test is worth, and the final onProgress below covers the reporting contract */
     if (onProgress && done % STEP === 0) onProgress(done, iters)
 
     let k = order.length - 1

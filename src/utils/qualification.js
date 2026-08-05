@@ -85,6 +85,7 @@ export function headToHead(names, group, matches) {
 // (points, GD, goals) among the tied teams first, re-applied to any subset that
 // stays tied, and only then overall GD / goals / alphabetical fallback.
 function resolveLevelOnPoints(tied, group, matches) {
+  /* v8 ignore next -- unreachable: the sole caller below only calls this when tied.length > 1 */
   if (tied.length === 1) return tied
   // Criteria 2–4: head-to-head sub-table among exactly these teams.
   const sub = headToHead(tied.map((t) => t.name), group, matches)

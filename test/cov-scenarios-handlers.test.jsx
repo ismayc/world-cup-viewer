@@ -33,3 +33,20 @@ describe('ScenariosView — quick-pick + stepper handlers', () => {
     fireEvent.click(plus[plus.length - 1])
   })
 })
+
+describe('ScenariosView — every remaining match picked', () => {
+  it('marks every projected matchup confirmed once the picks decide the whole group stage', () => {
+    render(<ScenariosView matches={snapshot} />)
+
+    // Quick-pick a home win for every remaining fixture. With nothing left
+    // undecided on the synthetic board, the bracket it projects can no longer
+    // change, so each matchup is confirmed outright rather than being checked
+    // pair by pair.
+    // getAllByTitle(/win$/i) yields [home0, away0, home1, away1, …]; re-query on
+    // each pass because picking a fixture re-renders its row.
+    const count = screen.getAllByTitle(/win$/i).length
+    for (let i = 0; i < count; i += 2) fireEvent.click(screen.getAllByTitle(/win$/i)[i])
+
+    expect(screen.queryAllByLabelText('Matchup confirmed').length).toBeGreaterThan(0)
+  })
+})

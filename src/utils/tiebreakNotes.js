@@ -15,6 +15,7 @@ import { rankGroup, headToHead } from './qualification.js'
 // Within a head-to-head-irreducible cluster, record adjacent pairs that overall
 // GD/GF couldn't separate (so conduct or FIFA ranking decided the order).
 function markCluster(tied, group, matches, notes) {
+  /* v8 ignore next -- unreachable: softTiebreaks only calls this for a cluster of 2 or more */
   if (tied.length < 2) return
   const sub = headToHead(tied.map((t) => t.name), group, matches)
   const sorted = [...tied].sort(

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, within, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, within, waitFor, act } from '@testing-library/react'
 import App from '../src/App.jsx'
 import { FollowProvider } from '../src/context/follow.jsx'
 import { LIVE_SOURCE } from '../src/services/espn.js'
@@ -368,6 +368,66 @@ describe('App coverage', () => {
     }
   })
 
+  it('raises an on-page toast with no notification permission, stacks the next goal, and suppresses a desynced flood', async () => {
+    // No Notification at all: the on-page toast is the whole point of raising
+    // both, because a focused tab is exactly when the OS tends to mute them.
+    localStorage.setItem('wc2026:goalAlerts', JSON.stringify({ enabled: true, scope: 'all' }))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-11T19:00:00Z'))
+    try {
+      let goals = []
+      global.fetch = vi.fn(async (url) => {
+        if (typeof url === 'string' && url.startsWith(LIVE_SOURCE.url)) {
+          return {
+            ok: true,
+            json: async () => ({
+              events: [
+                espnEvent({
+                  home: 'Mexico',
+                  away: 'South Africa',
+                  date: '2026-06-11T19:00:00Z',
+                  state: 'in',
+                  hs: String(goals.length),
+                  as: '0',
+                  goals,
+                }),
+              ],
+            }),
+          }
+        }
+        return { ok: true, json: async () => ({ events: [] }) }
+      })
+      render(<App />)
+      await vi.waitFor(() => expect(screen.getByText(/live now/)).toBeInTheDocument())
+
+      goals = [{ side: 'home', name: 'First', minute: 12 }]
+      await vi.advanceTimersByTimeAsync(31000)
+      const region = () => screen.getByRole('region', { name: /Goal alerts/ })
+      await vi.waitFor(() => expect(region().textContent).toMatch(/First/))
+
+      // A second goal arrives while the first toast is still up. Toasts retire
+      // after 8s and the live poll is 30s apart, so the only way two share the
+      // screen is a manual refresh — which is exactly when the new batch has to
+      // be diffed against what is already showing rather than replacing it.
+      goals = [...goals, { side: 'home', name: 'Second', minute: 20 }]
+      fireEvent.click(document.querySelector('.results-refresh'))
+      await vi.advanceTimersByTimeAsync(100)
+      await vi.waitFor(() => expect(region().textContent).toMatch(/Second/))
+      expect(region().textContent).toMatch(/First/)
+
+      // A feed gap restoring a pile of goals at once is a desync, not six goals
+      // in thirty seconds — it is dropped rather than spammed onto the page.
+      const before = region().textContent
+      goals = [...goals, ...Array.from({ length: 6 }, (_, i) => ({ side: 'home', name: `Flood${i}`, minute: 30 + i }))]
+      fireEvent.click(document.querySelector('.results-refresh'))
+      await vi.advanceTimersByTimeAsync(100)
+      expect(region().textContent).toBe(before)
+      expect(region().textContent).not.toMatch(/Flood/)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('toggleGoalAlerts: granted -> enables, scope select, toggle scope, disable', async () => {
     class FakeNotification {
       static permission = 'granted'
@@ -443,6 +503,64 @@ describe('App coverage', () => {
       expect(screen.queryByRole('region', { name: /Goal alerts/ })).toBeNull()
     } finally {
       vi.useRealTimers()
+      delete global.Notification
+      delete window.Notification
+    }
+  })
+
+  it('clicking the goal notification focuses the tab and opens that match', async () => {
+    // The notification is the way back into the app from another window, so its
+    // click has to do three things: raise the tab, open the match that scored,
+    // and close itself so it does not linger once acted on.
+    const made = []
+    class FakeNotification {
+      constructor(title, opts) {
+        this.title = title
+        this.opts = opts
+        this.close = vi.fn()
+        made.push(this)
+      }
+      static permission = 'granted'
+      static requestPermission = vi.fn(async () => 'granted')
+    }
+    global.Notification = FakeNotification
+    window.Notification = FakeNotification
+    const focus = vi.spyOn(window, 'focus').mockImplementation(() => {})
+    localStorage.setItem('wc2026:goalAlerts', JSON.stringify({ enabled: true, scope: 'all' }))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-11T19:00:00Z'))
+    try {
+      let goals = []
+      global.fetch = vi.fn(async (url) => {
+        if (typeof url === 'string' && url.startsWith(LIVE_SOURCE.url)) {
+          return {
+            ok: true,
+            json: async () => ({
+              events: [espnEvent({ home: 'Mexico', away: 'South Africa', date: '2026-06-11T19:00:00Z', state: 'in', hs: String(goals.length), as: '0', goals })],
+            }),
+          }
+        }
+        return { ok: true, json: async () => ({ events: [] }) }
+      })
+      render(<App />)
+      await vi.waitFor(() => expect(screen.getByText(/live now/)).toBeInTheDocument())
+
+      goals = [{ side: 'home', name: 'Scorer', minute: 23 }]
+      await vi.advanceTimersByTimeAsync(31000)
+      await vi.waitFor(() => expect(made.length).toBeGreaterThan(0))
+
+      const note = made[0]
+      expect(typeof note.onclick).toBe('function')
+      await act(async () => {
+        note.onclick()
+      })
+      expect(focus).toHaveBeenCalled()
+      expect(note.close).toHaveBeenCalled()
+      // The match that scored is now open in the detail modal.
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+      focus.mockRestore()
       delete global.Notification
       delete window.Notification
     }

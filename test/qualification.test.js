@@ -270,3 +270,24 @@ describe('groupComplete', () => {
     expect(groupComplete('C', six)).toBe(true)
   })
 })
+
+describe('group rows ignore a fixture whose teams are not in the group', () => {
+  it('skips a match between names the group table does not know', () => {
+    // Knockout placeholders and renamed teams can reach a group-stage row after
+    // a data refresh; counting them would invent a team in the standings.
+    const stray = {
+      num: 9999,
+      stage: 'Group',
+      group: Object.keys(TEAMS)[0],
+      t1: 'Nowhere United',
+      t2: 'Elsewhere City',
+      ko: '2024-06-14T19:00:00Z',
+      score: [3, 0],
+    }
+    const g = Object.keys(TEAMS)[0]
+    const before = rankGroup(g, MATCHES)
+    const after = rankGroup(g, [...MATCHES, stray])
+    expect(after.map((r) => r.name)).toEqual(before.map((r) => r.name))
+    expect(after.every((r) => r.GF === before.find((b) => b.name === r.name).GF)).toBe(true)
+  })
+})

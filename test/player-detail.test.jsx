@@ -75,6 +75,22 @@ describe('PlayerDetail', () => {
     expect(rows[0]).toHaveTextContent('⚽ 12’') // local goal data still renders
   })
 
+  it('leaves the row alone when the request was aborted rather than failing', async () => {
+    // Unmount/re-run aborts the in-flight lookup. That is this effect being
+    // superseded, not the data failing, so the row must not be marked in error —
+    // the successor run is what fills it in.
+    const abort = Object.assign(new Error('aborted'), { name: 'AbortError' })
+    fetchMatchLines.mockImplementation(async () => {
+      throw abort
+    })
+    renderPD()
+    const rows = screen.getAllByRole('row').slice(1)
+    // Local goal data still renders, and the minutes cell stays on its loading
+    // placeholder instead of flipping to the error dash.
+    await waitFor(() => expect(rows[0]).toHaveTextContent('⚽ 12’'))
+    expect(rows[0].cells[4]).not.toHaveTextContent('—')
+  })
+
   it('clicking a match row opens that match’s detail', async () => {
     const { onOpen } = renderPD()
     fireEvent.click(screen.getAllByTitle('Open match details')[0])

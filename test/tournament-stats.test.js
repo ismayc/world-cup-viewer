@@ -4,6 +4,7 @@ import {
   topScorers,
   scorerRanks,
   tournamentTotals,
+  shootoutMatches,
   applyBootExtras,
   applyPlayerStatOverrides,
   activeTeams,
@@ -36,6 +37,23 @@ describe('teamRecord', () => {
     expect(r.ga).toBe(1 + 2 + 1 + 1 + 2)
     expect(r.gd).toBe(r.gf - r.ga)
     expect(r.cleanSheets).toBe(0)
+  })
+
+  it('counts a shootout defeat, and orders several shootouts by kickoff', () => {
+    // Losing from the spot is the other half of the penalties branch: it books a
+    // loss, not a draw, and increments pensLost rather than pensWon.
+    const lost = teamRecord([m({ stage: 'QF', ko: '2026-07-04T18:00:00Z', score: [1, 1], pens: [3, 5] })], 'Brazil')
+    expect(lost.l).toBe(1)
+    expect(lost.d).toBe(0)
+    expect(lost.pensLost).toBe(1)
+    expect(lost.pensWon).toBe(0)
+
+    // Two shootouts, listed out of order, come back in kickoff order.
+    const ties = [
+      m({ stage: 'SF', ko: '2026-07-08T18:00:00Z', score: [2, 2], pens: [5, 4] }),
+      m({ stage: 'QF', ko: '2026-07-04T18:00:00Z', score: [1, 1], pens: [3, 5] }),
+    ]
+    expect(shootoutMatches(ties).map((x) => x.stage)).toEqual(['QF', 'SF'])
   })
 
   it('orients the score when the team is t2', () => {

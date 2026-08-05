@@ -57,6 +57,15 @@ describe('annotateScoreChecks', () => {
 })
 
 describe('reconcileScores', () => {
+  it('has nothing to reconcile without at least two sources', () => {
+    // Cross-checking is only meaningful between sources; one (or none) cannot
+    // disagree with itself, and must not be reported as if it had.
+    const one = [{ name: 'OpenFootball', score: () => ({ home: 'A', away: 'B', ft: [1, 0] }) }]
+    expect(reconcileScores(MATCHES, one)).toEqual([])
+    expect(reconcileScores(MATCHES, [])).toEqual([])
+    expect(reconcileScores(MATCHES, undefined)).toEqual([])
+  })
+
   it('lists every source score for disagreeing matches only', () => {
     const agree = [
       { name: 'OpenFootball', score: (m) => (m.num === 1 ? { home: 'Mexico', away: 'South Africa', ft: [2, 1] } : null) },

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
+  applyResults,
+  matchKey,
   openFootballFinalScore,
   fetchResults,
   isRealTeam,
@@ -58,6 +60,21 @@ describe('fetchResults (goal parsing + error branches)', () => {
     expect(map.has('pair:' + ['X', 'Y'].sort().join('|'))).toBe(false)
   })
 
+  it('keys the third-place play-off and the final by stage, not by pairing', async () => {
+    // Both are keyed by stage because their teams are not known until the
+    // semi-finals resolve, so a pair key would not match the committed board.
+    const feed = {
+      matches: [
+        { round: 'Match for third place', team1: 'Alpha', team2: 'Beta', score: { ft: [2, 1] } },
+        { round: 'Final', team1: 'Gamma', team2: 'Delta', score: { ft: [1, 0] } },
+      ],
+    }
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => feed }))
+    const map = await fetchResults()
+    expect(map.get('stage:3rd')?.score?.ft).toEqual([2, 1])
+    expect(map.get('stage:Final')?.score?.ft).toEqual([1, 0])
+  })
+
   it('handles a goal with no name/minute (empty-name, null minute defaults)', async () => {
     const feed = {
       matches: [
@@ -109,5 +126,16 @@ describe('isRealTeam', () => {
   it('false for placeholders, true for qualified sides', () => {
     expect(isRealTeam('2A')).toBe(false)
     expect(isRealTeam('Mexico')).toBe(true)
+  })
+})
+
+describe('a record with no result in it', () => {
+  it('leaves a group match alone when the record carries no score', () => {
+    // A fixture line with no result yet: the record exists (so the teams are
+    // known) but writing it back would blank the board rather than fill it.
+    const base = { num: 1, stage: 'Group', group: 'A', t1: 'Alpha', t2: 'Beta', ko: '2024-06-14T19:00:00Z' }
+    const map = new Map([[matchKey(base), { home: 'Alpha', away: 'Beta' }]])
+    const [out] = applyResults([base], map)
+    expect(out).toBe(base)
   })
 })

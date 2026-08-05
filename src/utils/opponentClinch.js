@@ -72,10 +72,12 @@ export function lockedOpponent(matches, team, clinch = computeClinch(matches), r
   // Only a fixed finishing slot gives a determinate matchup to resolve.
   if (status !== 'won-group' && status !== 'runner-up') return null
   const group = GROUPS.find((g) => TEAMS[g].some((t) => t.name === team))
+  /* v8 ignore next -- unreachable: `team` comes from a clinch verdict, which is only ever keyed by a team that is in a group */
   if (!group) return null
   const mySlot = status === 'won-group' ? `Winner Group ${group}` : `Runner-up Group ${group}`
 
   const match = R32.find((m) => m.slots.includes(mySlot))
+  /* v8 ignore next -- unreachable: the status checked above is won-group or runner-up, and every group's winner and runner-up has a Round-of-32 slot */
   if (!match) return null
   const oppLabel = match.slots[0] === mySlot ? match.slots[1] : match.slots[0]
   const slot = parseSlot(oppLabel)

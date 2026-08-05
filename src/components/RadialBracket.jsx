@@ -29,6 +29,7 @@ const FEED = /^(?:Winner|Loser) Match (\d+)$/
 const STATIC = Object.fromEntries(MATCHES.map((m) => [m.num, m]))
 function childMatchNums(num) {
   const m = STATIC[num]
+  /* v8 ignore next -- unreachable: every num reaching here comes from the bracket layout, which is built from the same committed schedule STATIC indexes */
   if (!m) return null
   const a = FEED.exec(m.t1)
   const b = FEED.exec(m.t2)

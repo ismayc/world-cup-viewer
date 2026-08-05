@@ -226,3 +226,27 @@ describe('Bracket — mobile round view', () => {
     expect(document.getElementById('bx-m97')).toBeInTheDocument()
   })
 })
+
+describe('Bracket with pieces missing', () => {
+  it('leaves a slot blank when the board has no match for it', () => {
+    // The bracket lays out every knockout slot from the format, not from the
+    // data, so a board that has not published a given match yet must render an
+    // empty position rather than throw on the missing record.
+    const knockoutless = MATCHES.filter((m) => m.stage === 'Group')
+    expect(() => renderBracket(knockoutless)).not.toThrow()
+    expect(document.querySelector('.bracket, .bk, .br')).toBeTruthy()
+  })
+
+  it('renders on a platform with no matchMedia', () => {
+    // The responsive hook is the only thing that touches matchMedia; where it is
+    // absent the bracket still has to render at its default width.
+    const real = window.matchMedia
+    delete window.matchMedia
+    try {
+      expect(() => renderBracket(MATCHES)).not.toThrow()
+      expect(screen.getAllByText(/Final/i).length).toBeGreaterThan(0)
+    } finally {
+      window.matchMedia = real
+    }
+  })
+})
