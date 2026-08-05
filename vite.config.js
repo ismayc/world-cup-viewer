@@ -10,6 +10,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./test/setup.js'],
+    // Full-app userEvent tests (past-day folding, the scenarios steppers) mount the
+    // whole tree and click through it, which brushes the default 5s ceiling on a
+    // loaded runner. The rest of the family already carries the same headroom.
+    testTimeout: 15000,
     coverage: {
       provider: 'v8',
       all: true, // count untested files too, so the badge isn't flattered
