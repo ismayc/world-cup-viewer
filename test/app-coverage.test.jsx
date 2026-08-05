@@ -434,8 +434,10 @@ describe('App coverage', () => {
       await vi.advanceTimersByTimeAsync(31000)
       await vi.waitFor(() => expect(fired.length).toBeGreaterThan(0))
       expect(fired[0].title).toMatch(/GOAL/)
-      // …and the same goal raises an on-page toast; its ✕ dismisses it.
-      const toast = screen.getByRole('region', { name: /Goal alerts/ })
+      // …and the same goal raises an on-page toast; its ✕ dismisses it. The toast is
+      // a separate state update from the Notification, so wait for it rather than
+      // assuming both landed in the same flush.
+      const toast = await vi.waitFor(() => screen.getByRole('region', { name: /Goal alerts/ }))
       expect(toast.textContent).toMatch(/Jimenez/)
       fireEvent.click(screen.getByLabelText('Dismiss'))
       expect(screen.queryByRole('region', { name: /Goal alerts/ })).toBeNull()
