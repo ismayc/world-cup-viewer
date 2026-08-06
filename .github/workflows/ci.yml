@@ -20,25 +20,14 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  deploy:
-    name: Deploy to Netlify
-    needs: test # only deploys if tests + build pass
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run coverage:badge # writes public/coverage.json for the README badge
-      - run: npm run build
-      - name: Deploy to Netlify
-        run: npx netlify-cli@26 deploy --dir dist --functions netlify/functions --prod --message "CI deploy ${{ github.sha }}"
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+  # Netlify deploys via its own GitHub integration (it builds the site and the functions
+  # on every push using netlify.toml), so there is no Netlify job here — a CI-driven
+  # deploy would be a redundant second path to the same site, and it kept deploying
+  # while Actions was unavailable, which a job here could not.
+  #
+  # That build runs `npm run build` only, so it never writes public/coverage.json —
+  # which is why that file is committed rather than generated here. The README badge
+  # reads it from the Netlify site.
 
   pages:
     name: Deploy to GitHub Pages
