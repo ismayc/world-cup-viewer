@@ -325,6 +325,41 @@ describe('espnStats against a feed that sends nothing', () => {
     expect(out).toEqual([{ name: 'Recent Player', assists: 0, minutes: null }])
   })
 
+  it('defaults a played log item with no event reference and a stat line with no numbers', async () => {
+    // Two shapes the eventlog sends that the totals must survive: an item marked
+    // played whose `event` reference is missing entirely (there is no match to
+    // attribute it to), and one whose statistics document carries neither
+    // assists nor minutes.
+    const summary = {
+      keyEvents: [],
+      rosters: [{ roster: [{ athlete: { id: '77', displayName: 'Recent Player' }, starter: true, stats: [] }] }],
+    }
+    const log = {
+      events: {
+        items: [
+          { played: true, statistics: { $ref: 'https://x/stats/1' } }, // no event ref
+          { played: true, event: { $ref: 'https://x/events/901' }, statistics: { $ref: 'https://x/stats/2' } },
+        ],
+      },
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({
+      ok: true,
+      json: async () => {
+        if (url.includes('/summary')) return summary
+        if (url.includes('/eventlog')) return log
+        if (url.includes('/stats/')) return { splits: { categories: [{ stats: [] }] } }
+        return {}
+      },
+    })))
+    const out = await fetchRecentPlayerStats(
+      [{ espnId: '900', live: false }],
+      new Set([nameKey('Recent Player')]),
+    )
+    // Neither item yields a minute, so minutes stay unknown rather than being
+    // reported as a misleading zero — and no assist is invented either.
+    expect(out).toEqual([{ name: 'Recent Player', assists: 0, minutes: null }])
+  })
+
   it('folds a live match’s assists in even when the event log is empty', async () => {
     const summary = {
       keyEvents: [],

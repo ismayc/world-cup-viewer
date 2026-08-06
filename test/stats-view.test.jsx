@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import StatsView from '../src/components/StatsView.jsx'
 import { DetailContext } from '../src/context/detail.js'
@@ -250,6 +250,67 @@ describe('StatsView enrichment failures', () => {
     await vi.waitFor(() => expect(fetchRecentPlayerStats).toHaveBeenCalled())
     // The committed aggregate still stands behind the failed override.
     expect(screen.getByText('Hinata Miyazawa')).toBeInTheDocument()
+  })
+})
+
+describe('StatsView — enrichment that arrives, and a scorer the tables barely know', () => {
+  it('adopts an interval refresh that actually brings something back', async () => {
+    vi.useFakeTimers()
+    try {
+      const live = [...matches, { num: 63, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], live: { minute: 10 }, goals: { t1: [], t2: [] } }]
+      render(<StatsView matches={live} hideScores={false} />)
+      // The mount call returns nothing, so the table starts un-enriched.
+      expect(screen.queryByTitle('Assists')).toBeNull()
+      fetchBootExtras.mockImplementation(async () => [
+        { name: 'Raúl Jiménez', goals: 3, assists: 2, minutes: 270 },
+      ])
+      // The re-render is driven by a timer and a promise, so flush both inside
+      // act or the assertion runs against the pre-update tree.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1000)
+      })
+      // The refresh brought rows this time, so the assists/minutes columns appear.
+      expect(screen.getByTitle('Assists')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('clears the per-match overrides when the reconciliation comes back empty', async () => {
+    // A recent match to reconcile, but ESPN has nothing to say about any of the
+    // shown scorers. The overrides must be cleared rather than set to an empty
+    // list, so the committed aggregate stands on its own.
+    const recent = [
+      ...matches,
+      { num: 64, stage: 'SF', t1: 'Mexico', t2: 'France', ko: recentKo(), score: [1, 0], espnId: 'e64', goals: { t1: [{ name: 'Raúl Jiménez' }], t2: [] } },
+    ]
+    render(<StatsView matches={recent} hideScores={false} />)
+    await vi.waitFor(() => expect(fetchRecentPlayerStats).toHaveBeenCalled())
+    expect(screen.getByText('Raúl Jiménez')).toBeInTheDocument()
+  })
+
+  it('falls back for a scorer whose team has no flag, and pluralises their penalties', () => {
+    // An upstream re-spelling the flag table has never carried, with a scorer on
+    // two penalties — both the fallback mark and the plural have to render.
+    const odd = [
+      {
+        num: 65,
+        stage: 'Group',
+        t1: 'Nowhere United',
+        t2: 'Mexico',
+        score: [2, 0],
+        goals: {
+          t1: [
+            { name: 'Spot Kicker', penalty: true },
+            { name: 'Spot Kicker', penalty: true },
+          ],
+          t2: [],
+        },
+      },
+    ]
+    render(<StatsView matches={odd} hideScores={false} />)
+    expect(document.querySelector('.boot-flag').textContent).toBe('•')
+    expect(screen.getByText('2 pens')).toBeInTheDocument()
   })
 })
 

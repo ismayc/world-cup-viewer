@@ -98,7 +98,27 @@ describe('matchesSearch — free text', () => {
   })
 
   it('handles a knockout match (no group) in the haystack', () => {
+    // Free text has to be non-empty or the haystack is never built at all — the
+    // point here is that a match with no group leaves that fragment blank
+    // instead of writing "group undefined" into what is searched.
     const ko = MATCHES.find((m) => m.stage !== 'Group')
-    expect(matchesSearch(ko, venueOf(ko), { tokens: [], free: '' })).toBe(true)
+    expect(matchesSearch(ko, venueOf(ko), { tokens: [], free: ko.t1.toLowerCase() })).toBe(true)
+    expect(matchesSearch(ko, venueOf(ko), { tokens: [], free: 'group undefined' })).toBe(false)
+  })
+
+  it('drops a field prefix with nothing after it', () => {
+    // Mid-typing: "venue:" with no value yet. There is nothing to search for, so
+    // it becomes neither a token nor free text.
+    const parsed = parseQuery('colour:')
+    expect(parsed.tokens).toEqual([])
+    expect(parsed.free).toBe('')
+  })
+
+  it('treats an unrecognised field prefix as free text rather than dropping it', () => {
+    // Someone types "colour:red". There is no such field, so the value has to
+    // fall through to the free-text search rather than silently vanishing.
+    const parsed = parseQuery('colour:zzzzz-nope')
+    expect(parsed.tokens).toEqual([])
+    expect(parsed.free).toBe('zzzzz-nope')
   })
 })

@@ -333,6 +333,9 @@ describe('the scoreboard normalizer against a sparse event', () => {
           { type: { text: 'Substitution' }, team: { id: HOME_ID }, clock: { displayValue: "60'" }, athletesInvolved: [{ displayName: 'On' }, {}] },
           // An event of no interest at all.
           { type: { text: 'Corner' }, team: { id: HOME_ID } },
+          // A detail with no `type` block at all — not a goal, not a card, and
+          // nothing to test for "substitution" against.
+          { team: { id: HOME_ID } },
         ],
       },
     ],
@@ -370,6 +373,16 @@ describe('the scoreboard normalizer against a sparse event', () => {
   it('keys a dated event by its instant as well as by the pairing', async () => {
     const rec = await readOne(sparseEvent({ date: '2026-01-01T15:00:00Z' }))
     expect(rec.instant).toBe(Date.parse('2026-01-01T15:00:00Z'))
+  })
+
+  it('reads an event with no status anywhere as not yet started', async () => {
+    // Neither the event nor its competition carries a status block. Rather than
+    // guess, the normalizer treats it as a fixture still to come.
+    const bare = sparseEvent()
+    delete bare.competitions[0].status
+    const rec = await readOne(bare)
+    expect(rec.state).toBe('pre')
+    expect(rec.live).toBeFalsy()
   })
 
   // Two teams the edition actually fields, so the overlay recognises them as
@@ -433,5 +446,33 @@ describe('the scoreboard normalizer against a sparse event', () => {
     const [out] = applyLive([placeholder], new Map([[key, rec]]))
     expect(out.t1).toBe(realPair.t1)
     expect(out.t2).toBe('Winner Match 8') // untouched
+  })
+
+  it('leaves the HOME placeholder alone when only the away side has resolved', () => {
+    // The mirror of the case above: ESPN has named the away side but is still
+    // carrying its own placeholder for the home one.
+    const placeholder = {
+      num: 502,
+      stage: 'QF',
+      t1: 'Winner Match 9',
+      t2: 'Winner Match 10',
+      ko: '2027-07-03T15:00:00Z',
+    }
+    const rec = {
+      id: 'e502',
+      home: 'Winner Match 9',
+      away: realPair.t2,
+      state: 'post',
+      score: [0, 1],
+      goals: { home: [], away: [] },
+      cards: { home: [], away: [] },
+      subs: { home: [], away: [] },
+      clock: 'FT',
+      detail: 'Full Time',
+    }
+    const key = 'inst:' + Date.parse(placeholder.ko)
+    const [out] = applyLive([placeholder], new Map([[key, rec]]))
+    expect(out.t1).toBe('Winner Match 9') // untouched
+    expect(out.t2).toBe(realPair.t2)
   })
 })

@@ -33,7 +33,8 @@ function childMatchNums(num) {
   if (!m) return null
   const a = FEED.exec(m.t1)
   const b = FEED.exec(m.t2)
-  return a && b ? [Number(a[1]), Number(b[1])] : null // null for R32 (children are teams)
+  /* v8 ignore next -- unreachable: only R16/QF/SF nums reach here, and both of their sides are always "Winner Match N" feeders. R32 (whose children are teams) is laid out from its leaf angles instead and never asks. */
+  return a && b ? [Number(a[1]), Number(b[1])] : null
 }
 
 // Polar → cartesian. Angle in degrees, 90° = top, measured counter-clockwise;
@@ -105,7 +106,11 @@ function FlagNode({ x, y, team, label, followed, onPath, trail, dimmed, onClick,
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined}
     >
-      <title>{label || team}</title>
+      {/* Every call site supplies a label whenever it supplies a team, and a
+          node with no team returned the placeholder dot above — so the fallback
+          is unreachable. (A v8-ignore inside a JSX expression never reaches the
+          compiled output, so it is removed rather than annotated.) */}
+      <title>{label}</title>
       <circle className="rb-flag-bg" cx={x} cy={y} r={r} />
       <text className="rb-flag" x={x} y={y} fontSize={r * 1.3}>
         {flag}

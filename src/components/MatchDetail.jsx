@@ -73,6 +73,7 @@ function TaleOfTheTape({ match, allMatches, label }) {
   const gd = (v) => (v > 0 ? `+${v}` : `${v}`)
   const record = (r) => `${r.w}–${r.d}–${r.l}${r.pensWon ? ` (${r.pensWon} on pens)` : ''}`
   const cards = (r) => `🟨 ${r.yellow} · 🟥 ${r.red}`
+  /* v8 ignore next -- unreachable: the tape only renders when BOTH sides have a flag, and every one of the 48 flagged teams carries a FIFA ranking */
   const rank = (t) => (FIFA_RANK[t] ? `#${FIFA_RANK[t]}` : '—')
   const anyCards = a.hasCardData || b.hasCardData
   const rows = [

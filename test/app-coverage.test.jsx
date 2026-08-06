@@ -162,6 +162,9 @@ describe('App coverage', () => {
     // The Radial view renders the circular bracket (RadialBracket).
     fireEvent.click(screen.getByRole('button', { name: /Radial/ }))
     expect(document.querySelector('.bracket-view')).toBeTruthy()
+    // Stats is the last nav entry and mounts StatsView in its own main.
+    fireEvent.click(screen.getByRole('button', { name: /Stats/ }))
+    expect(document.querySelector('.stats-view')).toBeTruthy()
   })
 
   it('"As it stands" link in Groups jumps to the Bracket and focuses a match', async () => {

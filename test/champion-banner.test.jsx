@@ -51,4 +51,12 @@ describe('ChampionBanner', () => {
     renderBanner(final({ t1: 'Winner Match 101', t2: 'Winner Match 102', score: [1, 0] }))
     expect(screen.queryByText(/World Champions/)).not.toBeInTheDocument()
   })
+
+  it('stays hidden when the board has no Final on it at all', () => {
+    // Before the fixture list carries the Final — or on a board filtered down to
+    // one round — there is no match to read a champion off, and the banner must
+    // simply not render rather than reach into nothing.
+    renderBanner(undefined)
+    expect(screen.queryByText(/World Champions/)).not.toBeInTheDocument()
+  })
 })

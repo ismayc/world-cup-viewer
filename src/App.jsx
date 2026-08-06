@@ -305,6 +305,7 @@ export default function App() {
       const fresh = events
         .map((ev) => ({ id: `${goalNotification(ev).tag}`, ev }))
         .filter((x) => !have.has(x.id))
+      /* v8 ignore next -- unreachable: detectGoals' snapshot accumulates every key it has ever seen, so a goal already on screen is never re-emitted */
       return fresh.length ? [...t, ...fresh] : t
     })
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return

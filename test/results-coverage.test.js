@@ -112,6 +112,30 @@ describe('fetchResults (goal parsing + error branches)', () => {
     expect(map.get(pairKey('Mexico', 'South Africa')).score.ft).toEqual([3, 2])
   })
 
+  it('falls back to the match number for a row that carries no round at all', async () => {
+    // OpenFootball omits `round` on some rows. Without a round there is no
+    // pairing or stage to key by, so the record has to be filed under its match
+    // number or it would be dropped entirely.
+    const feed = {
+      matches: [{ num: 73, team1: 'Mexico', team2: 'Canada', score: { ft: [2, 1] } }],
+    }
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => feed }))
+    const map = await fetchResults()
+    expect(map.get('num:73').score.ft).toEqual([2, 1])
+  })
+
+  it('treats a score object with no ft pair at all as no score', async () => {
+    // Half-time only: upstream posts `ht` the moment the whistle goes and fills
+    // `ft` later. Neither shape the parser understands is there, so the record
+    // carries no score rather than a half-time one masquerading as final.
+    const feed = {
+      matches: [{ round: 'Matchday 1', team1: 'Mexico', team2: 'South Africa', score: { ht: [0, 0] } }],
+    }
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => feed }))
+    const map = await fetchResults()
+    expect(map.get(pairKey('Mexico', 'South Africa')).score).toBeNull()
+  })
+
   it('treats an incomplete ft (null element) as no score', async () => {
     const feed = {
       matches: [{ round: 'Matchday 1', team1: 'Mexico', team2: 'South Africa', score: { ft: [1, null] } }],
@@ -126,6 +150,36 @@ describe('isRealTeam', () => {
   it('false for placeholders, true for qualified sides', () => {
     expect(isRealTeam('2A')).toBe(false)
     expect(isRealTeam('Mexico')).toBe(true)
+  })
+})
+
+describe('the shapes a knockout record arrives in before it is settled', () => {
+  // A Round-of-32 tie whose sides are still bracket placeholders. The record
+  // names them the same way, so nothing about it is a real team yet.
+  const ko = () => ({ num: 73, stage: 'R32', t1: '1A', t2: '2B', ko: '2026-06-28T19:00:00Z' })
+
+  it('adopts neither side, and writes no score, while the record is all placeholders', () => {
+    const m = ko()
+    const map = new Map([[matchKey(m), { home: '1A', away: '2B', score: null }]])
+    const [out] = applyResults([m], map)
+    expect(out.t1).toBe('1A')
+    expect(out.t2).toBe('2B')
+    expect(out.score).toBeUndefined()
+    expect(out.aet).toBeUndefined()
+  })
+
+  it('writes a regulation-time knockout score without marking it extra time', () => {
+    // Settled inside 90 minutes: `ft` is the result, and `aet` must stay off or
+    // the bracket would caption a normal win as one won in extra time.
+    const m = ko()
+    const map = new Map([
+      [matchKey(m), { home: 'Mexico', away: 'Canada', score: { ft: [2, 1] }, g1: [], g2: [] }],
+    ])
+    const [out] = applyResults([m], map)
+    expect([out.t1, out.t2]).toEqual(['Mexico', 'Canada'])
+    expect(out.score).toEqual([2, 1])
+    expect(out.aet).toBeUndefined()
+    expect(out.pens).toBeUndefined()
   })
 })
 

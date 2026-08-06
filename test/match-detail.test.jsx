@@ -64,6 +64,7 @@ describe('MatchDetail tale of the tape', () => {
     renderDetail({ match: base, allMatches: withForm })
     expect(screen.getByText('W–D–L')).toBeInTheDocument()
   })
+
 })
 
 describe('MatchDetail null + basic render', () => {

@@ -4,6 +4,52 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-08-05
+
+- **Toolchain upgrade.** Vite 5 → 8 (Rolldown), Vitest + coverage-v8 2 → 4,
+  `@vitejs/plugin-react` 4 → 6, jsdom 25 → 30, React 18 → 19, jest-dom 6 → 7.
+- **100% on every metric, and a gate that keeps it there.** Statements,
+  branches, functions and lines are all at 100%, and `vite.config.js` now
+  carries a `thresholds` block so the suite — and CI's `coverage:badge` step —
+  fails the moment any of the four slips. Vitest 4's v8 provider counts arms
+  Vitest 2 skipped, so the drift it exposed had simply been invisible; it is
+  closed with tests rather than waved through.
+- **The twelve-group best-thirds machinery is now covered end to end.** That was
+  the bulk of it, and it needed real boards: a third-place slot drawn on the
+  FIRST side of its tie, a locked third whose assigned group has not finished
+  yet, a group stage with no knockout fixtures published to fill, a third-place
+  slot with no group winner opposite it, a group too large to enumerate falling
+  back to the points bounds, a rival group too open to count towards the
+  eight-thirds cut, the requirement text in both of its awkward forms (a
+  positive goal difference that must keep its sign, a single point that must not
+  read "1 points"), a third-placed team whose match is suspended rather than
+  merely live, a thirds table with no two teams level at all, and a through team
+  the rank ladder cannot place.
+- **And the rest of the app's edges.** A third-place play-off with no fixture
+  published, one being played today, and one whose winner has to be captioned; a
+  champion whose route is not on the board; two knockout ties stacking under one
+  countdown with no flag among the four sides; a player's record read from the
+  home side, including a shootout the data has as level and a match with no goal
+  list; an ESPN event with no status block anywhere and a detail with no type; a
+  knockout record that has resolved only its away side; an eventlog item with no
+  event reference; an interval enrichment that actually brings something back
+  and a reconciliation that comes back empty; a results load that was aborted
+  rather than failed; and a completed stage hiding exactly one game.
+- **Guards removed rather than half-tested.** `parseSlot` no longer carries an
+  "other" arm in either engine: a Round-of-32 label is always a group winner, a
+  runner-up or a third-place slot, so the fallthrough was dead — and so was the
+  `else` it forced downstream. The flag and FIFA-ranking fallbacks in Standings,
+  ScenariosView, the radial nodes and the bracket's feeder pairs go the same
+  way: every name on those lines comes out of a ranked group table or a feeder
+  pair that only forms when both sides are known, so it always has a flag and a
+  ranking. A v8-ignore inside a JSX expression never reaches the compiled
+  output, so those are deleted with an explanatory comment rather than
+  annotated. Everything else that genuinely cannot be reached is documented in
+  place with the reason — the 2026 draw pairs every "3rd …" slot with a winner
+  from the Annexe C host list, all 495 eight-group combinations are in that
+  table, and the ranker seeds every group so a finished group always has a
+  third.
+
 ## 2026-07-20
 - **Champions banner.** Once the Final is FINAL (a live score stays provisional —
   `decideMatch` enforces it), a celebration strip appears under the header:

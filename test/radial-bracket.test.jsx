@@ -300,3 +300,66 @@ describe('RadialBracket — every clickable, and the shapes it guards against', 
     expect(container.querySelectorAll('.rb-node.rb-click').length).toBe(0)
   })
 })
+
+
+describe('RadialBracket — the third-place section, and a champion off the board', () => {
+  it('draws both losers with no click target when the play-off itself is missing', () => {
+    // The semi-finals are decided, so both third-place contenders are known —
+    // but the play-off fixture has not been published, so there is nothing to
+    // open. The two flags still render; they just are not buttons.
+    const board = playedBracket().filter((m) => m.num !== 103)
+    const { container } = renderRB(board)
+    const nodes = [...container.querySelectorAll('g.rb-node')]
+    const thirds = nodes.filter((n) => !n.classList.contains('rb-click'))
+    expect(thirds.length).toBeGreaterThanOrEqual(2)
+    for (const n of thirds) {
+      expect(n.getAttribute('role')).toBeNull()
+      expect(n.getAttribute('tabindex')).toBeNull()
+    }
+  })
+
+  it('spotlights and blinks a third-place play-off being played today', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-18T18:00:00Z'))
+      // The play-off is on now; one semi-final has been unscored, so only one of
+      // the two contenders is known and the other is still a placeholder dot.
+      const board = playedBracket().map((m) => {
+        if (m.num === 103) return { ...m, ko: '2026-07-18T19:00:00Z', score: [0, 0], live: { clock: "20'" } }
+        if (m.num === 101) return (({ score, pens, ...rest }) => rest)(m)
+        return m
+      })
+      const { container } = renderRB(board)
+      expect(container.querySelector('.rb-halo')).toBeTruthy()
+      expect(container.querySelector('.rb-live-dot')).toBeTruthy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('captions the third-place winner in the play-off it just won', () => {
+    // The play-off has been decided. The winning side is the loser of one of the
+    // two semi-finals, and its node has to say so — otherwise the two flags
+    // below the trophy read identically whatever the result was.
+    const board = playedBracket()
+    const sf2 = board.find((m) => m.num === 102)
+    const loserOf102 = sf2.score[0] > sf2.score[1] ? sf2.t2 : sf2.t1
+    const withPlayoff = board.map((m) =>
+      m.num === 103 ? { ...m, t1: m.t1, t2: m.t2, score: m.t1 === loserOf102 ? [2, 0] : [0, 2] } : m,
+    )
+    const { container } = renderRB(withPlayoff)
+    const titles = [...container.querySelectorAll('title')].map((t) => t.textContent)
+    expect(titles.some((t) => t === `${loserOf102} — 3rd place`)).toBe(true)
+  })
+
+  it('lights no trail for a champion whose route is not on the board', () => {
+    // A board carrying only a decided Final. There is a champion to crown, but
+    // no Round-of-32 tie naming them, so there is no route to light — the view
+    // must simply not draw one rather than trace a partial path.
+    const final = MATCHES.find((m) => m.num === 104)
+    const board = [{ ...final, t1: 'Mexico', t2: 'Canada', score: [2, 1] }]
+    const { container } = renderRB(board)
+    expect(container.querySelector('.rb-svg')).toBeTruthy()
+    expect(container.querySelector('.on-trail')).toBeNull()
+  })
+})

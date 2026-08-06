@@ -21,6 +21,16 @@ export default defineConfig({
       include: ['src/**'],
       exclude: ['src/main.jsx', 'src/**/*.test.{js,jsx}'],
       reporter: ['text-summary', 'json-summary', 'json'],
+      // Enforced gate: the suite (and CI's coverage:badge step) fails if any
+      // metric slips below 100%. Genuinely unreachable defensive arms carry an
+      // inline `/* v8 ignore next -- why */` with a justification rather than
+      // lowering these.
+      thresholds: {
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
+      },
     },
   },
 })

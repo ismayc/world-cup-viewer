@@ -10,6 +10,8 @@ import {
   newlyClinched,
   clinchHeadline,
   clinchBadge,
+  goalCap,
+  scorelinesUpTo,
 } from '../src/utils/clinch.js'
 
 const GROUPS = Object.keys(TEAMS)
@@ -18,6 +20,38 @@ const GROUPS = Object.keys(TEAMS)
 function withScores(scoreByNum) {
   return MATCHES.map((m) => (scoreByNum[m.num] ? { ...m, score: scoreByNum[m.num] } : m))
 }
+
+describe('clinch — a group too big to enumerate', () => {
+  it('falls back to the points bound for a third-place hope the scoreline pass never ran on', () => {
+    // Group A with all three of Czechia's games played and the other three
+    // teams' round-robin still to come. Three unplayed games at a goal cap of 8
+    // is 81³ scorelines — over the enumeration budget — so the scoreline pass
+    // gives up on the group entirely and every verdict has to come from the
+    // sound points bounds instead.
+    //
+    // Czechia drew one and lost two, leaving them on 1 point with nothing left
+    // to play. Mexico and South Korea are already above them and cannot come
+    // back down, so Czechia can finish no higher than 3rd (out of the top two,
+    // but not yet out of the tournament): exactly the case where the best
+    // third-place profile has to be taken from the points ceiling rather than
+    // from a scoreline enumeration that was never run.
+    const status = computeClinch(
+      withScores({
+        2: [2, 0], // South Korea 2–0 Czechia
+        53: [0, 2], // Czechia 0–2 Mexico
+        25: [1, 1], // Czechia 1–1 South Africa
+        // M1, M28 and M54 — the other three teams' round-robin — still to play.
+      }),
+    )
+    // Teeth: the whole point of this board is that the scoreline pass is over
+    // budget. If the cap ever shrank, or the budget grew, the group would be
+    // enumerable and this test would silently stop exercising the fallback.
+    expect(Math.pow(scorelinesUpTo(goalCap([])).length, 3)).toBeGreaterThan(500_000)
+    // Not through, and not out either: Czechia's one point could still be a
+    // qualifying third if the other eleven groups fall the right way.
+    expect(status['Czechia']).toBeNull()
+  })
+})
 
 describe('clinch — within a single group', () => {
   // Group A: Mexico, South Africa, South Korea, Czechia.

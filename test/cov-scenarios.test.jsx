@@ -78,3 +78,53 @@ describe('ScenariosView uncovered branches', () => {
     expect(within(card).getByText('3 to pick')).toBeInTheDocument()
   })
 })
+
+
+describe('ScenariosView — teams, ties and matchups the projection cannot fill in', () => {
+  // Five of the six group games drawn 0-0 and the last still open, plus a red
+  // card, so the pair the ranker cannot separate comes down to discipline
+  // rather than to the FIFA ranking.
+  const withCards = () => {
+    const scores = PAIRS.map(() => [0, 0])
+    scores[5] = undefined
+    const board = groupA(scores)
+    // Mexico v Czechia: Czechia pick up a red, so their fair-play score is the
+    // worse one and the pair straddling them is split on cards.
+    board[2] = { ...board[2], cards: { t1: [], t2: [{ color: 'red' }] } }
+    return board
+  }
+
+  it('says a soft tie-break was decided on cards, and warns the card data is best-effort', () => {
+    render(<ScenariosView matches={withCards()} />)
+    const marks = [...document.querySelectorAll('.sc-tiebreak')]
+    expect(marks.length).toBeGreaterThan(0)
+    expect(marks.some((m) => /fair-play points \(cards\)/.test(m.getAttribute('title')))).toBe(true)
+    expect(marks.some((m) => /best-effort card data/.test(m.getAttribute('title')))).toBe(true)
+  })
+
+  it('marks a fixture whose teams the flag table does not know', () => {
+    // A group game against a name the committed table has never carried — an
+    // upstream re-spelling, say. The picker still has to draw the fixture.
+    const board = [
+      ...groupA(PAIRS.map(() => [0, 0])).slice(0, 5),
+      { num: 105, stage: 'Group', group: 'A', t1: 'Nowhere United', t2: 'Elsewhere City' },
+    ]
+    render(<ScenariosView matches={board} />)
+    const teams = [...document.querySelectorAll('.sc-fx-team')].map((n) => n.textContent)
+    expect(teams).toEqual(['• Nowhere United', 'Elsewhere City •'])
+  })
+
+  it('shows TBD for a projected opponent the bracket cannot name yet', () => {
+    // The Round-of-32 tie this group's winner feeds into has one side that is
+    // not a group slot at all, so there is no opponent to project — the line
+    // still names the qualifier and leaves the other half blank.
+    const board = [
+      ...groupA((() => { const s = PAIRS.map(() => [0, 0]); s[5] = undefined; return s })()),
+      { num: 900, stage: 'R32', t1: 'Winner Group A', t2: 'Winner Match 5', ko: '2026-07-05T15:00:00Z' },
+    ]
+    render(<ScenariosView matches={board} />)
+    const first = document.querySelector('.sc-r32-row')
+    expect(first.querySelector('.sc-r32-opp').textContent).toBe('TBD')
+    expect(first.querySelector('.sc-r32-num').textContent).toBe('M900')
+  })
+})

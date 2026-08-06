@@ -215,3 +215,73 @@ describe('PlayerDetail — the shapes a scorer’s row can take', () => {
     expect(screen.getAllByRole('row')[1].cells[4]).toHaveTextContent('DNP')
   })
 })
+
+
+describe('PlayerDetail — the same shapes seen from the home side', () => {
+  // The mirror of the away-side describe: this player is t1 in every match, so
+  // the score and the shootout are read straight rather than flipped. Two
+  // penalties (plural), a shootout that the data records as level, and a match
+  // whose feed carries no goal list for this side at all.
+  const KEY = 'Home Striker'
+  const home = (num, stage, extra = {}) => ({
+    num,
+    stage,
+    group: stage === 'Group' ? 'A' : undefined,
+    t1: 'Home Nation',
+    t2: 'Someone Else',
+    ko: `2026-06-1${num}T15:00:00-04:00`,
+    espnId: `h${num}`,
+    ...extra,
+  })
+
+  const board = [
+    // Home win. The feed carries no goal list for either side of this match.
+    home(1, 'Group', { score: [2, 0] }),
+    // Level after 90 and won from the spot, seen from the home side.
+    home(2, 'R16', { score: [1, 1], pens: [4, 2], goals: { t1: [{ name: KEY, minute: 30 }], t2: [] } }),
+    // Level after 90 and a shootout the data has as level too — nothing to read
+    // a winner from, so the tie stays a draw rather than being guessed at.
+    home(3, 'QF', { score: [0, 0], pens: [3, 3], goals: { t1: [], t2: [] } }),
+    // A goal the feed gives no name at all: it is nobody's, least of all this
+    // player's, so it must not be credited to them.
+    home(4, 'SF', { score: [1, 0], goals: { t1: [{ minute: 44 }], t2: [] } }),
+  ]
+
+  const scorer = { name: KEY, team: 'Home Nation', goals: 2, pens: 2, assists: 2, minutes: 300 }
+
+  const renderHome = () => {
+    fetchMatchLines.mockImplementation(async () => ({ length: 90, byName: {} }))
+    render(
+      <DetailContext.Provider value={vi.fn()}>
+        <PlayerDetail scorer={scorer} matches={board} onClose={vi.fn()} />
+      </DetailContext.Provider>,
+    )
+  }
+
+  it('reads the score and the shootout straight for a player on the home side', () => {
+    renderHome()
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[0].cells[1]).toHaveTextContent('W 2–0')
+    expect(rows[1].cells[1]).toHaveTextContent('W 1–1')
+    expect(rows[1].cells[1]).toHaveTextContent('p4–2')
+  })
+
+  it('leaves a level shootout as a draw rather than picking a winner', () => {
+    renderHome()
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[2].cells[1]).toHaveTextContent('D 0–0')
+    expect(rows[2].cells[1]).toHaveTextContent('p3–3')
+  })
+
+  it('credits no goals from a match with no goal list, or from a nameless goal', () => {
+    renderHome()
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[0].cells[2].querySelectorAll('.pd-goal')).toHaveLength(0)
+    expect(rows[3].cells[2].querySelectorAll('.pd-goal')).toHaveLength(0)
+  })
+
+  it('writes the plural form of a two-penalty tally', () => {
+    renderHome()
+    expect(screen.getByText(/2 pens\)/)).toBeInTheDocument()
+  })
+})

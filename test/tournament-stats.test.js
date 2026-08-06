@@ -333,6 +333,17 @@ describe('applyPlayerStatOverrides', () => {
     expect(added.minutes).toBeUndefined()
   })
 
+  it('credits a shootout win to the second-named side', () => {
+    // A knockout tie level after 120 minutes and won on penalties by the AWAY
+    // side: the shootout score has to be read from that team's point of view or
+    // the win would be credited to the wrong one.
+    const board = [
+      { num: 73, stage: 'R32', t1: 'Mexico', t2: 'Canada', score: [1, 1], pens: [3, 5] },
+    ]
+    expect(teamRecord(board, 'Canada')).toMatchObject({ w: 1, l: 0, pensWon: 1 })
+    expect(teamRecord(board, 'Mexico')).toMatchObject({ w: 0, l: 1, pensWon: 0 })
+  })
+
   it('copes with no existing list to merge into', () => {
     const out = applyPlayerStatOverrides(undefined, [{ name: 'Solo', minutes: 90 }])
     expect(out).toEqual([{ name: 'Solo', goals: null, assists: undefined, minutes: 90 }])

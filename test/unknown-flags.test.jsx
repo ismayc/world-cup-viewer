@@ -34,6 +34,22 @@ describe('flag fallbacks for a team with no flag', () => {
     expect(document.querySelector('.feeder-flag').textContent).toBe('•')
   })
 
+  it('highlights a followed team among a feeder pair’s candidates', () => {
+    // The pair names two teams that might reach this tie. Following one of them
+    // has to mark it here too, not only where it is already resolved.
+    localStorage.setItem('wc2026:followed', JSON.stringify(['Mexico']))
+    try {
+      render(wrap(<FeederPair feeder={{ kind: 'Winner', num: 73, a: 'Mexico', b: 'Canada' }} />))
+      const marked = [...document.querySelectorAll('.feeder-cand')].filter((n) =>
+        n.classList.contains('followed'),
+      )
+      expect(marked).toHaveLength(1)
+      expect(marked[0].textContent).toMatch(/Mexico/)
+    } finally {
+      localStorage.clear()
+    }
+  })
+
   it('marks both sides of a group fixture, the team header and the knockout line', () => {
     const fixtures = [
       {

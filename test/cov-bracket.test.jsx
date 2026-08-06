@@ -52,3 +52,25 @@ describe('Bracket — currentRound Final fallback', () => {
     expect(document.getElementById('bx-m73')).toBeNull()
   })
 })
+
+
+describe('Bracket — a followed team, wherever it appears', () => {
+  it('marks a followed team on a resolved side and inside a feeder pair', () => {
+    // Following a team highlights it everywhere the bracket names it: on the
+    // side of a tie it has already reached, and among the two candidates of a
+    // tie it might still feed into.
+    localStorage.setItem('wc2026:followed', JSON.stringify(['Mexico', 'Canada']))
+    try {
+      const board = MATCHES.map((m) =>
+        m.num === 73 ? { ...m, t1: 'Mexico', t2: 'Canada', score: [2, 0] } : m,
+      )
+      renderBracket(board)
+      // The resolved side of Match 73.
+      expect(document.querySelector('.bx-side.followed')).toBeTruthy()
+      // And the same team as one of the two candidates feeding the next round.
+      expect(document.querySelector('.bx-feeder-team.followed')).toBeTruthy()
+    } finally {
+      localStorage.clear()
+    }
+  })
+})

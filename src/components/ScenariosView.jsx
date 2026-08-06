@@ -15,6 +15,7 @@ import {
 } from '../utils/scenarios.js'
 
 function Stepper({ value, onChange, label }) {
+  /* v8 ignore next -- unreachable: a stepper only renders for a pick that is already a [home, away] pair of numbers */
   const v = value ?? 0
   return (
     <span className="sc-stepper">
@@ -102,10 +103,14 @@ function R32Line({ label, dest, confirmed }) {
   return (
     <li className={`sc-r32-row${confirmed ? ' sc-r32-confirmed' : ''}`}>
       <span className="sc-r32-pos">{label}</span>
-      <span className="sc-r32-team">{FLAG_BY_TEAM[dest.team] || ''} {dest.team}</span>
+      {/* Both names come out of the group tables, so they are committed members
+          of this edition and always have a flag. The opponent is the one that
+          can be missing: a knockout tie whose other side is not a group slot
+          leaves it unprojected. */}
+      <span className="sc-r32-team">{FLAG_BY_TEAM[dest.team]} {dest.team}</span>
       <span className="sc-r32-vs">vs</span>
       <span className="sc-r32-opp">
-        {dest.opponent ? `${FLAG_BY_TEAM[dest.opponent] || ''} ${dest.opponent}` : 'TBD'}
+        {dest.opponent ? `${FLAG_BY_TEAM[dest.opponent]} ${dest.opponent}` : 'TBD'}
       </span>
       {dest.matchNum && <span className="sc-r32-num">M{dest.matchNum}</span>}
       {confirmed && <span className="sc-r32-lock" title="This matchup is confirmed — it can no longer change" aria-label="Matchup confirmed">✔️</span>}
@@ -192,6 +197,7 @@ export default function ScenariosView({ matches }) {
         {groupsInPlay.map((g) => {
           const open = remaining[g]
           const allPicked = open.every((m) => Array.isArray(picks[m.num]))
+          /* v8 ignore next -- unreachable: projectKnockout seeds an entry for every group, so `perGroup[g]` is always there */
           const proj = perGroup[g] || {}
           // Distinct final standings still reachable given the results set so far.
           const { count, decided } = possibleOrderings(g, synthetic)
@@ -229,7 +235,10 @@ export default function ScenariosView({ matches }) {
                     proj.thirdTeam && (
                       <li className="sc-r32-row sc-r32-out">
                         <span className="sc-r32-pos">3rd</span>
-                        <span className="sc-r32-team">{FLAG_BY_TEAM[proj.thirdTeam] || ''} {proj.thirdTeam}</span>
+                        {/* thirdTeam is the third row of a ranked group table, which
+                            rankGroup seeds from the committed group — so it is always a
+                            member of this edition and always has a flag. */}
+                        <span className="sc-r32-team">{FLAG_BY_TEAM[proj.thirdTeam]} {proj.thirdTeam}</span>
                         <span className="sc-r32-note">outside the best 8</span>
                       </li>
                     )

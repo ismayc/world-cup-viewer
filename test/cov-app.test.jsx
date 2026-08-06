@@ -58,6 +58,23 @@ describe('App coverage — extra lines', () => {
     )
   })
 
+  it('counts a single hidden game in the singular', () => {
+    // The group stage is archived and a search narrows what is left to exactly
+    // one of its fixtures: the note has to read "1 group game hidden", not
+    // "1 group games hidden".
+    global.fetch = fetchArchived()
+    // The haystack runs the two team names together, so the opener's exact
+    // pairing matches that fixture and nothing else. Restored from the URL, so
+    // the search is already applied when the archive lands.
+    const opener = MATCHES.find((m) => m.stage === 'Group')
+    window.history.replaceState(null, '', `/?q=${encodeURIComponent(`${opener.t1} ${opener.t2}`)}`)
+    render(<App />)
+    return screen.findByText(/Group stage complete/).then((note) => {
+      expect(note.textContent).toMatch(/1 group game hidden/)
+      expect(note.textContent).not.toMatch(/group games hidden/)
+    })
+  })
+
   // Lines 609-618: the scenarios and outlook <main> blocks, which render only
   // while the group stage is NOT archived (so those tabs stay visible).
   it('falls back to the bracket when the open view is archived away underneath it', async () => {

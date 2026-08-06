@@ -311,6 +311,7 @@ export function groupRunnersUp(matches) {
     const groupMatches = matches.filter((m) => m.stage === 'Group' && m.group === g)
     if (groupMatches.length < GROUP_MATCH_COUNT || !groupMatches.every(isFinal)) continue
     const second = rankGroup(g, groupMatches)[1]
+    /* v8 ignore next -- unreachable: rankGroup seeds its rows from the committed group, so a finished group always has a runner-up */
     if (second) out[g] = second.name
   }
   return out

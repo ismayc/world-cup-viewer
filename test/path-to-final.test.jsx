@@ -180,6 +180,25 @@ describe('PathPicker', () => {
     expect(screen.getByText(/Champions/)).toBeInTheDocument()
   })
 
+  it('says a team is in the Final while the Final is still to be played', () => {
+    // Through every round and named in the Final, but that match has no result
+    // yet — so the status is "In the Final", not a champion crowned early.
+    const toTheFinal = { ...fullRun, 104: { t1: 'Mexico' } }
+    renderWith(<PathPicker byNum={matchesByNum(withPath(toTheFinal))} />, { pathTeam: 'Mexico' })
+    expect(screen.getByText(/In the Final/)).toBeInTheDocument()
+    expect(screen.queryByText(/Champions/)).not.toBeInTheDocument()
+  })
+
+  it('clears the path when the dropdown is put back to its blank option', () => {
+    // The blank option carries an empty value; selecting it has to clear the
+    // path rather than set it to the empty string, which no team matches.
+    renderWith(<PathPicker byNum={matchesByNum(withPath(R32_TEAMS))} />, { pathTeam: 'Mexico' })
+    expect(screen.getByText(/Up next/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/Path to the Final/), { target: { value: '' } })
+    expect(screen.queryByText(/Up next/)).not.toBeInTheDocument()
+    expect(localStorage.getItem('wc2026:pathTeam')).toBeNull()
+  })
+
   it('offers a quick chip for a followed knockout team', () => {
     localStorage.setItem('wc2026:followed', JSON.stringify(['Mexico']))
     renderWith(<PathPicker byNum={matchesByNum(withPath(R32_TEAMS))} />)

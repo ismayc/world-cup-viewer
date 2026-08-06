@@ -216,3 +216,66 @@ describe('NextMatch — knockout slots and teams it has no flag for', () => {
     expect(document.querySelector('.nm-champ-flag').textContent).toBe('')
   })
 })
+
+
+describe('NextMatch — two knockout ties at the same kickoff', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    localStorage.clear()
+  })
+
+  // The quarter-finals are drawn in pairs that kick off together. Before the
+  // bracket resolves, both are ties between feeder labels: no group to name, no
+  // flag for any of the four sides. With nobody followed there is no favourite
+  // to single out, so they stack under one shared countdown.
+  const KO = '2027-07-04T15:00:00Z'
+  const tie = (num, a, b) => ({
+    num,
+    stage: 'QF',
+    t1: a,
+    t2: b,
+    ko: KO,
+    venue: MATCHES[0].venue,
+  })
+  const pair = () => [
+    tie(700, 'Winner Match 5', 'Winner Match 6'),
+    tie(701, 'Winner Match 7', 'Winner Match 8'),
+  ]
+
+  it('names each round, falls back for every flag, and counts the days down once', () => {
+    vi.setSystemTime(new Date('2027-06-30T15:00:00Z')) // four days out
+    renderNM(pair())
+    expect(document.querySelector('.nextmatch-stack')).toBeTruthy()
+    const rows = [...document.querySelectorAll('.nm-live-row')]
+    expect(rows).toHaveLength(2)
+    // Each stacked row is labelled by its round, not "Group undefined".
+    for (const row of rows) {
+      expect(row.textContent).not.toMatch(/Group undefined/)
+    }
+    // None of the four feeder labels has a flag of its own.
+    const flags = [...document.querySelectorAll('.nm-flag')].map((n) => n.textContent)
+    expect(flags).toHaveLength(4)
+    expect(flags.every((f) => f === '•')).toBe(true)
+    // One shared countdown, carrying a day component.
+    expect(document.querySelector('.nm-countdown').textContent).toMatch(/\dd/)
+  })
+
+  it('stacks two live knockout ties, each labelled by its round', () => {
+    // Both in progress at once: the same rows, now under the live header.
+    vi.setSystemTime(new Date('2027-07-04T16:00:00Z'))
+    renderNM(pair().map((m) => ({ ...m, score: [0, 0], live: { clock: "45'" } })))
+    expect(screen.getByText(/Live now/)).toBeInTheDocument()
+    const rows = [...document.querySelectorAll('.nm-live-row')]
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row.textContent).not.toMatch(/Group undefined/)
+    }
+    const flags = [...document.querySelectorAll('.nm-flag')].map((n) => n.textContent)
+    expect(flags).toHaveLength(4)
+    expect(flags.every((f) => f === '•')).toBe(true)
+  })
+})

@@ -178,11 +178,11 @@ describe('Standings clinch badges', () => {
 describe('Schedule team-name slot tooltip', () => {
   const groupMatch = MATCHES.find((m) => m.num === 28) // Mexico v South Korea (Group A)
 
-  function renderCard(clinch) {
+  function renderCard(clinch, slotMap = groupSlotMap(MATCHES)) {
     return render(
       <FollowProvider>
         <DetailContext.Provider value={() => {}}>
-          <MatchCard match={groupMatch} tz="America/New_York" clinch={clinch} slotMap={groupSlotMap(MATCHES)} />
+          <MatchCard match={groupMatch} tz="America/New_York" clinch={clinch} slotMap={slotMap} />
         </DetailContext.Provider>
       </FollowProvider>,
     )
@@ -201,6 +201,18 @@ describe('Schedule team-name slot tooltip', () => {
     expect(screen.getByText('Mexico').getAttribute('title')).toBe(
       'Clinched Group A winner → Round of 32 · Match 79',
     )
+  })
+
+  it('names only the routes the slot map actually knows', () => {
+    // The slot map is parsed from the published Round-of-32 labels. Before both
+    // ties naming this group are drawn, one or other route is simply missing —
+    // the tooltip lists what is known and never a "Match undefined".
+    renderCard({}, { A: { win: null, runnerUp: null } })
+    const title = screen.getByText('Mexico').getAttribute('title')
+    expect(title).toMatch(/Group A knockout route/)
+    expect(title).not.toMatch(/1st →/)
+    expect(title).not.toMatch(/2nd →/)
+    expect(title).toMatch(/3rd → a best-third tie/)
   })
 })
 
