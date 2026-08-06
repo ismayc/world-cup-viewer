@@ -154,3 +154,65 @@ describe('NextMatch', () => {
     expect(before).not.toBe(after)
   })
 })
+
+describe('NextMatch — knockout slots and teams it has no flag for', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    localStorage.clear()
+  })
+
+  // Before the bracket resolves, the next match is a knockout tie between two
+  // feeder labels. There is no group to name and no flag to show for either
+  // side, and the countdown to it is measured in days rather than minutes.
+  const KO = '2027-07-04T15:00:00Z'
+  const placeholder = {
+    num: 700,
+    stage: 'QF',
+    t1: 'Winner Match 5',
+    t2: 'Winner Match 6',
+    ko: KO,
+    venue: MATCHES[0].venue,
+  }
+
+  it('names the round, falls back for both flags, and counts the days down', () => {
+    // Four days out, so the countdown carries a day component.
+    vi.setSystemTime(new Date('2027-06-30T15:00:00Z'))
+    renderNM([placeholder])
+
+    // A knockout tie is labelled by its round, not "Group undefined".
+    expect(screen.getByText(/Quarter|QF/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Group undefined/)).not.toBeInTheDocument()
+
+    // Neither feeder label has a flag of its own.
+    const flags = [...document.querySelectorAll('.nm-flag')].map((n) => n.textContent)
+    expect(flags.length).toBeGreaterThanOrEqual(2)
+    expect(flags.every((f) => f === '•')).toBe(true)
+
+    // The countdown shows days.
+    expect(document.querySelector('.nm-count, .nm-countdown, .nm-timer')?.textContent ?? document.body.textContent)
+      .toMatch(/\dd/)
+  })
+
+  it('crowns a champion the flag table does not know', () => {
+    // A final between two feeder labels that has somehow been decided: the
+    // banner still names both, with the fallback where a flag would be.
+    vi.setSystemTime(new Date('2027-08-01T00:00:00Z'))
+    const decidedFinal = {
+      num: 701,
+      stage: 'Final',
+      t1: 'Winner Match 9',
+      t2: 'Winner Match 10',
+      ko: '2027-07-20T15:00:00Z',
+      venue: MATCHES[0].venue,
+      score: [2, 1],
+    }
+    renderNM([decidedFinal])
+    expect(screen.getByText(/Winner Match 9/)).toBeInTheDocument()
+    expect(screen.getByText(/Winner Match 10/)).toBeInTheDocument()
+    expect(document.querySelector('.nm-champ-flag').textContent).toBe('')
+  })
+})

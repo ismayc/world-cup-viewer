@@ -20,7 +20,7 @@ export default defineConfig({
       all: true, // count untested files too, so the badge isn't flattered
       include: ['src/**'],
       exclude: ['src/main.jsx', 'src/**/*.test.{js,jsx}'],
-      reporter: ['text-summary', 'json-summary'],
+      reporter: ['text-summary', 'json-summary', 'json'],
     },
   },
 })

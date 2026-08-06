@@ -234,3 +234,128 @@ describe('fetchRecentPlayerStats', () => {
     expect(await fetchRecentPlayerStats([{ live: true }], wantKeys)).toEqual([])
   })
 })
+
+describe('espnStats against a feed that sends nothing', () => {
+  // Every field these parsers read is optional in ESPN's core API, and a missing
+  // one is routine rather than exceptional — a leader list before the tournament
+  // starts, an athlete with no statistics document yet, an event log for someone
+  // who has not played. Each fallback below is the difference between an empty
+  // table and a crash, so they are exercised together on one bare document.
+
+  it('reads a leaders document with no categories at all', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({}) })))
+    expect(await fetchBootExtras()).toEqual([])
+  })
+
+  it('reads leader categories with no leaders, and leaders with no athlete ref', async () => {
+    const doc = {
+      categories: [
+        { name: 'goalsLeaders' }, // no leaders array
+        { name: 'assistsLeaders', leaders: [{}, { athlete: {} }] }, // no $ref to match
+      ],
+    }
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => doc })))
+    expect(await fetchBootExtras()).toEqual([])
+  })
+
+  it('defaults every statistic the athlete document omits', async () => {
+    // A named athlete whose statistics document has no splits at all: goals and
+    // minutes are unknown (null) but assists count as zero, because the Boot
+    // table sorts on assists and a missing value must not outrank a real one.
+    const doc = {
+      categories: [{ name: 'goalsLeaders', leaders: [{ athlete: { $ref: `http://${CORE}/athletes/1?lang=en` } }] }],
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({
+      ok: true,
+      json: async () => {
+        if (url.includes('/leaders')) return doc
+        if (url.includes('/statistics')) return {} // no splits
+        return { displayName: 'Nameless Stat Line' }
+      },
+    })))
+    expect(await fetchBootExtras()).toEqual([
+      { name: 'Nameless Stat Line', goals: null, assists: 0, minutes: null },
+    ])
+  })
+
+  it('reads a statistics document whose categories carry no stats', async () => {
+    const doc = {
+      categories: [{ name: 'goalsLeaders', leaders: [{ athlete: { $ref: `http://${CORE}/athletes/1?lang=en` } }] }],
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({
+      ok: true,
+      json: async () => {
+        if (url.includes('/leaders')) return doc
+        if (url.includes('/statistics')) return { splits: { categories: [{ name: 'general' }] } }
+        return { displayName: 'Empty Category' }
+      },
+    })))
+    const [only] = await fetchBootExtras()
+    expect(only).toMatchObject({ name: 'Empty Category', goals: null, assists: 0 })
+  })
+
+  it('takes the recent-match set and the wanted keys in their loosest forms', async () => {
+    // Callers pass a Set, but an array (or nothing at all) has to behave the
+    // same rather than reconcile every player on the board.
+    expect(await fetchRecentPlayerStats(null, new Set(['x']))).toEqual([])
+    expect(await fetchRecentPlayerStats([{ espnId: '1' }], null)).toEqual([])
+    expect(await fetchRecentPlayerStats([{ espnId: '1' }], [])).toEqual([])
+    expect(await fetchRecentPlayerStats([{ live: true }], ['x'])).toEqual([])
+  })
+
+  it('defaults an event log with no events and a match line with no minutes', async () => {
+    const summary = {
+      keyEvents: [],
+      rosters: [{ roster: [{ athlete: { id: '77', displayName: 'Recent Player' }, starter: true, stats: [] }] }],
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({
+      ok: true,
+      json: async () => {
+        if (url.includes('/summary')) return summary
+        if (url.includes('/eventlog')) return {} // no events at all
+        return {}
+      },
+    })))
+    const out = await fetchRecentPlayerStats(
+      [{ espnId: '900', live: false }],
+      new Set([nameKey('Recent Player')]),
+    )
+    // Nothing in the log to total up, so minutes come back as unknown rather
+    // than a misleading zero.
+    expect(out).toEqual([{ name: 'Recent Player', assists: 0, minutes: null }])
+  })
+
+  it('folds a live match’s assists in even when the event log is empty', async () => {
+    const summary = {
+      keyEvents: [],
+      rosters: [{ roster: [{ athlete: { id: '78', displayName: 'Live Player' }, starter: true, stats: [{ name: 'goalAssists', value: 2 }] }] }],
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({
+      ok: true,
+      json: async () => {
+        if (url.includes('/summary')) return summary
+        if (url.includes('/eventlog')) return { events: { items: [] } }
+        return {}
+      },
+    })))
+    const out = await fetchRecentPlayerStats(
+      [{ espnId: '901', live: true }],
+      new Set([nameKey('Live Player')]),
+    )
+    expect(out).toEqual([{ name: 'Live Player', assists: 2, minutes: null }])
+  })
+
+  it('ignores a match line with no athlete id', async () => {
+    const summary = {
+      keyEvents: [],
+      rosters: [{ roster: [{ athlete: { displayName: 'No Id' }, starter: true, stats: [] }] }],
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url) => ({
+      ok: true,
+      json: async () => (url.includes('/summary') ? summary : {}),
+    })))
+    expect(
+      await fetchRecentPlayerStats([{ espnId: '902', live: false }], new Set([nameKey('No Id')])),
+    ).toEqual([])
+  })
+})

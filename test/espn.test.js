@@ -299,3 +299,139 @@ describe('espnFinalScore (getter for the reconciler)', () => {
     expect(espnFinalScore(match1, done)).toEqual({ home: 'Mexico', away: 'South Africa', ft: [2, 1] })
   })
 })
+
+describe('the scoreboard normalizer against a sparse event', () => {
+  // ESPN omits fields freely: a fixture with no kickoff instant, an event with
+  // no clock, a card with only a short name, a substitution, a detail belonging
+  // to neither side. None of these is exceptional, and each has its own fallback.
+  const HOME_ID = '10'
+  const AWAY_ID = '20'
+
+  const sparseEvent = (over = {}) => ({
+    // no `id` — the uid is the fallback handle for the summary endpoint
+    uid: 's:600~e:900',
+    competitions: [
+      {
+        competitors: [
+          { homeAway: 'home', team: { id: HOME_ID, displayName: 'Alpha' }, score: '1' },
+          { homeAway: 'away', team: { id: AWAY_ID, displayName: 'Beta' }, score: '1' },
+        ],
+        // status lives on the competition here, not on the event
+        status: { type: { state: 'in' } },
+        details: [
+          // A shootout kick is not part of the 90 minutes.
+          { shootout: true, scoringPlay: true, team: { id: HOME_ID }, athletesInvolved: [{ displayName: 'Spot Kick' }] },
+          // A detail belonging to neither competitor.
+          { scoringPlay: true, team: { id: '999' }, athletesInvolved: [{ displayName: 'Nobody' }] },
+          // A goal with no clock at all and no athlete named.
+          { scoringPlay: true, team: { id: HOME_ID } },
+          // A yellow card whose player only has a short name.
+          { yellowCard: true, team: { id: AWAY_ID }, clock: { displayValue: "31'" }, athletesInvolved: [{ shortName: 'B. Short' }] },
+          // A red card.
+          { redCard: true, team: { id: AWAY_ID }, clock: { displayValue: "88'+2'" }, athletesInvolved: [{ displayName: 'Sent Off' }] },
+          // A substitution, with one unnamed player among them.
+          { type: { text: 'Substitution' }, team: { id: HOME_ID }, clock: { displayValue: "60'" }, athletesInvolved: [{ displayName: 'On' }, {}] },
+          // An event of no interest at all.
+          { type: { text: 'Corner' }, team: { id: HOME_ID } },
+        ],
+      },
+    ],
+    ...over,
+  })
+
+  const readOne = async (event) => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ events: [event] }) })))
+    const map = await fetchLive(undefined, ['20260101'])
+    return [...map.values()][0]
+  }
+
+  it('falls back through every missing field on the event', async () => {
+    const rec = await readOne(sparseEvent())
+    expect(rec.id).toBe('s:600~e:900') // uid stood in for the missing id
+    expect(rec.state).toBe('in') // read off the competition's status
+    expect(rec.clock).toBe('') // no shortDetail and no displayClock
+    expect(rec.detail).toBe('')
+    expect(rec.instant).toBeNull() // no date to anchor it to
+
+    // The shootout kick and the third-party detail are both left out.
+    expect(rec.goals.home.map((g) => g.name)).toEqual([''])
+    expect(rec.goals.home[0].minute).toBeNull()
+    expect(rec.goals.home[0].extra).toBeUndefined()
+
+    // A short name stands in when there is no display name.
+    expect(rec.cards.away.map((c) => c.name)).toEqual(['B. Short', 'Sent Off'])
+    expect(rec.cards.away.map((c) => c.color)).toEqual(['yellow', 'red'])
+    expect(rec.cards.away[1]).toMatchObject({ minute: 88, extra: 2 })
+
+    // The unnamed substitute is dropped from the list rather than blank-padded.
+    expect(rec.subs.home).toEqual([{ minute: 60, extra: undefined, names: ['On'] }])
+  })
+
+  it('keys a dated event by its instant as well as by the pairing', async () => {
+    const rec = await readOne(sparseEvent({ date: '2026-01-01T15:00:00Z' }))
+    expect(rec.instant).toBe(Date.parse('2026-01-01T15:00:00Z'))
+  })
+
+  // Two teams the edition actually fields, so the overlay recognises them as
+  // real names it may write onto a placeholder slot.
+  const realPair = MATCHES.find((m) => m.stage === 'Group')
+
+  it('adopts ESPN’s teams and order for a knockout placeholder', () => {
+    // A bracket slot still reading a feeder label has no teams of its own, so
+    // the feed's naming and its home/away order are taken as they come.
+    const placeholder = {
+      num: 500,
+      stage: 'QF',
+      t1: 'Winner Match 5',
+      t2: 'Winner Match 6',
+      ko: '2027-07-01T15:00:00Z',
+    }
+    const rec = {
+      id: 'e500',
+      home: realPair.t1,
+      away: realPair.t2,
+      state: 'post',
+      score: [2, 0],
+      goals: { home: [], away: [] },
+      cards: { home: [], away: [] },
+      subs: { home: [], away: [] },
+      clock: 'FT',
+      detail: 'Full Time',
+    }
+    // A placeholder has no real pairing to key on, so the overlay finds its
+    // record by kickoff instant instead.
+    const key = 'inst:' + Date.parse(placeholder.ko)
+    const [out] = applyLive([placeholder], new Map([[key, rec]]))
+    expect(out.t1).toBe(realPair.t1)
+    expect(out.t2).toBe(realPair.t2)
+    expect(out.score).toEqual([2, 0])
+  })
+
+  it('leaves a placeholder side alone when the feed has no real name for it', () => {
+    // Half-published knockout: ESPN knows one side and is still carrying its own
+    // placeholder for the other, which must not be written onto the board.
+    const placeholder = {
+      num: 501,
+      stage: 'QF',
+      t1: 'Winner Match 7',
+      t2: 'Winner Match 8',
+      ko: '2027-07-02T15:00:00Z',
+    }
+    const rec = {
+      id: 'e501',
+      home: realPair.t1,
+      away: 'Winner Match 8',
+      state: 'post',
+      score: [1, 0],
+      goals: { home: [], away: [] },
+      cards: { home: [], away: [] },
+      subs: { home: [], away: [] },
+      clock: 'FT',
+      detail: 'Full Time',
+    }
+    const key = 'inst:' + Date.parse(placeholder.ko)
+    const [out] = applyLive([placeholder], new Map([[key, rec]]))
+    expect(out.t1).toBe(realPair.t1)
+    expect(out.t2).toBe('Winner Match 8') // untouched
+  })
+})

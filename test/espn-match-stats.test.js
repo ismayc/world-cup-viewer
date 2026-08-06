@@ -148,3 +148,59 @@ describe('applyLive carries the ESPN event id onto merged matches', () => {
     expect(m.espnId).toBe('760512')
   })
 })
+
+describe('parseSummary against a document with nothing in it', () => {
+  // Every array the parser walks is optional in ESPN's summary document — a match
+  // with no key events, a side with no roster published yet, a player with no
+  // statistics. Each fallback below is the difference between an empty team sheet
+  // and a crash, and none of them is an exceptional state.
+
+  it('reads a document with no key events and no rosters at all', () => {
+    const { length, byName } = parseSummary({})
+    expect(length).toBe(90) // no extra-time marker → regulation
+    expect(byName).toEqual({})
+  })
+
+  it('reads a side whose roster has not been published', () => {
+    const { byName } = parseSummary({ keyEvents: [], rosters: [{}, { roster: [] }] })
+    expect(byName).toEqual({})
+  })
+
+  it('reads events with no type, no participants and no stats', () => {
+    const doc = {
+      keyEvents: [
+        {}, // no type at all — not a substitution, not extra time
+        { type: {} },
+        { type: { text: 'Substitution' }, clock: { value: 3600 } }, // no participants
+      ],
+      rosters: [
+        {
+          roster: [
+            // No stats array, so the per-match assist count falls back to zero.
+            { athlete: { id: '1', displayName: 'Ninety Minutes' }, starter: true },
+          ],
+        },
+      ],
+    }
+    const { length, byName } = parseSummary(doc)
+    expect(length).toBe(90)
+    expect(byName['ninety minutes']).toMatchObject({ played: true, minutes: 90, assists: 0 })
+  })
+
+  it('plays a substitute to the whistle when only their exit is recorded', () => {
+    // Subbed out with no substitution event naming them: there is no minute to
+    // end at, so the match length stands in rather than a zero-minute line.
+    const doc = {
+      keyEvents: [],
+      rosters: [
+        {
+          roster: [
+            { athlete: { id: '2', displayName: 'Only Off' }, starter: true, subbedOut: true, stats: [] },
+          ],
+        },
+      ],
+    }
+    const { byName } = parseSummary(doc)
+    expect(byName['only off'].minutes).toBe(90)
+  })
+})
