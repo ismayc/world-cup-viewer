@@ -73,6 +73,20 @@ describe('formatters', () => {
   it('returns a timezone abbreviation', () => {
     expect(tzAbbrev(ISO, 'America/New_York')).toBeTruthy()
   })
+
+  it('returns an empty abbreviation when the platform formats no zone name', () => {
+    // Node's ICU build decides which parts come back, and a trimmed build can
+    // format a time with no timeZoneName part at all. The kickoff line then
+    // reads "1:00 PM" with nothing after it rather than "1:00 PM undefined".
+    const spy = vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function () {
+      return { formatToParts: () => [{ type: 'hour', value: '1' }] }
+    })
+    try {
+      expect(tzAbbrev(ISO, 'America/New_York')).toBe('')
+    } finally {
+      spy.mockRestore()
+    }
+  })
 })
 
 describe('teamLocalKickoffs / tooltip', () => {

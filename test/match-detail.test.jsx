@@ -179,6 +179,26 @@ describe('MatchDetail timeline', () => {
     // Stoppage-time minute label.
     expect(screen.getByText("90+3'")).toBeInTheDocument()
   })
+
+  it('keeps a stable order for two events the feed gives no clock at all', () => {
+    // ESPN sometimes publishes an event before its clock. Two of those compare
+    // equal on every key the sort has, so the comparator has to fall through
+    // both halves without throwing or dropping either one.
+    const m = {
+      ...groupMatch,
+      score: [1, 1],
+      goals: {
+        t1: [{ name: 'Clockless One' }],
+        t2: [{ name: 'Clockless Two' }],
+      },
+      cards: { t1: [{ name: 'Carded', color: 'yellow' }], t2: [] },
+    }
+    renderDetail({ match: m })
+    expect(screen.getByText('Clockless One')).toBeInTheDocument()
+    expect(screen.getByText('Clockless Two')).toBeInTheDocument()
+    expect(screen.getByText('Carded')).toBeInTheDocument()
+    expect(document.querySelectorAll('.timeline li')).toHaveLength(3)
+  })
 })
 
 describe('MatchDetail live states', () => {

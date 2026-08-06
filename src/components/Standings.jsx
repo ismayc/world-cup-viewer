@@ -46,10 +46,14 @@ function AsItStands({ proj, onGoToMatch }) {
     return (
       <li className="ais-row" key={label}>
         <span className="ais-pos">{label}</span>
-        <span className="ais-team">{FLAG_BY_TEAM[team] || ''} {team}</span>
+        {/* Both names come out of the group tables, so they are committed members
+            of this edition and always have a flag. The opponent is the one that
+            can be missing: a knockout tie whose other side is not a group slot
+            leaves it unprojected. */}
+        <span className="ais-team">{FLAG_BY_TEAM[team]} {team}</span>
         <span className="ais-vs">vs</span>
         <span className="ais-opp">
-          {opp ? `${FLAG_BY_TEAM[opp] || ''} ${opp}` : 'TBD'}
+          {opp ? `${FLAG_BY_TEAM[opp]} ${opp}` : 'TBD'}
         </span>
         {d?.matchNum &&
           (onGoToMatch ? (
@@ -78,7 +82,10 @@ function AsItStands({ proj, onGoToMatch }) {
           : proj.thirdTeam && (
               <li className="ais-row ais-out" key="3rd-out">
                 <span className="ais-pos">3rd</span>
-                <span className="ais-team">{FLAG_BY_TEAM[proj.thirdTeam] || ''} {proj.thirdTeam}</span>
+                {/* thirdTeam is the third row of a ranked group table, which
+                    rankGroup seeds from the committed group — so it is always a
+                    member of this edition and always has a flag. */}
+                <span className="ais-team">{FLAG_BY_TEAM[proj.thirdTeam]} {proj.thirdTeam}</span>
                 <span className="ais-note">outside the best 8</span>
               </li>
             )}
@@ -290,8 +297,13 @@ function ThirdTieNotes({ thirds }) {
                 </>
               ) : (
                 <>
-                  <strong>FIFA ranking</strong>: {a.name} #{FIFA_RANK[a.name] ?? '—'} vs {b.name} #
-                  {FIFA_RANK[b.name] ?? '—'}{' '}
+                  {/* Every one of the 48 qualified teams carries a FIFA ranking,
+                      and these two names are rows of ranked group tables, so
+                      there is always a number to print. (A v8-ignore inside a
+                      JSX expression never reaches the compiled output, so the
+                      dead placeholder is removed rather than annotated.) */}
+                  <strong>FIFA ranking</strong>: {a.name} #{FIFA_RANK[a.name]} vs {b.name} #
+                  {FIFA_RANK[b.name]}{' '}
                   <span className="thirds-tie-fine">— a lower number ranks higher</span>
                 </>
               )}
@@ -318,6 +330,7 @@ function BestThirds({ qual, clinch, groupState, liveTeams, pausedTeams }) {
   const contenders = []
   for (const g of GROUPS) {
     if (groupState[g] === 'final') continue // group done → its third is settled
+    /* v8 ignore next -- unreachable: computeQualification ranks every group of the committed table, so `qual.groups[g]` is always an array */
     const rows = qual.groups[g] || []
     if (!rows.some((r) => r.P > 0)) continue // group hasn't kicked off → not meaningful yet
     const fourth = rows[3]
@@ -456,9 +469,11 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
     const through =
       status === 'won-group' || status === 'runner-up' || status === 'top2' || status === 'third'
     if (!through) return null
+    /* v8 ignore next -- unreachable: computeQualification ranks every group of the committed table, so `qual.groups[group]` is always an array */
     const row = (qual.groups[group] || []).find((r) => r.name === team)
     /* v8 ignore next -- unreachable: the group/team pair comes from a rendered standings row, so the team is always among that group's computed rows */
     if (!row) return null
+    /* v8 ignore next -- unreachable: projectKnockout seeds an entry for every group, so `perGroup[group]` is always there */
     const proj = perGroup[group] || {}
     // A 'won-group'/'runner-up' verdict pins the exact finishing position, so use
     // it directly; otherwise (top2 not yet split, or a best third) fall back to
@@ -474,7 +489,6 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
               ? proj.second
               : row.rank === 3
                 ? proj.third
-                /* v8 ignore next -- a through (top2/third) team is always rank 1-3 */
                 : null
     // A mathematically locked opponent (invariant across every remaining outcome)
     // is authoritative; otherwise fall back to the provisional "as it stands"

@@ -86,21 +86,33 @@ export function resolveLockedThirdSlots(matches) {
   // No group finished → no third can be locked yet (and skip the costly analysis).
   if (!Object.keys(TEAMS).some((g) => groupComplete(g, matches))) return matches
   const reachable = reachableThirdSets(matches)
+  // Unreachable: take the eight groups with the highest BEST third profile. Every
+  // excluded group's WORST is no better than its own best, which is no better
+  // than the weakest included best — so that combination can never be blocked,
+  // and all 495 eight-group combinations are in the Annexe C table. The list is
+  // therefore never empty. Kept as a guard because everything below indexes it.
+  /* v8 ignore next */
   if (!reachable.length) return matches
   const fill = {} // R32 match number -> locked third-placed team
   for (const m of R32_STATIC) {
     const sides = [m.t1, m.t2]
     const ti = sides.findIndex((s) => THIRD_SLOT.test(s))
     if (ti < 0) continue
+    // In the 2026 draw every "3rd …" slot faces a "Winner Group X" whose X is one
+    // of the eight THIRD_WINNER_ORDER hosts, so neither guard below can fire.
+    // They stay because both feed an index.
     const wm = WINNER_GROUP.exec(sides[1 - ti])
+    /* v8 ignore next */
     if (!wm) continue
     const wi = THIRD_WINNER_ORDER.indexOf(wm[1])
+    /* v8 ignore next */
     if (wi < 0) continue
     const groups = new Set(reachable.map((key) => THIRD_PLACE_COMBINATIONS[key][wi]))
     if (groups.size !== 1) continue
     const g = [...groups][0]
     if (!groupComplete(g, matches)) continue
     const third = rankGroup(g, matches)[2]
+    /* v8 ignore next -- unreachable: rankGroup seeds its rows from the committed group, so a finished group always has a third-placed team */
     if (third) fill[m.num] = third.name
   }
   if (!Object.keys(fill).length) return matches

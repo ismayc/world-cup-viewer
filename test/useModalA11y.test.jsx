@@ -102,4 +102,18 @@ describe('useModalA11y', () => {
     expect(document.activeElement).toBe(trigger) // restored
     trigger.remove()
   })
+
+  it('has nothing to restore when nothing was focused before it opened', () => {
+    // A modal opened from a keyboard shortcut rather than a button: there is no
+    // trigger holding focus, so closing must simply leave focus alone instead of
+    // reaching for a focus() that isn't there.
+    let unmount
+    Object.defineProperty(document, 'activeElement', { configurable: true, get: () => null })
+    try {
+      ;({ unmount } = render(<Modal onClose={() => {}} />))
+    } finally {
+      delete document.activeElement // back to jsdom's real getter
+    }
+    expect(() => unmount()).not.toThrow()
+  })
 })

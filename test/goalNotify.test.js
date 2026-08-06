@@ -157,9 +157,28 @@ describe('goalNotification', () => {
     expect(n.body).toContain('A 1–0 B')
   })
 
+  it('names the fixture rather than a score when neither goal lists nor a score exist', () => {
+    // The very first poll of a match ESPN has only just started publishing: it is
+    // live, but nothing numeric has arrived yet. Better to say who is playing
+    // than to invent a scoreline.
+    const m = { num: 1, t1: 'A', t2: 'B' }
+    const n = goalNotification({ match: m, side: 't2', goal: goal('Nine', null) })
+    expect(n.body).toBe('Nine\nA v B')
+  })
+
   it('falls back to the team name when the scorer is unknown', () => {
     const m = { num: 1, t1: 'A', t2: 'B', score: [1, 0] }
     const n = goalNotification({ match: m, side: 't1', goal: goal('', 12) })
     expect(n.body.startsWith("A 12'")).toBe(true)
+  })
+})
+
+describe('goal identity with pieces missing', () => {
+  it('keys a goal that has neither a scorer nor a clock', () => {
+    expect(goalKeys({ goals: { t1: [{}] } })).toEqual(new Set(['t1||||']))
+  })
+
+  it('reads a match with no goal lists as having no goals', () => {
+    expect(goalKeys({ num: 1 })).toEqual(new Set())
   })
 })

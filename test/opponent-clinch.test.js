@@ -42,6 +42,16 @@ describe('lockedOpponent — knockout opponent clinch', () => {
     expect(sets.every((key) => key.includes('B'))).toBe(true)
   })
 
+  it('claims nothing when the caller hands it an empty set of reachable combinations', () => {
+    // The reachable combinations can be computed once and passed in when many
+    // teams are resolved together. If that pass came back with nothing, there is
+    // no combination left to agree on — the tie stays provisional rather than
+    // resolving off an empty set. (Note [] is truthy, so it is used as given.)
+    expect(lockedOpponent(snapshot, 'USA', clinch, [])).toBeNull()
+    // Teeth: the same call with the combinations recomputed does lock.
+    expect(lockedOpponent(snapshot, 'USA', clinch)).not.toBeNull()
+  })
+
   it('locks nothing before the tournament starts', () => {
     expect(lockedOpponent(MATCHES, 'USA')).toBeNull()
     expect(reachableThirdSets(MATCHES).length).toBeGreaterThan(1)

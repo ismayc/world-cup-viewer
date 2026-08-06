@@ -227,3 +227,128 @@ describe('eliminationStatus — basic verdicts', () => {
     for (const t of TEAMS['A']) expect(isAlive(matches, t.name)).toBe(true)
   })
 })
+
+// Every game a 1–0 win for the better-ranked side → third on 3 points, GD −1.
+const PLAIN = () => ({ margin: 1 })
+// The bottom two are both beaten twice by two goals and their meeting is left to
+// play: whoever wins finishes third on 3 points, a draw leaves the third on a
+// single point with a −4 difference. That spread is what makes the "strongest
+// reachable third-place profile" search do any work.
+const SWING = (hi, lo) => (lo >= 2 && hi <= 1 ? { margin: 2 } : { margin: 1 })
+const swingGroup = (g) => {
+  const idx = Object.fromEntries(TEAMS[g].map((t, k) => [t.name, k]))
+  const scores = groupScores(g, SWING)
+  const decider = MATCHES.find(
+    (m) =>
+      m.stage === 'Group' &&
+      m.group === g &&
+      Math.min(idx[m.t1], idx[m.t2]) === 2 &&
+      Math.max(idx[m.t1], idx[m.t2]) === 3,
+  )
+  delete scores[decider.num]
+  return scores
+}
+
+describe('third-place R32 slots — teams the bracket has no room for', () => {
+  // Groups A–H field a strong third (4 pts), I–L a battered one (3 pts, −9), so
+  // the eight best thirds are exactly A–H and the group stage is complete.
+  const completeStage = () => {
+    const scores = {}
+    for (const g of GROUPS) Object.assign(scores, groupScores(g, g <= 'H' ? STRONG : WEAK))
+    return withScores(scores)
+  }
+
+  it('names no slots at all for a team that is in no group', () => {
+    // A name the committed table has never carried — an upstream re-spelling,
+    // say. Neither form may attribute somebody else's slots to it.
+    const matches = completeStage()
+    expect(thirdPlaceR32Slots(matches, 'Nowhere United')).toEqual([])
+    expect(aliveR32Slots(matches, ['Nowhere United'])).toEqual({})
+  })
+
+  it('omits a third that no reachable combination carries into the bracket', () => {
+    // Group L's third IS its group's third-placed team, but with the stage
+    // complete only one eight-group combination remains reachable and L is not
+    // in it — so there is no slot to name, and the batch form leaves it out
+    // entirely rather than listing it with an empty array.
+    const matches = completeStage()
+    const lThird = TEAMS['L'][2].name
+    expect(aliveR32Slots(matches, TEAMS['L'].map((t) => t.name))[lThird]).toBeUndefined()
+    // Teeth: a third that DID make the cut is listed, so the omission is about
+    // this team rather than the batch form returning nothing on this board.
+    const aThird = TEAMS['A'][2].name
+    expect(aliveR32Slots(matches, [aThird])[aThird].length).toBeGreaterThan(0)
+  })
+})
+
+describe('the exact check across groups it cannot enumerate', () => {
+  const board = (opts = {}) => {
+    const scores = { ...swingGroup('L') }
+    for (const g of GROUPS) if (g !== 'L') Object.assign(scores, groupScores(g, PLAIN))
+    for (const num of opts.unplay || []) delete scores[num]
+    return withScores(scores)
+  }
+
+  it('takes the strongest third-place profile a team can still reach', () => {
+    // Group L's third can be on 3 points or on 1 — the check has to reason from
+    // the 3, its easiest path, or it would eliminate the team on its worst case.
+    const matches = board()
+    expect(matches.filter((m) => m.stage === 'Group' && !m.score)).toHaveLength(1)
+    expect(isAlive(matches, TEAMS['L'][2].name)).toBe(true)
+  })
+
+  it('refuses to count a rival group that is too open to enumerate', () => {
+    // Group E loses three results, putting its remaining scoreline space over
+    // the budget. It can no longer be shown to force anyone below it, so it
+    // simply does not count towards the eight-thirds cut — never a false
+    // elimination.
+    const eNums = MATCHES.filter((m) => m.stage === 'Group' && m.group === 'E')
+      .slice(0, 3)
+      .map((m) => m.num)
+    const status = eliminationStatus(board({ unplay: eNums }))
+    for (const t of TEAMS['E']) expect(status[t.name]).toBe('alive')
+    // ...and a team elsewhere that depends on the thirds race still gets a
+    // verdict, computed with group E left out of the count.
+    expect(status[TEAMS['A'][2].name]).toBe('alive')
+  })
+
+  it('declines to state requirements while the team’s own group cannot be enumerated', () => {
+    const cNums = MATCHES.filter((m) => m.stage === 'Group' && m.group === 'C')
+      .slice(0, 3)
+      .map((m) => m.num)
+    expect(advancementRequirements(board({ unplay: cNums }), TEAMS['C'][2].name)).toBeNull()
+    // Teeth: with Group C intact the same team does get a requirements picture.
+    expect(advancementRequirements(board(), TEAMS['C'][2].name)).toBeTruthy()
+  })
+})
+
+describe('advancementRequirements — how the threshold reads', () => {
+  const boardWith = (cTemplate) => {
+    const scores = { ...groupScores('C', cTemplate), ...swingGroup('L') }
+    for (const g of GROUPS) if (g !== 'C' && g !== 'L') Object.assign(scores, groupScores(g, PLAIN))
+    return withScores(scores)
+  }
+
+  it('signs a positive goal difference', () => {
+    // Group C's third thrashes the bottom side 3–0 and loses its other two 0–1:
+    // three points and a PLUS-one difference, which the threshold must spell
+    // with its sign or "worse than 1" reads as a bigger number than it is.
+    const POSITIVE = (hi, lo) => (hi === 2 && lo === 3 ? { margin: 3 } : { margin: 1 })
+    const req = advancementRequirements(boardWith(POSITIVE), TEAMS['C'][2].name)
+    expect(req.profile).toMatchObject({ Pts: 3, GD: 1 })
+    expect(req.variable.map((v) => v.group)).toEqual(['L'])
+    expect(req.variable[0].condition).toMatch(/goal difference worse than \+1/)
+  })
+
+  it('counts a single point in the singular', () => {
+    // Group C's third draws with the bottom side and loses its other two 0–1,
+    // while the bottom side is beaten 0–3 twice: one point, and it must read
+    // "fewer than 1 point", not "1 points".
+    const ONE_POINT = (hi, lo) =>
+      hi === 2 && lo === 3 ? { draw: true } : lo === 3 ? { margin: 3 } : { margin: 1 }
+    const req = advancementRequirements(boardWith(ONE_POINT), TEAMS['C'][2].name)
+    expect(req.profile).toMatchObject({ Pts: 1, GD: -2 })
+    expect(req.variable.map((v) => v.group)).toEqual(['L'])
+    expect(req.variable[0].condition).toMatch(/fewer than 1 point,/)
+  })
+})

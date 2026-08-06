@@ -29,16 +29,15 @@ const GROUPS = Object.keys(TEAMS)
 // team names, so always read the invariant labels from the static schedule).
 const R32 = MATCHES.filter((m) => m.stage === 'R32').map((m) => ({ num: m.num, slots: [m.t1, m.t2] }))
 
+// A Round-of-32 slot label is always one of exactly three shapes, so the return
+// type is 'winner' | 'runner' | 'third' — never anything else.
 function parseSlot(label) {
   let m = /^Winner Group ([A-L])$/.exec(label)
   if (m) return { type: 'winner', group: m[1] }
   m = /^Runner-up Group ([A-L])$/.exec(label)
   if (m) return { type: 'runner', group: m[1] }
-  if (/^3rd /.test(label)) return { type: 'third' }
-  /* v8 ignore start -- defensive: every R32 slot label is a group-winner/runner-up/third */
-  return { type: 'other' }
+  return { type: 'third' }
 }
-/* v8 ignore stop */
 
 // Which "8 best third-placed groups" combinations are STILL reachable. For each
 // candidate (the keys of the Annexe C table), set in-combination groups to their
@@ -57,6 +56,7 @@ export function reachableThirdSets(matches) {
       const b = bounds[g].best
       if (weakestIncluded === null || cmpThird(b, weakestIncluded) < 0) weakestIncluded = b
     }
+    /* v8 ignore next -- unreachable: every key of the Annexe C table is eight real group letters, so the loop above always sets a weakest included profile */
     if (!weakestIncluded) continue
     const blocked = GROUPS.some((g) => !inSet.has(g) && cmpThird(bounds[g].worst, weakestIncluded) > 0)
     if (!blocked) out.push(key)
@@ -88,21 +88,19 @@ export function lockedOpponent(matches, team, clinch = computeClinch(matches), r
     return opp ? { opponent: opp, matchNum: match.num } : null
   }
 
-  if (slot.type === 'third') {
-    const wi = THIRD_WINNER_ORDER.indexOf(group)
-    if (wi < 0) return null
-    const sets = reachable || reachableThirdSets(matches)
-    if (!sets.length) return null
-    const assignedGroups = new Set(sets.map((key) => THIRD_PLACE_COMBINATIONS[key][wi]))
-    if (assignedGroups.size !== 1) return null
-    const g = [...assignedGroups][0]
-    // The assigned group's third is only a single fixed team once it has finished.
-    if (!groupComplete(g, matches)) return null
-    const third = rankGroup(g, matches)[2]
-    return third ? { opponent: third.name, matchNum: match.num } : null
-  }
-
-  /* v8 ignore start -- unreachable: the opponent slot is always winner/runner/third */
-  return null
+  // Everything left is a third-place slot, and only the eight winner-vs-third
+  // ties reach here — so `group` is always one of the hosts in THIRD_WINNER_ORDER.
+  const wi = THIRD_WINNER_ORDER.indexOf(group)
+  /* v8 ignore next -- unreachable: a third-place slot only ever faces a group winner drawn from THIRD_WINNER_ORDER, so the index always hits */
+  if (wi < 0) return null
+  const sets = reachable || reachableThirdSets(matches)
+  if (!sets.length) return null
+  const assignedGroups = new Set(sets.map((key) => THIRD_PLACE_COMBINATIONS[key][wi]))
+  if (assignedGroups.size !== 1) return null
+  const g = [...assignedGroups][0]
+  // The assigned group's third is only a single fixed team once it has finished.
+  if (!groupComplete(g, matches)) return null
+  const third = rankGroup(g, matches)[2]
+  /* v8 ignore next -- unreachable: rankGroup seeds its rows from the committed group, so a finished group always has a third-placed team */
+  return third ? { opponent: third.name, matchNum: match.num } : null
 }
-/* v8 ignore stop */

@@ -48,6 +48,39 @@ describe('projectKnockout — parseSlot "other" + teamForSide null branch', () =
       expect(perGroup[g].first).toBeTruthy()
     }
   })
+
+  it('reports the projection incomplete when a side has no opponent to name', () => {
+    // An R32 tie drawn against a slot this bracket does not define: the group
+    // side of it still projects, but there is nobody to project it against, so
+    // the whole picture is flagged as not yet complete rather than being
+    // presented as settled.
+    const custom = [
+      ...buildComplete(),
+      {
+        num: 9998,
+        stage: 'R32',
+        t1: 'Winner Group A',
+        t2: 'Mystery Slot',
+        venue: 'sofi',
+        ko: '2026-06-29T16:30:00-04:00',
+      },
+      {
+        num: 9997,
+        stage: 'R32',
+        t1: 'Runner-up Group B',
+        t2: 'Mystery Slot',
+        venue: 'sofi',
+        ko: '2026-06-29T16:30:00-04:00',
+      },
+    ]
+    const { perGroup, complete } = projectKnockout(custom)
+    expect(complete).toBe(false)
+    // The last side written for a group wins, so A's winner and B's runner-up
+    // now point at the unnameable tie — with no opponent.
+    expect(perGroup.A.first).toMatchObject({ matchNum: 9998, opponent: null })
+    expect(perGroup.A.first.team).toBeTruthy()
+    expect(perGroup.B.second).toMatchObject({ matchNum: 9997, opponent: null })
+  })
 })
 
 describe('matchThirds — bipartite matching fallback', () => {

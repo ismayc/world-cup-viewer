@@ -81,6 +81,58 @@ describe('resolveThirdPlaceSlots — fill "3rd X/Y/Z" once the group stage is fi
   })
 })
 
+describe('third-place slots on the other side of the tie, and boards with nowhere to put them', () => {
+  // The 2026 draw happens to put every "3rd …" slot second, but both resolvers
+  // are written to fill whichever side carries the label. Swapping a tie's sides
+  // on the board exercises that: the slot LABELS are read from the static
+  // schedule by match number, so only the side being rewritten changes.
+  const swapSides = (matches, num) =>
+    matches.map((m) => (m.num === num ? { ...m, t1: m.t2, t2: m.t1 } : m))
+  const allNames = new Set(Object.values(TEAMS).flat().map((t) => t.name))
+
+  it('returns the board untouched when a final group stage has no ties to fill', () => {
+    // Group results only — the knockout fixtures are published separately and
+    // are not on this board, so there is no third-place slot to fill at all.
+    const groupsOnly = buildComplete().filter((m) => m.stage === 'Group')
+    expect(resolveThirdPlaceSlots(groupsOnly)).toBe(groupsOnly)
+  })
+
+  it('fills a third-place slot drawn on the FIRST side of its tie', () => {
+    // M81 is "Winner Group D v 3rd B/E/F/I/J"; swap it so the third is t1.
+    const resolved = resolveThirdPlaceSlots(swapSides(buildComplete(), 81))
+    const m81 = resolved.find((m) => m.num === 81)
+    expect(allNames.has(m81.t1)).toBe(true)
+    expect(m81.t2).toBe('Winner Group D')
+  })
+
+  it('fills a LOCKED third-place slot drawn on the FIRST side of its tie', () => {
+    const snapshot = MATCHES.map((m) =>
+      m.stage === 'Group' && GROUP_STAGE_MD3[m.num] ? { ...m, score: GROUP_STAGE_MD3[m.num] } : m,
+    )
+    // M81 is the tie the early-lock path fills (USA v Bosnia & Herzegovina).
+    const resolved = resolveLockedThirdSlots(swapSides(snapshot, 81))
+    const m81 = resolved.find((m) => m.num === 81)
+    expect(m81.t1).toBe('Bosnia & Herzegovina')
+    expect(m81.t2).toBe('Winner Group D')
+  })
+
+  it('waits for the assigned group to finish before locking its third into a slot', () => {
+    // Every group complete except E, which still has its final game to play. The
+    // reachable combinations now agree that the Winner-A tie draws group E's
+    // third — but E has not finished, so which team that is remains open and the
+    // slot must stay a placeholder.
+    const board = buildComplete().map((m) => (m.num === 56 ? (({ score, ...rest }) => rest)(m) : m))
+    const resolved = resolveLockedThirdSlots(board)
+    const winnerA = resolved.find(
+      (m) => MATCHES.find((x) => x.num === m.num)?.t1 === 'Winner Group A',
+    )
+    expect(THIRD_SLOT.test(winnerA.t2)).toBe(true)
+    // Teeth: once E finishes, the very same slot does resolve to a real team.
+    const done = resolveLockedThirdSlots(buildComplete())
+    expect(allNames.has(done.find((m) => m.num === winnerA.num).t2)).toBe(true)
+  })
+})
+
 describe('resolveKnockoutSlots — propagate winners/losers up the bracket', () => {
   it('feeds a round’s winners into the next round', () => {
     const ms = [

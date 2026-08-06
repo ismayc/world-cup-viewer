@@ -60,6 +60,17 @@ describe('MatchDetail tale of the tape', () => {
     expect(screen.getByText('W–D–L')).toBeInTheDocument()
   })
 
+  it('calls the hidden records "going into this match" once the tie has been played', () => {
+    // Spoiler-free on a match that is already in the books: the records offered
+    // are the ones the teams took INTO it, so the heading has to say so rather
+    // than reading as the tournament to date.
+    renderDetail({ match: allMatches[2], hideScores: true })
+    expect(screen.getByText('Going into this match')).toBeInTheDocument()
+    expect(screen.queryByText('Tournament so far')).toBeNull()
+    fireEvent.click(screen.getByText('🙈 reveal team records'))
+    expect(screen.getByText('W–D–L')).toBeInTheDocument()
+  })
+
   it('renders without the section when allMatches is not provided', () => {
     render(
       <FollowProvider>
