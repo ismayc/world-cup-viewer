@@ -4,6 +4,14 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-08-08
+
+- **Condensed view strip.** Once the header's view switch scrolls out of view, a
+  slim fixed strip pins to the top showing the current view; tapping it drops
+  down the full tab set, so switching views never means scrolling back to the
+  top. The sticky filters panel and Week column heads offset beneath it. Rolled
+  out family-wide from the WNBA/NBA viewers.
+
 ## 2026-08-05
 
 - **Toolchain upgrade.** Vite 5 → 8 (Rolldown), Vitest + coverage-v8 2 → 4,

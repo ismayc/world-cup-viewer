@@ -242,6 +242,28 @@ export default function App() {
     () => VIEWS.filter((v) => !(v.groupStageOnly && archived)),
     [archived],
   )
+  const viewSwitchRef = useRef(null)
+  // The in-flow view switch has scrolled out of view (see the IntersectionObserver below).
+  const [navAway, setNavAway] = useState(false)
+  // The condensed strip's expanded tab set. Component-local — never persisted.
+  const [stripOpen, setStripOpen] = useState(false)
+  // Condensed view strip: once the header's view switch scrolls out of view, a slim
+  // fixed strip takes over so switching views never means scrolling back to the top.
+  // The strip collapses again (and its expanded tab set closes) when the nav returns.
+  useEffect(() => {
+    if (typeof IntersectionObserver !== 'function') return
+    const io = new IntersectionObserver(([entry]) => {
+      const away = !entry.isIntersecting
+      setNavAway(away)
+      if (!away) setStripOpen(false)
+    })
+    io.observe(viewSwitchRef.current)
+    return () => io.disconnect()
+  }, [])
+  const pickView = (id) => {
+    setView(id)
+    setStripOpen(false)
+  }
   const showAnalysisTabs = !archived
   // If the active view just got hidden (group stage archived while on it), fall
   // back to the Bracket.
@@ -432,7 +454,7 @@ export default function App() {
 
   return (
     <DetailContext.Provider value={setDetailMatch}>
-    <div className="app">
+    <div className={`app${navAway ? ' nav-away' : ''}`}>
       <header className="app-header">
         <div className="title-block">
           <h1>
@@ -444,12 +466,12 @@ export default function App() {
           </p>
         </div>
         <div className="view-bar">
-          <div className="view-switch">
+          <div className="view-switch" ref={viewSwitchRef}>
             {visibleViews.map((v) => (
               <Fragment key={v.id}>
                 <button
                   className={`view-btn${view === v.id ? ' active' : ''}`}
-                  onClick={() => setView(v.id)}
+                  onClick={() => pickView(v.id)}
                 >
                   {v.label}
                 </button>
@@ -484,6 +506,38 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {navAway && (
+        <div className="view-strip">
+          <div className="view-strip-inner">
+            <button
+              className="view-strip-toggle"
+              onClick={() => setStripOpen((o) => !o)}
+              aria-expanded={stripOpen}
+              aria-controls="view-strip-tabs"
+            >
+              {VIEWS.find((v) => v.id === view).label}
+              <span className="chev" aria-hidden="true">
+                {stripOpen ? '▲' : '▼'}
+              </span>
+            </button>
+            {stripOpen && (
+              <nav id="view-strip-tabs" className="view-strip-tabs" aria-label="Views quick switch">
+                {visibleViews.map((v) => (
+                  <button
+                    key={v.id}
+                    className={`view-btn${view === v.id ? ' active' : ''}`}
+                    onClick={() => pickView(v.id)}
+                    aria-current={view === v.id ? 'page' : undefined}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </nav>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Once the Final is FINAL, the champion gets their banner (hidden in
           spoiler-free mode — it's the ultimate spoiler). */}

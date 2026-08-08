@@ -17,6 +17,11 @@
   --delay: #f5a623;
   --radius: 14px;
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+
+  /* Condensed view strip: one fixed-height row (plus the notch inset on phones),
+     declared as a token so the sticky filters panel and week column heads can
+     offset beneath it without any JS measuring. */
+  --view-strip-h: calc(44px + env(safe-area-inset-top, 0px));
   --page-bg: radial-gradient(1200px 600px at 80% -10%, #1d2a45 0%, var(--bg) 55%);
 }
 
@@ -168,6 +173,70 @@ body {
   top: 8px;
   z-index: 20;
   backdrop-filter: blur(6px);
+}
+/* While the condensed view strip is up, pin beneath it instead of behind it. */
+.nav-away .filters {
+  top: calc(var(--view-strip-h) + 8px);
+}
+
+/* ── Condensed view strip ───────────────────────────────────────────────
+   Appears (position: fixed, so nothing reflows mid-scroll) once the header's
+   view switch leaves the viewport. Fixed height --view-strip-h; the expanded
+   tab set overlays as a dropdown so the strip itself never grows. While it's
+   up, .nav-away pushes the sticky filters panel and week column heads down by
+   the same token. */
+.view-strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--view-strip-h);
+  padding-top: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.view-strip-inner {
+  position: relative;
+  max-width: 1080px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.view-strip-toggle {
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.view-strip-toggle:hover { color: var(--accent); }
+.view-strip-toggle .chev {
+  font-size: 0.7em;
+  color: var(--text-dim);
+}
+
+.view-strip-tabs {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 20px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 .filters-row {
   display: flex;
@@ -1468,6 +1537,10 @@ select {
   top: 0;
   background: var(--bg-soft);
   border-radius: 10px 10px 0 0;
+}
+/* Pin beneath the condensed view strip instead of behind it. */
+.nav-away .week-col-head {
+  top: var(--view-strip-h);
 }
 .week-col-head .wd {
   font-size: 0.72rem;
