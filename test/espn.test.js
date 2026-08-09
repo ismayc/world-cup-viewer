@@ -16,11 +16,21 @@ describe('scoreboardDates', () => {
 })
 
 describe('historyDates', () => {
-  it('lists distinct UTC dates of already-finished matches, excluding the live window', () => {
+  it('lists distinct ESPN (US-Eastern) days of finished matches, excluding the live window', () => {
     // Base: June 16 noon UTC. Live window (scoreboardDates) = Jun 15/16/17, so
-    // those are excluded; earlier match days (Jun 11–14) are the backfill set.
+    // those are excluded; earlier match days (Jun 11–14 EASTERN) are the backfill set.
     const dates = historyDates(MATCHES, new Date('2026-06-16T12:00:00Z'))
     expect(dates).toEqual(['20260611', '20260612', '20260613', '20260614'])
+  })
+
+  it('files late-evening ET kickoffs under their Eastern day, not a phantom UTC day', () => {
+    // July 11's 9pm/10pm ET kickoffs are July 12 in UTC, but ESPN files them
+    // under the 11th. The old UTC-day conversion emitted a 20260712 query whose
+    // slate contains none of our matches — a wasted request that would silently
+    // miss any match left alone on its Eastern day.
+    const dates = historyDates(MATCHES, new Date('2026-08-01T00:00:00Z'))
+    expect(dates).toContain('20260711')
+    expect(dates).not.toContain('20260712')
   })
 
   it('skips a fixture that has no kickoff instant yet', () => {

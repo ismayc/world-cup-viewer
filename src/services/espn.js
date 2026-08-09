@@ -126,6 +126,19 @@ export function scoreboardDates(base = new Date()) {
 // ends, so App fetches these once and merges them as a backfill overlay. The live
 // window (scoreboardDates) covers everything recent; we exclude it here so the
 // poll and the backfill never fight over the same dates.
+// ESPN buckets a `dates=YYYYMMDD` query by the US-EASTERN day, not UTC (verified:
+// dates=20260728 returns instants up to 07-29T02:00Z). A 9pm-ET kickoff is already
+// "tomorrow" in UTC — 33 of the 104 kickoffs cross midnight — so filing by the UTC
+// day asked for a slate that didn't contain the match and the backfill missed its
+// cards/subs. The live window survives this only because it spans ±1 day.
+const EASTERN_DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+const espnDay = (instant) => EASTERN_DAY.format(instant).replace(/-/g, '')
+
 export function historyDates(matches, base = new Date()) {
   const inWindow = new Set(scoreboardDates(base))
   const now = base.getTime()
@@ -133,7 +146,7 @@ export function historyDates(matches, base = new Date()) {
   for (const m of matches) {
     if (!m.ko) continue
     if (new Date(m.ko).getTime() > now) continue // not yet kicked off
-    const d = new Date(m.ko).toISOString().slice(0, 10).replace(/-/g, '')
+    const d = espnDay(new Date(m.ko))
     if (!inWindow.has(d)) out.add(d)
   }
   return [...out]

@@ -15,6 +15,16 @@ data/source updates, deployment). Newest day on top.
   `groupPositionBounds` export, so the column can never contradict the badges.
   Mirrors the Finish column the WNBA/NBA/NFL viewers carry.
 
+## 2026-08-09
+
+- **Card/sub backfill files queries by ESPN's real day bucket.** `historyDates`
+  used the UTC day, but ESPN buckets `dates=` by the US-Eastern day — 33 of
+  104 kickoffs cross midnight UTC, so the old code emitted phantom next-day
+  queries (e.g. 20260712) whose slates contain none of our matches. Here every
+  match happened to share its Eastern day with others, so nothing was lost —
+  the Copa and Women's World Cup viewers were not so lucky (same fix landed
+  there today). Days are now computed in America/New_York.
+
 ## 2026-08-08
 
 - **Condensed view strip.** Once the header's view switch scrolls out of view, a
