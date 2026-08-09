@@ -266,6 +266,26 @@ export function thirdProfileBounds(matches) {
   return out
 }
 
+// The window of final group positions (1–4) still arithmetically open to each
+// team — exact (goal difference and head-to-head included) when the group's
+// remaining scorelines are enumerable, else the sound points-only bounds (ties
+// counted for the team on the best side, against it on the worst side, so the
+// range is conservative, never wrong). best === worst means the position is
+// locked. Powers the Finish column in the standings tables.
+export function groupPositionBounds(matches) {
+  const out = {}
+  for (const g of GROUPS) {
+    const sa = analyzeGroup(g, matches)
+    const pa = pointsAnalysis(g, matches)
+    for (const n of pa.names) {
+      out[n] = sa.feasible
+        ? { best: Math.min(...sa.ranks[n]), worst: Math.max(...sa.ranks[n]) }
+        : { best: pa.opt[n], worst: pa.pess[n] }
+    }
+  }
+  return out
+}
+
 // group letter -> the team that has clinched winning it (if any).
 export function groupWinners(clinch) {
   const winners = {}

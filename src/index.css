@@ -1049,6 +1049,16 @@ select {
 }
 .col-team { text-align: left !important; }
 .col-pts { color: var(--text) !important; font-weight: 700; }
+/* Finish column — the group positions still arithmetically open; gold once locked. */
+.finish {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.finish-locked {
+  color: var(--gold);
+  font-weight: 700;
+}
 .standings-table .qualifies td {
   background: rgba(0, 194, 168, 0.07);
 }

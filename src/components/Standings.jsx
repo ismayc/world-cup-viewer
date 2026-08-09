@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { TEAMS } from '../data/teams.js'
 import { computeQualification, rowStatus } from '../utils/qualification.js'
-import { clinchBadge } from '../utils/clinch.js'
+import { clinchBadge, groupPositionBounds } from '../utils/clinch.js'
 import { projectKnockout } from '../utils/asItStands.js'
 import { lockedOpponent } from '../utils/opponentClinch.js'
 import { softTiebreaks, softThirdTiebreaks, TIEBREAK_LABEL } from '../utils/tiebreakNotes.js'
@@ -108,7 +108,21 @@ function TieMark({ tie }) {
   )
 }
 
-function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSelectTeam, ties, liveTeams, pausedTeams }) {
+// "1–3" while group outcomes remain open; collapses to the bare position (gold)
+// once locked. Bounds come from the clinch engine — exact when the group's
+// remaining scorelines are enumerable, sound points-only otherwise.
+function FinishRange({ range }) {
+  if (range.best === range.worst) {
+    return <span className="finish finish-locked">{range.best}</span>
+  }
+  return (
+    <span className="finish">
+      {range.best}–{range.worst}
+    </span>
+  )
+}
+
+function GroupTable({ group, rows, qual, clinch, finish, asItStands, onGoToMatch, onSelectTeam, ties, liveTeams, pausedTeams }) {
   const { isFollowed } = useFollow()
   const played = qual.completion[group] || rows.some((r) => r.P > 0)
   const groupLive = rows.some((r) => liveTeams.has(r.name))
@@ -142,6 +156,7 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
             <th className="col-team">Team</th>
             <th>P</th><th>W</th><th>D</th><th>L</th>
             <th>GF</th><th>GA</th><th>GD</th><th className="col-pts">Pts</th>
+            <th className="col-finish" title="Final group positions still arithmetically possible — a single number means the finish is locked">Fin</th>
           </tr>
         </thead>
         <tbody>
@@ -203,6 +218,7 @@ function GroupTable({ group, rows, qual, clinch, asItStands, onGoToMatch, onSele
                 <td>{r.GF}</td><td>{r.GA}</td>
                 <td>{r.GD > 0 ? `+${r.GD}` : r.GD}</td>
                 <td className="col-pts">{r.Pts}</td>
+                <td className="col-finish"><FinishRange range={finish[r.name]} /></td>
               </tr>
             )
           })}
@@ -458,6 +474,8 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
 
   const qual = computeQualification(matches)
   const { perGroup } = projectKnockout(matches)
+  // Finish-column bounds, from the same engine that powers the clinch badges.
+  const finish = groupPositionBounds(matches)
 
   // For a team that has CLINCHED a Round-of-32 place, its projected knockout
   // matchup (opponent + match number), pulled from the same projection that
@@ -553,7 +571,9 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
         · <span className="q-badge c-won">🥇 Won group</span> /{' '}
         <span className="q-badge c-silver">🥈 Group runner-up</span> /{' '}
         <span className="q-badge c-in">✅ Through</span> /{' '}
-        <span className="q-badge c-out">❌ Out</span> mark mathematically clinched outcomes.
+        <span className="q-badge c-out">❌ Out</span> mark mathematically clinched outcomes ·{' '}
+        <span className="finish">Fin 1–3</span> the group positions still arithmetically
+        possible (a single gold number means the finish is locked).
       </p>
       <div className="standings-toolbar">
         <button
@@ -573,6 +593,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
             rows={qual.groups[g]}
             qual={qual}
             clinch={clinch}
+            finish={finish}
             asItStands={showProjection ? perGroup[g] : null}
             onGoToMatch={onGoToMatch}
             onSelectTeam={onSelectTeam}

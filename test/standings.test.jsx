@@ -388,3 +388,23 @@ describe('Standings', () => {
     expect(screen.getAllByRole('button', { name: /^Unfollow / }).length).toBeGreaterThan(0)
   })
 })
+
+describe('Finish column', () => {
+  it('shows a wide-open 1–4 range for every team before any result', () => {
+    const { container } = renderStandings()
+    const headers = [...container.querySelectorAll('.standings-table th.col-finish')]
+    expect(headers).toHaveLength(12) // one per group table
+    const cells = [...container.querySelectorAll('.standings-table .finish')]
+    expect(cells).toHaveLength(48)
+    expect(cells.every((c) => c.textContent === '1–4')).toBe(true)
+    expect(container.querySelector('.standings-table .finish-locked')).toBeNull()
+  })
+
+  it('collapses to locked gold positions once a group is decided', () => {
+    const { container } = renderStandings({ matches: withGroupAPlayed() })
+    const locked = [...container.querySelectorAll('.standings-table .finish-locked')]
+    expect(locked.map((c) => c.textContent)).toEqual(['1', '2', '3', '4'])
+    // The legend explains the marker.
+    expect(screen.getByText(/positions still arithmetically/)).toBeInTheDocument()
+  })
+})

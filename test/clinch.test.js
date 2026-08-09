@@ -11,6 +11,7 @@ import {
   clinchHeadline,
   clinchBadge,
   goalCap,
+  groupPositionBounds,
   scorelinesUpTo,
 } from '../src/utils/clinch.js'
 
@@ -347,5 +348,45 @@ describe('newlyClinched — detects new verdicts and upgrades', () => {
     expect(computeClinch(before)['Mexico']).toBe('top2')
     const changes = newlyClinched(before, after)
     expect(changes).toContainEqual({ team: 'Mexico', group: 'A', status: 'won-group' })
+  })
+})
+
+describe('groupPositionBounds', () => {
+  const withAllOf = (group, score) => {
+    const nums = MATCHES.filter((m) => m.stage === 'Group' && m.group === group).map((m) => m.num)
+    return withScores(Object.fromEntries(nums.map((n) => [n, score])))
+  }
+
+  it('reads 1–4 for every team while nothing has been played (points fallback)', () => {
+    // Six remaining games per group is far over the scoreline budget, so every
+    // bound comes from the sound points-only pass — and with no results at all,
+    // every position is genuinely open.
+    const bounds = groupPositionBounds(MATCHES)
+    for (const g of GROUPS) {
+      for (const t of TEAMS[g]) expect(bounds[t.name]).toEqual({ best: 1, worst: 4 })
+    }
+  })
+
+  it('is exact (goal difference and head-to-head included) when the group is enumerable', () => {
+    // Group A with two games left (81² scorelines — enumerable): Czechia played
+    // all three (1 point), Mexico beat South Korea, the SA games remain.
+    const bounds = groupPositionBounds(
+      withScores({ 2: [2, 0], 53: [0, 2], 25: [1, 1], 28: [1, 0] }),
+    )
+    expect(bounds['Mexico']).toEqual({ best: 1, worst: 2 })
+    expect(bounds['South Korea']).toEqual({ best: 2, worst: 3 })
+    expect(bounds['South Africa']).toEqual({ best: 1, worst: 4 })
+    expect(bounds['Czechia']).toEqual({ best: 3, worst: 4 })
+  })
+
+  it('locks every position once a group is complete — through the real tiebreakers', () => {
+    // Every Group A game a 2-0 home win leaves Czechia and Mexico level on
+    // points, goal difference AND goals — Czechia is 1st only via head-to-head,
+    // which the exact enumeration applies.
+    const bounds = groupPositionBounds(withAllOf('A', [2, 0]))
+    expect(bounds['Czechia']).toEqual({ best: 1, worst: 1 })
+    expect(bounds['Mexico']).toEqual({ best: 2, worst: 2 })
+    expect(bounds['South Africa']).toEqual({ best: 3, worst: 3 })
+    expect(bounds['South Korea']).toEqual({ best: 4, worst: 4 })
   })
 })
