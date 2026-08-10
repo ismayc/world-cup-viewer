@@ -1,10 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import calendar from '../netlify/functions/calendar.js'
-
 // The ICS feed pulls OpenFootball, whose knockout slots are cryptic codes
 // (1A / 2B / 3A/B/C/D/F / W73 / L101). prettySlot maps them to the same friendly
 // wording the app's bracket shows, so calendar subscribers don't see raw codes.
-const { prettySlot } = calendar
+import { prettySlot } from '../netlify/functions/calendar.js'
 
 describe('calendar prettySlot — OpenFootball knockout codes → friendly labels', () => {
   it('maps group-winner and runner-up codes', () => {

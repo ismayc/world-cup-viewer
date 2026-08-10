@@ -2,6 +2,12 @@
 // Fetches the live OpenFootball schedule on each request and emits an .ics, so a
 // subscribed calendar reflects resolved knockout teams and final scores as they
 // land. Optional ?teams=Mexico,Brazil filters to specific teams (case-insensitive).
+//
+// This is an ES MODULE on purpose (the siblings converted first). The package sets
+// "type": "module", so a CommonJS function (`exports.handler`) is rejected by
+// Netlify's runtime with "module is not defined in ES module scope" whenever the
+// site is built from Git rather than deployed through netlify-cli, which bundles
+// the mismatch away.
 
 const FEED = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
 const MATCH_MS = 135 * 60 * 1000
@@ -25,7 +31,7 @@ function prettySlot(label) {
   if (m) return `Loser Match ${m[1]}`
   return norm(label)
 }
-exports.prettySlot = prettySlot
+export { prettySlot }
 
 const STAGE = {
   'Round of 32': 'Round of 32',
@@ -92,7 +98,7 @@ function vevent(m) {
   ].join('\r\n')
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   try {
     const res = await fetch(FEED)
     if (!res.ok) return { statusCode: 502, body: `Upstream ${res.status}` }

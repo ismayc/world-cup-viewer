@@ -17,6 +17,11 @@ data/source updates, deployment). Newest day on top.
 
 ## 2026-08-09
 
+- **Calendar function converted to ES module.** The package sets
+  `"type": "module"`, so the CommonJS `exports.handler` form is rejected by
+  Netlify's runtime on a Git-triggered build ("module is not defined in ES
+  module scope") — it only ever worked here because deploys went through
+  netlify-cli, which bundles the mismatch away. Now matches the siblings.
 - **Card/sub backfill files queries by ESPN's real day bucket.** `historyDates`
   used the UTC day, but ESPN buckets `dates=` by the US-Eastern day — 33 of
   104 kickoffs cross midnight UTC, so the old code emitted phantom next-day
