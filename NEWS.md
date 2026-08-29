@@ -4,6 +4,15 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-08-29
+
+- Corrected the repo's `verify` skill. This one did describe the right app, but it
+  omitted the first thing anyone hits: the Schedule opens with its days collapsed,
+  so `.card` matches nothing until a `.day-header` is clicked. It also listed
+  `Scenarios`, which is hidden now that the group stage is archived, and did not
+  say that the radial champion selectors only resolve while the Radial tab is open.
+  Every selector was re-probed against the running app.
+
 ## 2026-08-09
 
 - **Finish column in the group tables.** Each standings row now ends with a
