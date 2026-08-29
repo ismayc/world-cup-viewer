@@ -6,6 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+# Per-ref group: a PR branch's runs must never occupy main's slot. A single static
+# group bit the NBA viewer on 2026-08-13. GitHub keeps one running plus one pending
+# run per group, and each new arrival CANCELS the previous pending one
+# (cancel-in-progress only protects the RUNNING run), so while a busy PR was pushing,
+# main's CI and its deploy kept getting canceled before they could start. The only
+# lock that must serialize repo-wide is the Pages deploy: the job-level `pages` group
+# on the deploy job below.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   test:
     name: Test & build
@@ -34,6 +45,11 @@ jobs:
     needs: test # only deploys if tests + build pass
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    # Serialize Pages deploys repo-wide, never mid-cancel. Job level, so a queued
+    # deploy waits its turn instead of taking a slot in the per-ref group above.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write

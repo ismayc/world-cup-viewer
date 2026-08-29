@@ -34,6 +34,16 @@ data/source updates, deployment). Newest day on top.
   served from one origin and therefore share localStorage. There is no generated-data check
   here: `src/data/` in this repo is hand maintained, so no builder banner applies. Each
   guard was checked by reintroducing the bug it describes and confirming it fails.
+- **CI now uses a per-ref concurrency group, with a repo-wide lock only on the Pages
+  deploy.** This workflow had no concurrency control at all, so two pushes in quick
+  succession could run their Pages deploys against each other. The naive fix, one static
+  group for the whole workflow, is worse: GitHub keeps one running plus one pending run
+  per group and each new arrival cancels the pending one, so a busy PR branch starves
+  main's CI and its deploy. That is what happened to the NBA viewer on August 13, 2026.
+  The group is now `ci-${{ github.ref }}`, giving each branch its own slot, and the
+  deploy job alone carries a job-level `pages` group so Pages publishes stay serialized.
+  The eight sibling repos and the workflow template in `sports-viewer-meta` already had
+  this shape; these four viewers were the last without it.
 
 ## 2026-08-09
 
