@@ -23,6 +23,17 @@ data/source updates, deployment). Newest day on top.
   `Scenarios`, which is hidden now that the group stage is archived, and did not
   say that the radial champion selectors only resolve while the Radial tab is open.
   Every selector was re-probed against the running app.
+- **Repo-level guards now run in the test suite.** New `test/guards.test.js`, ported from
+  the FIBA viewer, which was the only repo that had one. It pins the invariants that have
+  already broken a viewer in this family. The ESPN host must be `site.web.api` everywhere it
+  appears: `site.api` serves the same routes but 403s on a browser User-Agent with no CORS
+  headers, so it reads as healthy from curl while every deployed page loses live scores. The
+  data scripts must import only Node built-ins and in-repo source, because they run in CI
+  with no `npm install` of the app dependencies. Every localStorage key must carry this
+  app's `wc2026:` prefix and never a sibling's, because the hub and all eleven viewers are
+  served from one origin and therefore share localStorage. There is no generated-data check
+  here: `src/data/` in this repo is hand maintained, so no builder banner applies. Each
+  guard was checked by reintroducing the bug it describes and confirming it fails.
 
 ## 2026-08-09
 
