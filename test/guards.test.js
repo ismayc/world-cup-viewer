@@ -105,3 +105,16 @@ describe('the storage namespace', () => {
     }
   })
 })
+
+describe('the test timezone pin', () => {
+  // Every date-derived assertion in this suite reads the pinned zone. A dropped pin
+  // fails on a developer's machine in a confusing way and passes on CI, whose runners
+  // sit in UTC.
+  it('is set to UTC in vite.config.js', () => {
+    expect(read('vite.config.js')).toContain("env: { TZ: 'UTC' }")
+  })
+
+  it('actually took effect in this process', () => {
+    expect(process.env.TZ).toBe('UTC')
+  })
+})

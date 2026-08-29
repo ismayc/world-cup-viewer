@@ -65,6 +65,17 @@ data/source updates, deployment). Newest day on top.
   in three full local runs today. The assertion now waits for the overridden values instead
   of the name. Confirmed with teeth: with the override deliberately delayed the old
   assertion fails and the new one passes.
+- **The test suite now pins its timezone, so `npm test` works without a `TZ=UTC` prefix.**
+  Nothing pinned the zone, so the suite ran in whatever zone the machine was in. CI's
+  runners sit in UTC and the tests were written against that, so CI was always fine, but a
+  local run in a US zone failed on any assertion about a day heading or what counts as
+  "today" until you remembered to type `TZ=UTC` in front of it. `vite.config.js` now sets
+  `env: { TZ: 'UTC' }`, which is exactly what CI has always done: the full suite passes at
+  100% locally in an ambient MST with no prefix. A new guard in `test/guards.test.js`
+  asserts both that the pin is in the config and that it took effect in the running
+  process, since a dropped pin is invisible on an already-UTC CI runner. Verified by
+  deleting the pin and watching both assertions fail. Four repos in the family already had
+  a pin, each set to the zone its own content needs; these eight were the ones without.
 
 ## 2026-08-09
 

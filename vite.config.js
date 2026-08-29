@@ -15,6 +15,13 @@ export default defineConfig({
     // on a loaded CI runner under coverage instrumentation. Matches the headroom the
     // rest of the family already carries.
     testTimeout: 30000,
+    // Pin the suite's timezone so any test asserting a day heading, or what counts
+    // as "today", is runner-independent. UTC is what these tests were already
+    // written against: CI's runners sit in UTC, so this changes nothing there. What
+    // it fixes is the LOCAL run, which until now needed an explicit `TZ=UTC` prefix
+    // and failed in a confusing way without one. test/guards.test.js asserts the pin
+    // so it cannot be dropped unnoticed on an already-UTC runner.
+    env: { TZ: 'UTC' },
     coverage: {
       provider: 'v8',
       all: true, // count untested files too, so the badge isn't flattered
