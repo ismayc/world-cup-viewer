@@ -159,9 +159,14 @@ describe('StatsView', () => {
       { num: 101, stage: 'SF', t1: 'Mexico', t2: 'France', score: [0, 0], live: { minute: 80 }, espnId: '999', ko: recentKo(), goals: { t1: [], t2: [] } },
     ]
     render(<StatsView matches={live} hideScores={false} />)
-    const row = (await screen.findByText('Raúl Jiménez')).closest('tr')
-    expect(row.cells[4]).toHaveTextContent('4') // assists
-    expect(row.cells[5]).toHaveTextContent('320') // minutes
+    // The name appears as soon as the AGGREGATE fetch resolves, while the override
+    // arrives from a second fetch a render later. Waiting only for the name therefore
+    // reads the pre-override cells on a loaded runner. Wait for the overridden values.
+    await vi.waitFor(() => {
+      const row = screen.getByText('Raúl Jiménez').closest('tr')
+      expect(row.cells[4]).toHaveTextContent('4') // assists
+      expect(row.cells[5]).toHaveTextContent('320') // minutes
+    })
     expect(fetchRecentPlayerStats).toHaveBeenCalled()
   })
 

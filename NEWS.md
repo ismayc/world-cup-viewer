@@ -44,6 +44,27 @@ data/source updates, deployment). Newest day on top.
   deploy job alone carries a job-level `pages` group so Pages publishes stay serialized.
   The eight sibling repos and the workflow template in `sports-viewer-meta` already had
   this shape; these four viewers were the last without it.
+- **The radial bracket no longer hardcodes match numbers 101-104.** Twenty-four references
+  to the semi-finals, the Final and the third-place play-off were literal numbers, while
+  `BRACKET.left.SF[0]`, `BRACKET.right.SF[0]`, `BRACKET.final[0]` and `BRACKET.third[0]`
+  already existed and are what the Copa and Euros viewers use. This is the same literal
+  that survived scaffolding into the Euros viewer and killed its champion banner, so it is
+  a known-live bug class rather than a style preference. No behavior change here: the
+  constants resolve to the same numbers.
+- **`ADVANCING_THIRDS` now has one definition instead of five.** The rule that the eight
+  best third-placed teams advance was written out separately in `asItStands.js`,
+  `clinch.js` and `eliminationCheck.js`, and inline again as `slice(0, 8)` in
+  `qualification.js` and `outlookEnum.js`. It is now exported once from `qualification.js`
+  and imported by all four, matching the Euros viewer. The `best8` field on the
+  qualification result is renamed `bestThirds` for the same reason: the old name re-encoded
+  the count it was supposed to describe.
+- **Fixed a racy assertion in the StatsView override test.** The test waits for a player's
+  name, then reads his assists and minutes cells. The name appears as soon as the aggregate
+  fetch resolves, but the values under test come from a second fetch that lands a render
+  later, so on a loaded runner the assertion read the pre-override numbers. It failed once
+  in three full local runs today. The assertion now waits for the overridden values instead
+  of the name. Confirmed with teeth: with the override deliberately delayed the old
+  assertion fails and the new one passes.
 
 ## 2026-08-09
 

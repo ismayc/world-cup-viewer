@@ -12,10 +12,9 @@
 // mode is staying silent (conservative), never a false "clinched".
 
 import { TEAMS } from '../data/teams.js'
-import { rankGroup } from './qualification.js'
+import { rankGroup, ADVANCING_THIRDS } from './qualification.js'
 
 const GROUPS = Object.keys(TEAMS)
-const ADVANCING_THIRDS = 8 // 8 of the 12 third-placed teams advance
 // Upper bound on enumerated scorelines per group. Sized so the real clinch
 // window (each team with one match left → 2 remaining) is always exact, while
 // larger fan-outs fall back to "undetermined" (and thus claim nothing).

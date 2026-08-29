@@ -28,7 +28,7 @@
 
 import { MATCHES } from '../data/matches.js'
 import { TEAMS } from '../data/teams.js'
-import { rankGroup } from './qualification.js'
+import { rankGroup, ADVANCING_THIRDS } from './qualification.js'
 import { byFifaRank } from '../data/fifaRanking.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
 
@@ -186,7 +186,7 @@ export function enumerateOutlook(matches, onProgress, fixedCap) {
       weight *= o.weight
     }
     thirds.sort(compareThirds)
-    const key = thirds.slice(0, 8).map((x) => x.group).sort().join('')
+    const key = thirds.slice(0, ADVANCING_THIRDS).map((x) => x.group).sort().join('')
     const combo = THIRD_PLACE_COMBINATIONS[key]
     const w2t = {}
     /* v8 ignore next -- unreachable: the key is always eight distinct group letters, and the Annexe C table holds all 495 such combinations */

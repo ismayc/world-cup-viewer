@@ -27,6 +27,12 @@ import { byFifaRank } from '../data/fifaRanking.js'
 const GROUPS = Object.keys(TEAMS)
 const GROUP_MATCH_COUNT = 6 // 4 teams => 6 matches per group
 
+// How many third-placed teams advance. Twelve groups, the best eight thirds,
+// which is the 48-team format introduced for 2026. The single source of truth
+// for the clinch, elimination and projection engines, which all import it from
+// here.
+export const ADVANCING_THIRDS = 8
+
 function blank(team, group) {
   return { ...team, group, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0, conduct: 0 }
 }
@@ -168,9 +174,9 @@ export function computeQualification(matches) {
   )
 
   const allComplete = GROUPS.every((g) => completion[g])
-  const best8 = new Set(thirds.slice(0, 8).map((t) => t.name))
+  const bestThirds = new Set(thirds.slice(0, ADVANCING_THIRDS).map((t) => t.name))
 
-  return { groups, completion, thirds, best8, allComplete }
+  return { groups, completion, thirds, bestThirds, allComplete }
 }
 
 // Per-row qualification status for the standings UI.
@@ -181,8 +187,8 @@ export function rowStatus(row, group, qual) {
   if (!qual.completion[group]) return null // group still in progress
   if (row.rank <= 2) return 'in'
   if (row.rank === 3) {
-    if (!qual.allComplete) return qual.best8.has(row.name) ? 'best3' : 'out3'
-    return qual.best8.has(row.name) ? 'in' : 'out'
+    if (!qual.allComplete) return qual.bestThirds.has(row.name) ? 'best3' : 'out3'
+    return qual.bestThirds.has(row.name) ? 'in' : 'out'
   }
   return 'out'
 }

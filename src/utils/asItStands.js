@@ -11,11 +11,10 @@
 
 import { MATCHES } from '../data/matches.js'
 import { TEAMS } from '../data/teams.js'
-import { computeQualification } from './qualification.js'
+import { computeQualification, ADVANCING_THIRDS } from './qualification.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
 
 const GROUPS = Object.keys(TEAMS)
-const ADVANCING_THIRDS = 8
 
 // The R32 slot labels ("Winner Group A", "3rd C/E/F/H/I") are invariant, but the
 // LIVE matches we're handed have clinched winners already resolved to real teams

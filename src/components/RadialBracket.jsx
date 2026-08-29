@@ -201,10 +201,11 @@ export default function RadialBracket({ matches, tz, hideScores }) {
   // The final: the two finalists run straight in to the centre. Its number is
   // pinned ABOVE the trophy — the finalists' average angle points straight down,
   // which would otherwise drop the label onto the third-place section below.
-  addBracket(104, 0, RING.SF, angle[101], angle[102], 80)
+  const [SF_A, SF_B] = [BRACKET.left.SF[0], BRACKET.right.SF[0]]
+  addBracket(BRACKET.final[0], 0, RING.SF, angle[SF_A], angle[SF_B], 80)
   matchups[matchups.length - 1].label = [CX, CY - 78]
 
-  const champion = winnerOf(104)
+  const champion = winnerOf(BRACKET.final[0])
 
   // Teams that still have football to play; while any remain, the flags of
   // knocked-out sides fade so who's alive reads at a glance. Once the Final is
@@ -227,9 +228,10 @@ export default function RadialBracket({ matches, tz, hideScores }) {
   const spotlit = (m) => m && dayKey(m.ko, tz) === todayKey && !(Array.isArray(m.score) && !m.live)
 
   // Third-place play-off, shown just below the trophy.
-  const thirdA = byNum[101] ? decideMatch(byNum[101])?.loser : null
-  const thirdB = byNum[102] ? decideMatch(byNum[102])?.loser : null
-  const thirdWinner = winnerOf(103)
+  const THIRD_NUM = BRACKET.third[0]
+  const thirdA = byNum[SF_A] ? decideMatch(byNum[SF_A])?.loser : null
+  const thirdB = byNum[SF_B] ? decideMatch(byNum[SF_B])?.loser : null
+  const thirdWinner = winnerOf(THIRD_NUM)
   const THIRD_Y = 596
 
   return (
@@ -345,20 +347,20 @@ export default function RadialBracket({ matches, tz, hideScores }) {
         {/* Third-place play-off, below the trophy. The label carries its match
             number and opens the detail popout (matching the matchup groups). */}
         <g
-          className={byNum[103] ? 'rb-matchup rb-click' : undefined}
-          onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
-          role={byNum[103] ? 'button' : undefined}
-          tabIndex={byNum[103] ? 0 : undefined}
-          onKeyDown={byNum[103] ? (e) => (e.key === 'Enter' || e.key === ' ') && openDetail(byNum[103]) : undefined}
+          className={byNum[THIRD_NUM] ? 'rb-matchup rb-click' : undefined}
+          onClick={byNum[THIRD_NUM] ? () => openDetail(byNum[THIRD_NUM]) : undefined}
+          role={byNum[THIRD_NUM] ? 'button' : undefined}
+          tabIndex={byNum[THIRD_NUM] ? 0 : undefined}
+          onKeyDown={byNum[THIRD_NUM] ? (e) => (e.key === 'Enter' || e.key === ' ') && openDetail(byNum[THIRD_NUM]) : undefined}
         >
-          {byNum[103] && <title>{matchInfo(byNum[103])}</title>}
+          {byNum[THIRD_NUM] && <title>{matchInfo(byNum[THIRD_NUM])}</title>}
           <text className="rb-3rd-label" x={CX} y={THIRD_Y - 26} fontSize="15">
             Third place
           </text>
           {/* Match number sits below the matchup, smaller (mirrors the inner
               matchups, where the score tucks just under the number). */}
           <text className="rb-mnum" x={CX} y={THIRD_Y + 22} fontSize="9">
-            M103
+            M{THIRD_NUM}
           </text>
         </g>
         <FlagNode
@@ -369,7 +371,7 @@ export default function RadialBracket({ matches, tz, hideScores }) {
           onPath={onPathTeam(thirdA)}
           dimmed={isDimmed(thirdA)}
           label={thirdA ? `${thirdA}${thirdA === thirdWinner ? ' — 3rd place' : ''}` : undefined}
-          onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
+          onClick={byNum[THIRD_NUM] ? () => openDetail(byNum[THIRD_NUM]) : undefined}
           r={16}
         />
         <text className="rb-3rd-vs" x={CX} y={THIRD_Y} fontSize="12">vs</text>
@@ -381,19 +383,19 @@ export default function RadialBracket({ matches, tz, hideScores }) {
           onPath={onPathTeam(thirdB)}
           dimmed={isDimmed(thirdB)}
           label={thirdB ? `${thirdB}${thirdB === thirdWinner ? ' — 3rd place' : ''}` : undefined}
-          onClick={byNum[103] ? () => openDetail(byNum[103]) : undefined}
+          onClick={byNum[THIRD_NUM] ? () => openDetail(byNum[THIRD_NUM]) : undefined}
           r={16}
         />
-        {spotlit(byNum[103]) && <circle className="rb-halo" cx={CX} cy={THIRD_Y + 22} r={14} />}
-        {byNum[103]?.live && <circle className="rb-live-dot" cx={CX} cy={THIRD_Y - 26} r={3.4} />}
-        {!hideScores && scoreText(byNum[103]) && (
+        {spotlit(byNum[THIRD_NUM]) && <circle className="rb-halo" cx={CX} cy={THIRD_Y + 22} r={14} />}
+        {byNum[THIRD_NUM]?.live && <circle className="rb-live-dot" cx={CX} cy={THIRD_Y - 26} r={3.4} />}
+        {!hideScores && scoreText(byNum[THIRD_NUM]) && (
           <text className="rb-score" x={CX} y={THIRD_Y + 34} fontSize="9.5">
-            {scoreText(byNum[103])}
+            {scoreText(byNum[THIRD_NUM])}
           </text>
         )}
-        {byNum[103] && !byNum[103].score && (
+        {byNum[THIRD_NUM] && !byNum[THIRD_NUM].score && (
           <text className="rb-time" x={CX} y={THIRD_Y + 34} fontSize="8.5">
-            {formatTime(byNum[103].ko, tz)}
+            {formatTime(byNum[THIRD_NUM].ko, tz)}
           </text>
         )}
       </svg>

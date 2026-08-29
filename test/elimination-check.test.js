@@ -98,7 +98,7 @@ describe('eliminationStatus — exactness vs the qualification picture (complete
 
     // The alive thirds must be exactly computeQualification's best 8.
     const aliveThirds = GROUPS.map((g) => TEAMS[g][2].name).filter((n) => status[n] === 'alive')
-    expect(new Set(aliveThirds)).toEqual(qual.best8)
+    expect(new Set(aliveThirds)).toEqual(qual.bestThirds)
   })
 })
 

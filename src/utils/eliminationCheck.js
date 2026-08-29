@@ -24,14 +24,13 @@
 
 import { TEAMS } from '../data/teams.js'
 import { MATCHES } from '../data/matches.js'
-import { rankGroup } from './qualification.js'
+import { rankGroup, ADVANCING_THIRDS } from './qualification.js'
 import { byFifaRank } from '../data/fifaRanking.js'
 import { goalCap, scorelinesUpTo } from './clinch.js'
 import { reachableThirdSets } from './opponentClinch.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
 
 const GROUPS = Object.keys(TEAMS)
-const ADVANCING_THIRDS = 8 // 8 of the 12 third-placed teams advance
 // Mirrors clinch.js: a group with a small remaining scoreline space is exact;
 // anything larger falls back to a conservative "unknown" (claims no elimination).
 const SCENARIO_BUDGET = 500000

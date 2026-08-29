@@ -228,9 +228,9 @@ describe('computeQualification', () => {
   it('selects the 8 best third-placed teams by points/GD/GF', () => {
     // Give every team a 3rd-place row with distinct points by scoring one match
     // per group: in each group, team[0] beats team[2] so team[2] is clearly 3rd-ish.
-    // Simpler: just check the ranking is sorted and best8 has size 8.
+    // Simpler: just check the ranking is sorted and bestThirds has size 8.
     const q = computeQualification(MATCHES)
-    expect(q.best8.size).toBe(8)
+    expect(q.bestThirds.size).toBe(8)
     // thirds sorted descending by Pts, then GD, then GF
     for (let i = 1; i < q.thirds.length; i++) {
       const a = q.thirds[i - 1]
