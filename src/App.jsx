@@ -25,7 +25,7 @@ import { fetchBackup, BACKUP_SOURCE, sdbFinalScore } from './services/thesportsd
 import { annotateScoreChecks } from './services/reconcile.js'
 import { computeClinch } from './utils/clinch.js'
 import { resolveBracket } from './utils/bracketResolve.js'
-import { groupSlotMap, matchesByNum } from './utils/bracket.js'
+import { BRACKET, groupSlotMap, matchesByNum } from './utils/bracket.js'
 import { detectGoals, goalNotification } from './services/goalNotify.js'
 import { useFollow } from './context/follow.jsx'
 import { DetailContext } from './context/detail.js'
@@ -542,7 +542,7 @@ export default function App() {
       {/* Once the Final is FINAL, the champion gets their banner (hidden in
           spoiler-free mode — it's the ultimate spoiler). */}
       <ChampionBanner
-        match={displayMatches.find((m) => m.num === 104)}
+        match={displayMatches.find((m) => m.num === BRACKET.final[0])}
         hideScores={hideScores}
       />
 

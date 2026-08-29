@@ -6,6 +6,17 @@ data/source updates, deployment). Newest day on top.
 
 ## 2026-08-29
 
+- **Hardened the champion banner's lookup.** It found the Final by the literal
+  `m.num === 104`. That value is correct here, but this is the exact line every
+  sibling was scaffolded from, and in the Euros viewer the 104 survived into a
+  51-match tournament and killed its banner outright. It now reads
+  `BRACKET.final[0]`, the way all four siblings already did, so the next app built
+  from this one inherits a constant instead of a magic number.
+- **Fixed: live scores could not load at all.** The browser code called
+  `site.api.espn.com`, which now 403s any request with a browser User-Agent and
+  returns no CORS headers with it. The data scripts moved to `site.web.api` on
+  2026-08-16; the browser half was left behind and has been broken since ESPN
+  tightened the block.
 - Corrected the repo's `verify` skill. This one did describe the right app, but it
   omitted the first thing anyone hits: the Schedule opens with its days collapsed,
   so `.card` matches nothing until a `.day-header` is clicked. It also listed
