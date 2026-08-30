@@ -31,6 +31,15 @@ data/source updates, deployment). Newest day on top.
   gets a usable calendar: that an offset-less kickoff is read in the right zone, that
   knockout slot codes become readable names, and that an upstream outage produces an
   error rather than a silently empty calendar.
+- **Test files run one at a time now (`fileParallelism: false`).** Vitest's v8 provider
+  merges each worker's coverage after the run, and with files in parallel that merge
+  races. It has surfaced in this family three separate ways, all the same fault: a crash
+  reading a departed worker's temp file, an unstable percentage between identical runs,
+  and a function reported uncovered while its own test demonstrably exercises it. Three
+  repos already had this fix; all twelve do now, and the family audit asserts it so the
+  claim cannot quietly stop being true. The cost is real on a many-core laptop (35s
+  against 132s on the largest suite) and close to nothing on a 2-core CI runner, where
+  the parallel run was already CPU-bound. CI is where the flake actually bit.
 
 ## 2026-08-29
 
