@@ -25,7 +25,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       all: true, // count untested files too, so the badge isn't flattered
-      include: ['src/**'],
+      // netlify/functions is inside the gate as well as src. The subscription
+      // endpoint is real shipped code that a subscriber's calendar hits directly,
+      // and it sat outside coverage.include while the badge read 100%.
+      include: ['src/**', 'netlify/functions/**'],
       exclude: ['src/main.jsx', 'src/**/*.test.{js,jsx}'],
       reporter: ['text-summary', 'json-summary', 'json'],
       // Enforced gate: the suite (and CI's coverage:badge step) fails if any
