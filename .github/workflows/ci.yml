@@ -71,3 +71,32 @@ jobs:
           path: dist
       - id: deploy
         uses: actions/deploy-pages@v5
+
+  # Check the DEPLOYED site, which nothing else in this repo ever does: the build,
+  # the tests and the jobs above all work on local files, so a dead host, a URL
+  # pointing at a sibling's site, or a calendar feed that disagrees with the
+  # committed schedule are invisible to the entire gate. See
+  # sports-viewer-meta/docs/LINEAGES.md section 5.
+  #
+  # Never a required check: it depends on GitHub Pages and Netlify having finished
+  # publishing, and Netlify builds from its own git trigger on its own schedule, so
+  # a red run here can mean "not deployed yet" rather than "broken". It reports.
+  smoke:
+    name: Smoke-test production
+    needs: pages
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      # Netlify's build is triggered by the same push but runs independently of
+      # this workflow, so give it a moment before asking it for the feed.
+      - name: Wait for the hosts to publish
+        run: sleep 60
+      # No `npm ci`: the script uses Node built-ins only.
+      - name: Check the deployed URLs and the calendar feed
+        shell: bash
+        run: node scripts/smoke-prod.mjs

@@ -1,0 +1,13 @@
+{
+  "_comment": "Instants the live calendar feed emits that the committed schedule does not hold. Every entry must say why. See sports-viewer-meta/scripts/smoke-prod.mjs.",
+  "feedStartMismatch": [
+    {
+      "iso": "2026-07-01T01:00:00Z",
+      "why": "Match 79 (R32, Azteca) was delayed by weather. src/data/matches.js records the 22:00 EDT start it actually had; ESPN's scoreboard keeps the 21:00 EDT it was scheduled for. The app is right."
+    },
+    {
+      "iso": "2026-07-06T00:00:00Z",
+      "why": "Match 92 (R16, Azteca) started an hour late in weather. Committed data holds the 21:00 EDT actual start, ESPN the 20:00 EDT scheduled one."
+    }
+  ]
+}
