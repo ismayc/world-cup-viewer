@@ -16,7 +16,7 @@ import MatchDetail from './components/MatchDetail.jsx'
 import CalendarModal from './components/CalendarModal.jsx'
 import GoalToasts from './components/GoalToasts.jsx'
 import { groupStageArchived, stageArchived } from './utils/scenarios.js'
-import { detectTimezone, formatDateLong, dayKey, liveState } from './utils/time.js'
+import { detectTimezone, formatDayKeyLong, dayKey, liveState } from './utils/time.js'
 import { readState, writeState } from './utils/urlState.js'
 import { parseQuery, matchesSearch } from './utils/search.js'
 import { fetchResults, applyResults, RESULTS_SOURCE, openFootballFinalScore } from './services/results.js'
@@ -714,7 +714,12 @@ export default function App() {
                       aria-expanded={!collapsed}
                     >
                       <span className="day-chev" aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
-                      <h2>{formatDateLong(matches[0].ko, tz)}</h2>
+                      {/* The heading names the day this section groups, so it
+                          formats the day KEY. Formatting matches[0].ko instead
+                          holds only while every match on the day has a kickoff:
+                          in the FIBA sibling, where some do not, it printed the
+                          Unix epoch as "Wednesday, December 31, 1969". */}
+                      <h2>{formatDayKeyLong(key)}</h2>
                       <span className="day-count">
                         {matches.length} match{matches.length === 1 ? '' : 'es'}
                       </span>

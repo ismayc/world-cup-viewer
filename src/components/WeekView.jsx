@@ -170,7 +170,7 @@ export default function WeekView({ allMatches, shown, tz, dayHidden }) {
                   <button
                     type="button"
                     className="week-day-btn"
-                    onClick={() => setDayModal({ matches, hidden })}
+                    onClick={() => setDayModal({ matches, hidden, dayKey: d })}
                     title={`Show all ${matches.length} match${matches.length === 1 ? '' : 'es'} this day`}
                     aria-label={`Show all ${matches.length} match${matches.length === 1 ? '' : 'es'} on ${hdr.wd} ${hdr.day}`}
                   >
@@ -191,6 +191,7 @@ export default function WeekView({ allMatches, shown, tz, dayHidden }) {
       {dayModal && (
         <DayMatchesModal
           matches={dayModal.matches}
+          dayKey={dayModal.dayKey}
           tz={tz}
           hideScores={dayModal.hidden}
           byNum={byNum}

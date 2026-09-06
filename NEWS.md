@@ -4,6 +4,21 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-05
+
+- **A day heading now formats the day it names, not the first match's kickoff.**
+  `new Date(null)` is not an Invalid Date, it is the Unix epoch, and it formats without
+  complaint as "Wednesday, December 31, 1969". The FIBA sibling ships games whose
+  organizer has not announced a tip-off time yet, and three of its day headings read
+  1969 because the heading was built from `matches[0].ko`. This edition's board has a
+  kickoff on every match, so nothing here was visibly wrong, but the heading was resting
+  on that fact rather than on anything it controls. It now formats the day KEY its
+  section groups, through a new `formatDayKeyLong()`, and the day pop-up is titled from
+  the day it was opened for instead of from the first match in it.
+- `formatTime`, `formatDateLong` and `tzAbbrev` return an empty string for a missing
+  instant rather than formatting the epoch, so a future call site that forgets the case
+  renders nothing instead of a 1969 date.
+
 ## 2026-08-30
 
 - **Production is now checked after every deploy.** Nothing in this repo ever fetched an

@@ -42,7 +42,18 @@ export function timezoneOptions(detected) {
   return [...set]
 }
 
+// `new Date(null)` is not an Invalid Date, it is the Unix EPOCH, and it formats
+// without complaint: "December 31, 1969" and a plausible wall-clock time that
+// even shifts with the viewer's timezone. Nothing fails loudly, so a missing
+// kickoff ships as a 1969 date. It did exactly that in the FIBA sibling, whose
+// board carries games the organizer has not timed yet. Every formatter here
+// refuses a missing instant, so a call site that forgets the case shows nothing.
+function hasInstant(iso) {
+  return iso != null && iso !== ''
+}
+
 export function formatTime(iso, tz) {
+  if (!hasInstant(iso)) return ''
   return new Date(iso).toLocaleTimeString('en-US', {
     timeZone: tz,
     hour: 'numeric',
@@ -52,12 +63,35 @@ export function formatTime(iso, tz) {
 
 // Long date in a given timezone, e.g. "Thursday, June 11, 2026".
 export function formatDateLong(iso, tz) {
+  if (!hasInstant(iso)) return ''
   return new Date(iso).toLocaleDateString('en-US', {
     timeZone: tz,
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+  })
+}
+
+// Long form of a calendar-day KEY ("2026-06-20" -> "Saturday, June 20, 2026"),
+// with `year: false` for the shorter heading the day pop-up uses.
+//
+// A day heading names the DAY its section groups, so it formats the key rather
+// than the first match's kickoff. Reading a kickoff there is only correct while
+// every match on the day has one, which is an assumption about the DATA, not
+// about the heading.
+//
+// The key is a plain calendar date with no instant behind it, so it is parsed at
+// noon UTC and rendered in UTC: any timezone conversion here would shift the
+// date the key already states.
+export function formatDayKeyLong(key, { year = true } = {}) {
+  if (!key) return ''
+  return new Date(`${key}T12:00:00Z`).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    ...(year ? { year: 'numeric' } : null),
   })
 }
 
@@ -70,6 +104,7 @@ export function dayKey(iso, tz) {
 
 // Short timezone abbreviation for a given instant, e.g. "CDT", "GMT+1".
 export function tzAbbrev(iso, tz) {
+  if (!hasInstant(iso)) return ''
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: tz,
     timeZoneName: 'short',

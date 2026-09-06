@@ -3,22 +3,12 @@ import { FLAG_BY_TEAM } from '../data/teams.js'
 import { VENUES } from '../data/venues.js'
 import { STAGE_LABELS } from '../data/matches.js'
 import { colorForMatch } from '../data/groupColors.js'
-import { formatTime, tzAbbrev, liveState, statusFlag } from '../utils/time.js'
+import { formatTime, tzAbbrev, liveState, statusFlag, formatDayKeyLong } from '../utils/time.js'
 import { feederTeams } from '../utils/bracket.js'
 import { useModalA11y } from '../hooks/useModalA11y.js'
 import { useDetail } from '../context/detail.js'
 import LiveBadge from './LiveBadge.jsx'
 import FeederPair from './FeederPair.jsx'
-
-// Full weekday + date for the popup title, e.g. "Saturday, June 27".
-function longDate(iso, tz) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    timeZone: tz,
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
-}
 
 // One compact row per match — kickoff, teams, score/status, stage, venue. Clicking
 // opens the existing full match-detail modal.
@@ -97,7 +87,7 @@ function DayRow({ match, tz, scoreHidden, onOpen, byNum }) {
 
 // Pop-up listing every match scheduled on one day, opened from the Week-view date
 // header. Each row drills into the full match-detail modal.
-export default function DayMatchesModal({ matches, tz, hideScores, byNum, onClose }) {
+export default function DayMatchesModal({ matches, dayKey, tz, hideScores, byNum, onClose }) {
   const cardRef = useModalA11y(onClose)
   const openDetail = useDetail()
   const [revealed, setRevealed] = useState(false)
@@ -115,7 +105,10 @@ export default function DayMatchesModal({ matches, tz, hideScores, byNum, onClos
         <button className="md-close" onClick={onClose} aria-label="Close">✕</button>
 
         <div className="md-head">
-          <span className="md-stage">{fixtures.length ? longDate(fixtures[0].ko, tz) : 'Schedule'}</span>
+          {/* Titled from the day KEY the pop-up was opened for, not from the
+              first match's kickoff: a day whose matches have no kickoff yet
+              would title itself with the Unix epoch. */}
+          <span className="md-stage">{formatDayKeyLong(dayKey, { year: false }) || 'Schedule'}</span>
           <span className="gg-head-team">
             {fixtures.length} match{fixtures.length === 1 ? '' : 'es'}
           </span>

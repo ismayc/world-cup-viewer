@@ -4,6 +4,7 @@ import {
   timezoneOptions,
   formatTime,
   formatDateLong,
+  formatDayKeyLong,
   dayKey,
   tzAbbrev,
   teamLocalKickoffs,
@@ -157,5 +158,46 @@ describe('liveState', () => {
   })
   it('falls back to the clock when no feed data', () => {
     expect(liveState({ ko: ISO }, new Date(ISO).getTime() - 1000)).toBe('upcoming')
+  })
+})
+
+// A day heading names the DAY its section groups, so it formats the day key.
+// Formatting the first match's kickoff instead holds only while every match on
+// the day has one: in the FIBA sibling, whose board carries games the organizer
+// has not timed yet, it printed "Wednesday, December 31, 1969".
+describe('formatDayKeyLong', () => {
+  it('names a calendar day from its key, with or without the year', () => {
+    expect(formatDayKeyLong('2026-06-20')).toBe('Saturday, June 20, 2026')
+    expect(formatDayKeyLong('2026-06-20', { year: false })).toBe('Saturday, June 20')
+  })
+
+  it('renders nothing without a day to name', () => {
+    expect(formatDayKeyLong(null)).toBe('')
+    expect(formatDayKeyLong('')).toBe('')
+  })
+
+  // The suite runs on America/New_York, where `new Date('2026-01-01')` (parsed
+  // as UTC midnight, rendered locally) is December 31, 2025. A day key is a
+  // plain calendar date with no instant behind it, so it must come back as the
+  // day it names: parsed at noon UTC and rendered in UTC, never converted.
+  it('states the day the key names, with no timezone drift', () => {
+    expect(formatDayKeyLong('2026-01-01')).toBe('Thursday, January 1, 2026')
+    expect(formatDayKeyLong('2026-12-31')).toBe('Thursday, December 31, 2026')
+  })
+})
+
+// `new Date(null)` is the EPOCH, not an Invalid Date, and it formats cleanly.
+// Every formatter refuses a missing instant so a call site that forgets the case
+// shows nothing rather than a 1969 date.
+describe('a missing kickoff', () => {
+  it('renders as nothing, never as the epoch', () => {
+    for (const tz of ['UTC', 'America/Los_Angeles']) {
+      expect(formatTime(null, tz)).toBe('')
+      expect(formatDateLong(null, tz)).toBe('')
+      expect(tzAbbrev(null, tz)).toBe('')
+      expect(formatTime(undefined, tz)).toBe('')
+      expect(formatDateLong('', tz)).toBe('')
+      expect(tzAbbrev(undefined, tz)).toBe('')
+    }
   })
 })

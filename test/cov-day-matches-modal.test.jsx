@@ -109,4 +109,19 @@ describe('DayMatchesModal (coverage)', () => {
       vi.useRealTimers()
     }
   })
+
+  // The heading names the day the pop-up was opened for. Titling it from the
+  // first match's kickoff holds only while every match on the day has one, and
+  // in the FIBA sibling, where some do not, it read "Wednesday, December 31".
+  it('titles itself from the day key, not from a match kickoff', () => {
+    renderModal({ dayKey: '2026-06-20' })
+    expect(screen.getByText('Saturday, June 20')).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/1969|1970/)
+  })
+
+  it('falls back to a generic title with no day to name', () => {
+    renderModal({ dayKey: null })
+    expect(screen.getByText('Schedule')).toBeInTheDocument()
+  })
+
 })
