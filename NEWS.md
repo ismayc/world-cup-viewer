@@ -4,6 +4,26 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-05 (later)
+
+- **The visual identity is now the family's results-board system.** The old look was a set
+  of defaults rather than decisions: rounded cards floating on a radial gradient, one
+  accent spent equally on a filter chip and a live badge, and system-ui at a single width
+  because the "Inter" named in the stylesheet was never actually loaded. Built first in
+  the FIBA sibling and rolled out here.
+- **Type.** One family, Archivo, loaded as a variable font on both axes and used at two
+  extremes: expanded and heavy for every numeral and heading, normal for text. All figures
+  are tabular, so columns line up.
+- **Rows, not cards.** A day is a block: a band naming the day over a rule, then its
+  matches as ruled rows sharing one left edge, each led by a scoreboard rail carrying the
+  kickoff in the viewer's own timezone.
+- **Color is information again.** This competition's hue stays as the accent and is spent
+  only on what is happening now. A structural blue carries day bands and round plates.
+  Green and red mean a competition outcome and nothing else.
+- **Less chrome.** Bordered pills under every row became quiet text, the view switch became
+  tabs on the masthead rule, and a grab-bag of six corner radii became one. Literal colors
+  left over from a sibling's palette are now token-derived.
+
 ## 2026-09-05
 
 - **A day heading now formats the day it names, not the first match's kickoff.**
