@@ -4,6 +4,14 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-06
+
+- **Added a stage-search coverage test.** It walks `STAGE_ORDER` and asserts every stage
+  is findable by its own code and by its full label, and that a code resolves to exactly
+  one stage. This viewer already passed; the sibling it was written for did not, because
+  a stage can be added to `STAGE_ORDER` with no synonym written for it and the only
+  symptom is a search that quietly returns nothing.
+
 ## 2026-09-05 (later)
 
 - **The visual identity is now the family's results-board system.** The old look was a set
