@@ -14,15 +14,16 @@
 
 import { fetchMatchLines } from './espnMatchStats.js'
 import { nameKey } from '../utils/tournamentStats.js'
+import { LEAGUE } from '../config/league.js'
 
-const CORE = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026'
+const CORE = `https://sports.core.api.espn.com/v2/sports/${LEAGUE.coreSeasonPath}`
 export const LEADERS_SOURCE = {
   name: 'ESPN',
   url: `${CORE}/types/1/leaders?lang=en&region=us`,
 }
 
-const CACHE_KEY = 'wc2026:bootExtras'
-const NAMES_KEY = 'wc2026:athleteNames'
+const CACHE_KEY = `${LEAGUE.storageKey}:bootExtras`
+const NAMES_KEY = `${LEAGUE.storageKey}:athleteNames`
 export const CACHE_TTL_MS = 15 * 60 * 1000
 
 // $ref links in the feed are http:// — rewrite to https:// or the browser
@@ -148,7 +149,7 @@ export async function fetchBootExtras(signal, { force = false } = {}) {
 // cold load too, where a session high-water mark can't help.
 
 const EVENT_ID = /\/events\/(\d+)/
-const MATCH_STAT_PREFIX = 'wc2026:matchStat:' // `${eventId}:${athleteId}` → {a, m} (final games only)
+const MATCH_STAT_PREFIX = `${LEAGUE.storageKey}:matchStat:` // `${eventId}:${athleteId}` → {a, m} (final games only)
 
 function readMatchStat(key) {
   try {

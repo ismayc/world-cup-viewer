@@ -10,6 +10,7 @@ import { FIFA_RANK } from '../data/fifaRanking.js'
 import { useFollow } from '../context/follow.jsx'
 import GroupGamesModal from './GroupGamesModal.jsx'
 import ScalesIcon from './ScalesIcon.jsx'
+import { LEAGUE } from '../config/league.js'
 
 const GROUPS = Object.keys(TEAMS)
 
@@ -447,7 +448,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
   // hides it for those who just want the tables.
   const [showProjection, setShowProjection] = useState(() => {
     try {
-      return localStorage.getItem('wc2026:asItStands') !== '0'
+      return localStorage.getItem(`${LEAGUE.storageKey}:asItStands`) !== '0'
     } catch {
       return true
     }
@@ -456,7 +457,7 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
     setShowProjection((v) => {
       const next = !v
       try {
-        localStorage.setItem('wc2026:asItStands', next ? '1' : '0')
+        localStorage.setItem(`${LEAGUE.storageKey}:asItStands`, next ? '1' : '0')
       } catch {
         /* ignore */
       }

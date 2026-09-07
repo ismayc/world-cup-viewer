@@ -12,13 +12,14 @@
 // localStorage keyed by event id; live matches are always fetched fresh.
 
 import { nameKey } from '../utils/tournamentStats.js'
+import { LEAGUE } from '../config/league.js'
 
 export const SUMMARY_SOURCE = {
   name: 'ESPN',
-  url: 'https://site.web.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary',
+  url: `https://site.web.api.espn.com/apis/site/v2/sports/${LEAGUE.espnPath}/summary`,
 }
 
-const CACHE_PREFIX = 'wc2026:matchLines:'
+const CACHE_PREFIX = `${LEAGUE.storageKey}:matchLines:`
 
 async function getJson(url, signal) {
   const res = await fetch(url, { signal })

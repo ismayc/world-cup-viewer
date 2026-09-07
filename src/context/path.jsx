@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { LEAGUE } from '../config/league.js'
 
 // The team whose "path to the Final" is highlighted across the Bracket and
 // Radial views. Lifted to a context (and persisted) so the selection survives
 // switching between those two tabs. null = no path highlighted.
-const KEY = 'wc2026:pathTeam'
+const KEY = `${LEAGUE.storageKey}:pathTeam`
 const PathCtx = createContext(null)
 
 export function PathProvider({ children }) {

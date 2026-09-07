@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { downloadICSCollection, webcalUrl, googleCalendarUrl } from '../utils/ics.js'
 import { useFollow } from '../context/follow.jsx'
 import { useModalA11y } from '../hooks/useModalA11y.js'
+import { LEAGUE } from '../config/league.js'
 
 // Subscriptions must point at the deployed feed (a localhost URL can't be
 // subscribed to), so links always use the production origin.
-const PROD = 'https://world-cup-viewer.netlify.app'
+const PROD = LEAGUE.feedHost
 const FEED = `${PROD}/calendar.ics`
 
 function SubRow({ label, httpsUrl }) {

@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { LEAGUE } from '../config/league.js'
 
 // Followed teams, persisted to localStorage. Used to highlight teams, filter to
 // "My Teams", and prioritize the next-match countdown.
-const KEY = 'wc2026:followed'
+const KEY = `${LEAGUE.storageKey}:followed`
 const FollowCtx = createContext(null)
 
 export function FollowProvider({ children }) {
