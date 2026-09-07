@@ -13,7 +13,7 @@ import {
 import { TEAM_TIMEZONES } from '../src/data/teamTimezones.js'
 import { ALL_TEAMS } from '../src/data/teams.js'
 import { buildICS, webcalUrl, googleCalendarUrl } from '../src/utils/ics.js'
-import { computeGroup } from '../src/utils/standings.js'
+import { rankGroup } from '../src/utils/qualification.js'
 
 describe('week utils', () => {
   it('weekStartOf returns the preceding Sunday', () => {
@@ -156,7 +156,7 @@ describe('standings', () => {
     const scored = MATCHES.map((m) =>
       m.num === 1 ? { ...m, score: [2, 1] } : m, // Mexico 2-1 South Africa
     )
-    const table = computeGroup('A', scored)
+    const table = rankGroup('A', scored)
     const mex = table.find((r) => r.name === 'Mexico')
     const rsa = table.find((r) => r.name === 'South Africa')
     expect(mex.Pts).toBe(3)
