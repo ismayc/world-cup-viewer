@@ -6,6 +6,22 @@ data/source updates, deployment). Newest day on top.
 
 ## 2026-09-06
 
+- **Every edition fact now lives in one file, `src/config/league.js`.** Tenth and last of
+  the rollout. 10 files import it: the two ESPN URL grammars, nine storage keys over six
+  files, the match-length window, the `.ics` identity and the deploy host. All 1086
+  existing tests passed untouched.
+- **The storage prefix now says why it carries a year.** `wc2026:` is the only one in the
+  family that does. The twelve apps share one localStorage origin, so a future edition of
+  this same tournament would otherwise inherit this one's followed teams and saved path to
+  the final. It looked like an inconsistency; it is a decision, and the config records it.
+- **Structure deliberately stayed out, and this repo has the most of it still loose.**
+  `R32` is a magic string in 15+ sites across 9 files, and the slot-label grammar is 13
+  copies of the same regex across 7, because `utils/slots.js` was extracted in the sibling
+  viewers and never back-ported here. That is real work with behavior attached and wants
+  its own change. The config header says so, so the omission does not read as an oversight.
+- **New `test/chrome-identity.test.js`** holds `index.html`, the manifest and
+  `package.json` to the config, including the pre-paint theme key that `guards.test.js`
+  checks against the family registry.
 - **Added a stage-search coverage test.** It walks `STAGE_ORDER` and asserts every stage
   is findable by its own code and by its full label, and that a code resolves to exactly
   one stage. This viewer already passed; the sibling it was written for did not, because
