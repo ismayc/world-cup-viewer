@@ -11,6 +11,8 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { handler } from '../netlify/functions/calendar.js'
+import { buildICS } from '../src/utils/ics.js'
+import { MATCHES } from '../src/data/matches.js'
 
 const ok = (payload) =>
   vi.fn(async () => ({ ok: true, json: async () => payload }))
@@ -99,10 +101,15 @@ describe('the calendar handler', () => {
     expect(events((await handler({ queryStringParameters: {} })).body)).toBe(1)
   })
 
-  it('identifies a match with no number by its teams and date', async () => {
-    global.fetch = ok({ matches: [match({ num: undefined, round: 'Final' })] })
+  it('falls back to teams and date for a fixture the committed data has never seen', async () => {
+    // Only reachable if the feed grows a match this edition never played. A
+    // recognized group pairing takes its number from GROUP_MATCH_NUMS instead;
+    // see the agreement tests at the bottom of this file.
+    global.fetch = ok({
+      matches: [match({ num: undefined, round: 'Final', team1: 'Narnia', team2: 'Gondor' })],
+    })
     const body = (await handler({ queryStringParameters: {} })).body
-    expect(body).toMatch(/UID:wc2026-Final-Mexico-South_Africa-2026-06-11@worldcupviewer/)
+    expect(body).toMatch(/UID:wc2026-Final-Narnia-Gondor-2026-06-11@worldcupviewer/)
   })
 
   it('serves an empty calendar rather than failing when the feed has no matches', async () => {
@@ -165,5 +172,73 @@ describe('the calendar handler', () => {
   it('builds an id for a match with neither a number nor a named side', async () => {
     global.fetch = ok({ matches: [match({ num: undefined, team1: undefined, round: 'Final' })] })
     expect((await handler({ queryStringParameters: {} })).body).toContain('@worldcupviewer')
+  })
+
+  // The feed and the download used to stamp different UID bodies for the same
+  // fixture, so a subscriber who had also downloaded a match saw it twice. A UID
+  // is the only thing a calendar client uses to decide "same event". This feed
+  // got the 32 knockout ties right already, because OpenFootball numbers those;
+  // it numbers none of the 72 group matches, which is where the pair went wrong.
+
+  it('gives every fixture the same UID the download would', async () => {
+    global.fetch = ok({
+      matches: MATCHES.map((m) => ({
+        // A knockout carries its number upstream. A group match does not, and
+        // its teams are what the number has to be recovered from.
+        num: m.stage === 'Group' ? undefined : m.num,
+        round: m.stage === 'Group' ? 'Matchday 1' : m.stage,
+        group: m.group,
+        date: m.ko.slice(0, 10),
+        time: '13:00 UTC-6',
+        team1: m.t1,
+        team2: m.t2,
+      })),
+    })
+    const body = (await handler({ queryStringParameters: {} })).body
+    const fromFeed = [...body.matchAll(/UID:(\S+)/g)].map((x) => x[1].trim())
+    const fromDownload = MATCHES.map((m) => buildICS(m).match(/UID:(\S+)/)[1].trim())
+
+    expect(fromFeed).toHaveLength(MATCHES.length)
+    expect(new Set(fromFeed).size).toBe(MATCHES.length)
+    expect([...fromFeed].sort()).toEqual([...fromDownload].sort())
+  })
+
+  it('numbers every unnumbered group match from its teams alone', async () => {
+    // GROUP_MATCH_NUMS restates src/data/matches.js, so it can go stale.
+    // Rebuilding the pairing here from the app's own data is what catches a
+    // regenerated fixture list: a renumbered or renamed match fails this, not a
+    // subscriber's calendar. Keying on the pair is only sound while no two teams
+    // meet twice in the group stage, which a 48-team single round robin
+    // guarantees, so that is asserted rather than assumed. It also pins the
+    // shape, since OpenFootball lists some fixtures in the opposite order.
+    const group = MATCHES.filter((m) => m.stage === 'Group')
+    expect(new Set(group.map((m) => [m.t1, m.t2].sort().join('|'))).size).toBe(group.length)
+
+    global.fetch = ok({
+      matches: group.map((m) => ({
+        round: 'Matchday 1',
+        group: m.group,
+        date: m.ko.slice(0, 10),
+        time: '13:00 UTC-6',
+        // Reversed on purpose: identity must not depend on which side is first.
+        team1: m.t2,
+        team2: m.t1,
+      })),
+    })
+    const body = (await handler({ queryStringParameters: {} })).body
+    expect(body).not.toMatch(/UID:wc2026-Matchday/)
+    expect([...body.matchAll(/UID:wc2026-match-(\d+)@/g)].map((x) => Number(x[1])).sort((a, b) => a - b))
+      .toEqual(group.map((m) => m.num).sort((a, b) => a - b))
+  })
+
+  it('takes the alias spellings into account when recovering a number', async () => {
+    // OpenFootball writes "Czech Republic" and "Turkey"; the table is keyed on
+    // the app's spellings, so the lookup has to normalize first. Six group
+    // matches involve one of the two.
+    global.fetch = ok({
+      matches: [match({ num: undefined, team1: 'Czech Republic', team2: 'South Korea' })],
+    })
+    const body = (await handler({ queryStringParameters: {} })).body
+    expect(body).toContain('UID:wc2026-match-2@worldcupviewer')
   })
 })

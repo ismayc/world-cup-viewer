@@ -4,6 +4,27 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-07
+
+- **Subscribing to the calendar and downloading a group match no longer produce two
+  events.** The download stamps each match `wc2026-match-<num>@worldcupviewer`, and the
+  feed already emitted that for a knockout tie, because OpenFootball numbers its knockout
+  fixtures. It numbers only those 32. The other 72 fell through to a body built from the
+  round, teams and date, so every group match a subscriber had also downloaded sat in the
+  calendar twice. The feed now recovers a group match's number from its teams, and the two
+  sources agree on all 104.
+- **This viewer was the one the family treated as the model here**, on the strength of its
+  feed reading `m.num`. It read a number that upstream supplies for less than a third of
+  the tournament.
+- **Group fixtures only, deliberately.** A knockout tie keeps taking its number from the
+  feed, which is the authority there: the committed record carries bracket slots ("Winner
+  Group A") rather than the teams who filled them, so there is no pair to key on.
+- **Three new tests state the invariant rather than a copy of the literal**: one builds the
+  whole feed from the committed fixture list and asserts its UIDs are exactly the set the
+  download path produces, one rebuilds the number table from `src/data/matches.js` so a
+  regenerated fixture list fails the suite instead of drifting, and one covers the
+  "Czech Republic" and "Turkey" spellings, which have to be normalized before the lookup.
+
 ## 2026-09-06
 
 - **The scenarios view's CSS classes are named after the entry round now, not a round
