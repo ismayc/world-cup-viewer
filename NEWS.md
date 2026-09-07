@@ -6,6 +6,15 @@ data/source updates, deployment). Newest day on top.
 
 ## 2026-09-06
 
+- **Deleted `src/utils/standings.js`, a module the app never imported.** Candidate 3 from
+  the architecture review. It had zero importers in `src/`, despite a header claiming to
+  keep "the small surface the Standings UI and its tests rely on". It held a bare
+  re-export of `rankGroup`, a pure alias `computeGroup`, and `groupHasResults`, which has
+  no caller anywhere and no equivalent inline in the UI. `test/standings-util.test.js`
+  existed only to exercise that surface and goes with it; `test/utils.test.js` now calls
+  `rankGroup` from `qualification.js` directly, which is what the app has always done.
+  Coverage is still 100% afterwards, which is the confirmation that matters: those
+  exports were being counted as covered while exercising no shipped path.
 - **Every edition fact now lives in one file, `src/config/league.js`.** Tenth and last of
   the rollout. 10 files import it: the two ESPN URL grammars, nine storage keys over six
   files, the match-length window, the `.ics` identity and the deploy host. All 1086
