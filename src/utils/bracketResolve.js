@@ -19,14 +19,11 @@ import { reachableThirdSets } from './opponentClinch.js'
 import { groupComplete, rankGroup } from './qualification.js'
 import { projectKnockout } from './asItStands.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
+import { LOSER_MATCH, RUNNERUP_GROUP, THIRD_SLOT, WINNER_GROUP, WINNER_MATCH, entryMatches } from './slots.js'
 
 const ALL_TEAMS = new Set(Object.values(TEAMS).flat().map((t) => t.name))
 // Static R32 slots (invariant labels), for resolving third-place ties.
-const R32_STATIC = MATCHES.filter((m) => m.stage === 'R32')
-const WINNER_GROUP = /^Winner Group ([A-L])$/
-const THIRD_SLOT = /^3rd [A-L/]+$/
-const WINNER_MATCH = /^Winner Match (\d+)$/
-const LOSER_MATCH = /^Loser Match (\d+)$/
+const R32_STATIC = entryMatches(MATCHES)
 
 // A result counts only once FINAL — a live score is provisional, a voided match
 // has no result. (Same rule the clinch engine uses for group matches.)

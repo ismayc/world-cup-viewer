@@ -13,6 +13,7 @@
 
 import { TEAMS } from '../data/teams.js'
 import { rankGroup, ADVANCING_THIRDS } from './qualification.js'
+import { RUNNERUP_GROUP, WINNER_GROUP } from './slots.js'
 
 const GROUPS = Object.keys(TEAMS)
 // Upper bound on enumerated scorelines per group. Sized so the real clinch
@@ -300,7 +301,7 @@ export function groupWinners(clinch) {
 // match-detail modal, schedule cards, calendar) — not just one view. Only the
 // group-winner slot is determinable from clinch status; runner-up / third-place
 // slots stay as placeholders until results settle them.
-const WINNER_SLOT = /^Winner Group ([A-L])$/
+const WINNER_SLOT = WINNER_GROUP
 export function resolveClinchedSlots(matches, clinch) {
   const winners = groupWinners(clinch)
   if (!Object.keys(winners).length) return matches
@@ -321,7 +322,7 @@ export function resolveClinchedSlots(matches, clinch) {
 // points alone; a runner-up is only pinned down once results settle, which for
 // a 4-team group means every group match is final.) Third-place slots stay as
 // placeholders: which third lands in which tie depends on the cross-group race.
-const RUNNERUP_SLOT = /^Runner-up Group ([A-L])$/
+const RUNNERUP_SLOT = RUNNERUP_GROUP
 const GROUP_MATCH_COUNT = 6 // 4 teams => 6 matches per group
 const isFinal = (m) => m.score && !m.live && !m.voided
 export function groupRunnersUp(matches) {

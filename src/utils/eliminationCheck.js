@@ -29,6 +29,7 @@ import { byFifaRank } from '../data/fifaRanking.js'
 import { goalCap, scorelinesUpTo } from './clinch.js'
 import { reachableThirdSets } from './opponentClinch.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
+import { WINNER_GROUP, entryMatches } from './slots.js'
 
 const GROUPS = Object.keys(TEAMS)
 // Mirrors clinch.js: a group with a small remaining scoreline space is exact;
@@ -170,10 +171,10 @@ export function isAlive(matches, team) {
 // group winner with a third-place slot (the only matches a best-third lands in).
 const WINNER_THIRD_MATCH = (() => {
   const out = {}
-  for (const m of MATCHES.filter((x) => x.stage === 'R32')) {
-    const w = [m.t1, m.t2].find((s) => /^Winner Group ([A-L])$/.test(s))
+  for (const m of entryMatches(MATCHES)) {
+    const w = [m.t1, m.t2].find((s) => WINNER_GROUP.test(s))
     const third = [m.t1, m.t2].find((s) => /^3rd /.test(s))
-    if (w && third) out[/^Winner Group ([A-L])$/.exec(w)[1]] = m.num
+    if (w && third) out[WINNER_GROUP.exec(w)[1]] = m.num
   }
   return out
 })()

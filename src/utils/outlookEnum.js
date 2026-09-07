@@ -31,6 +31,7 @@ import { TEAMS } from '../data/teams.js'
 import { rankGroup, ADVANCING_THIRDS } from './qualification.js'
 import { byFifaRank } from '../data/fifaRanking.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
+import { RUNNERUP_GROUP, WINNER_GROUP, entryMatches } from './slots.js'
 
 // Cross-group third-place ranking — IDENTICAL to computeQualification's: points,
 // goal difference, goals, conduct (cards), then FIFA ranking. Descending (< 0
@@ -46,20 +47,20 @@ const MAX_ITERS = 12_000_000
 // A Round-of-32 slot label is always one of exactly three shapes, so the return
 // type is 'winner' | 'runner' | 'third' — never anything else.
 function parseSlot(label) {
-  let m = /^Winner Group ([A-L])$/.exec(label)
+  let m = WINNER_GROUP.exec(label)
   if (m) return { type: 'winner', group: m[1] }
-  m = /^Runner-up Group ([A-L])$/.exec(label)
+  m = RUNNERUP_GROUP.exec(label)
   if (m) return { type: 'runner', group: m[1] }
   return { type: 'third' }
 }
 
-const R32 = MATCHES.filter((m) => m.stage === 'R32').map((m) => ({
+const R32 = entryMatches(MATCHES).map((m) => ({
   num: m.num,
   sides: [parseSlot(m.t1), parseSlot(m.t2)],
 }))
 
 export const R32_SLOT_LABELS = Object.fromEntries(
-  MATCHES.filter((m) => m.stage === 'R32').map((m) => [m.num, [m.t1, m.t2]]),
+  entryMatches(MATCHES).map((m) => [m.num, [m.t1, m.t2]]),
 )
 
 const isRemaining = (m) => m.stage === 'Group' && !m.voided && !(Array.isArray(m.score) && !m.live)

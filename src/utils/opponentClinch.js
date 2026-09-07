@@ -23,18 +23,19 @@ import { MATCHES } from '../data/matches.js'
 import { rankGroup, groupComplete } from './qualification.js'
 import { computeClinch, thirdProfileBounds, cmpThird } from './clinch.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
+import { RUNNERUP_GROUP, WINNER_GROUP, entryMatches } from './slots.js'
 
 const GROUPS = Object.keys(TEAMS)
 // Static R32 slot labels by match number (the live feed resolves some to real
 // team names, so always read the invariant labels from the static schedule).
-const R32 = MATCHES.filter((m) => m.stage === 'R32').map((m) => ({ num: m.num, slots: [m.t1, m.t2] }))
+const R32 = entryMatches(MATCHES).map((m) => ({ num: m.num, slots: [m.t1, m.t2] }))
 
 // A Round-of-32 slot label is always one of exactly three shapes, so the return
 // type is 'winner' | 'runner' | 'third' — never anything else.
 function parseSlot(label) {
-  let m = /^Winner Group ([A-L])$/.exec(label)
+  let m = WINNER_GROUP.exec(label)
   if (m) return { type: 'winner', group: m[1] }
-  m = /^Runner-up Group ([A-L])$/.exec(label)
+  m = RUNNERUP_GROUP.exec(label)
   if (m) return { type: 'runner', group: m[1] }
   return { type: 'third' }
 }

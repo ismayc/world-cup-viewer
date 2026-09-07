@@ -13,6 +13,7 @@ import { MATCHES } from '../data/matches.js'
 import { TEAMS } from '../data/teams.js'
 import { computeQualification, ADVANCING_THIRDS } from './qualification.js'
 import { THIRD_PLACE_COMBINATIONS, THIRD_WINNER_ORDER } from '../data/thirdPlaceCombinations.js'
+import { ENTRY_ROUND, RUNNERUP_GROUP, WINNER_GROUP, entryMatches } from './slots.js'
 
 const GROUPS = Object.keys(TEAMS)
 
@@ -20,12 +21,12 @@ const GROUPS = Object.keys(TEAMS)
 // LIVE matches we're handed have clinched winners already resolved to real teams
 // (e.g. "Winner Group E" → "Germany") — which would no longer parse as a slot.
 // So read each R32 match's slot labels from the STATIC schedule, by match number.
-const R32_SLOTS = new Map(MATCHES.filter((m) => m.stage === 'R32').map((m) => [m.num, [m.t1, m.t2]]))
+const R32_SLOTS = new Map(entryMatches(MATCHES).map((m) => [m.num, [m.t1, m.t2]]))
 
 function parseSlot(label) {
-  let m = /^Winner Group ([A-L])$/.exec(label)
+  let m = WINNER_GROUP.exec(label)
   if (m) return { type: 'winner', group: m[1] }
-  m = /^Runner-up Group ([A-L])$/.exec(label)
+  m = RUNNERUP_GROUP.exec(label)
   if (m) return { type: 'runner', group: m[1] }
   m = /^3rd ([A-L/]+)$/.exec(label)
   if (m) return { type: 'third', groups: m[1].split('/') }
@@ -75,7 +76,7 @@ export function projectKnockout(matches) {
   // Every R32 side, with its parsed slot, indexed by match.
   const sides = []
   for (const m of matches) {
-    if (m.stage !== 'R32') continue
+    if (m.stage !== ENTRY_ROUND) continue
     const [t1, t2] = R32_SLOTS.get(m.num) || [m.t1, m.t2]
     sides.push({ matchNum: m.num, sideIdx: 0, slot: parseSlot(t1) })
     sides.push({ matchNum: m.num, sideIdx: 1, slot: parseSlot(t2) })

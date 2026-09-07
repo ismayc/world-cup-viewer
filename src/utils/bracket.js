@@ -5,6 +5,7 @@
 
 import { FLAG_BY_TEAM } from '../data/teams.js'
 import { MATCHES } from '../data/matches.js'
+import { ENTRY_ROUND, RUNNERUP_GROUP, WINNER_GROUP, WINNER_MATCH } from './slots.js'
 
 // A still-unresolved feed slot ("Winner Match 73" / "Loser Match 73") expands to
 // the two teams of the tie it feeds from, ONCE that tie has both real teams — the
@@ -49,14 +50,14 @@ export function matchesByNum(matches) {
 // into, parsed from the R32 placeholder labels ("Winner Group A" etc.). Third-
 // place routes are intentionally omitted: a group's 3rd-placed team can land in
 // one of several ties depending on which third-placed teams advance.
-const WINNER_LABEL = /^Winner Group ([A-L])$/
-const RUNNERUP_LABEL = /^Runner-up Group ([A-L])$/
+const WINNER_LABEL = WINNER_GROUP
+const RUNNERUP_LABEL = RUNNERUP_GROUP
 
 export function groupSlotMap(matches) {
   const map = {}
   const slot = (g) => (map[g] ||= { win: null, runnerUp: null })
   for (const m of matches) {
-    if (m.stage !== 'R32') continue
+    if (m.stage !== ENTRY_ROUND) continue
     for (const side of [m.t1, m.t2]) {
       let hit = WINNER_LABEL.exec(side)
       if (hit) { slot(hit[1]).win = m.num; continue }
@@ -72,7 +73,7 @@ export function groupSlotMap(matches) {
 // matches drop those labels, so we read the invariant fixture data). The Final
 // (104) has no parent; "Loser Match N" edges (the third-place play-off) are
 // intentionally excluded — a path to the Final follows winners only.
-const WINNER_MATCH_LABEL = /^Winner Match (\d+)$/
+const WINNER_MATCH_LABEL = WINNER_MATCH
 const KO_WINNER_PARENT = (() => {
   const parent = {}
   for (const m of MATCHES) {
@@ -103,7 +104,7 @@ function koWinner(m) {
 export function knockoutTeams(byNum) {
   const set = new Set()
   for (const m of Object.values(byNum)) {
-    if (m.stage !== 'R32') continue
+    if (m.stage !== ENTRY_ROUND) continue
     for (const t of [m.t1, m.t2]) if (FLAG_BY_TEAM[t]) set.add(t)
   }
   return [...set].sort()
@@ -121,7 +122,7 @@ export function knockoutTeams(byNum) {
 export function pathToFinal(team, byNum) {
   if (!team) return null
   const r32 = Object.values(byNum).find(
-    (m) => m.stage === 'R32' && (m.t1 === team || m.t2 === team),
+    (m) => m.stage === ENTRY_ROUND && (m.t1 === team || m.t2 === team),
   )
   if (!r32) return null
   const nums = []
