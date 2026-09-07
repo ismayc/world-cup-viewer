@@ -6,6 +6,26 @@ data/source updates, deployment). Newest day on top.
 
 ## 2026-09-06
 
+- **The bracket's label grammar now has one definition, in `src/utils/slots.js`.**
+  Candidate 2 from the architecture review. Every sibling tournament viewer had extracted
+  this module; this repo, where the duplication was worst, never got it back. It was
+  sixteen regex literals across seven files, plus the entry round as a bare `R32` in ten
+  more comparisons. Adding a group letter meant editing all of them and hoping none was
+  missed.
+- **`GROUP_CLASS` derives from the groups that exist** rather than hardcoding `[A-L]`.
+  That range is right for twelve groups and silently wrong for any other number: a label
+  naming a group this edition does not have used to parse as nothing, halfway through an
+  engine, instead of failing. `THIRD_SLOT` is stricter too, since the old
+  `/^3rd [A-L/]+$/` accepted `3rd ///`. Both were checked against every label in the
+  committed fixture list and agree with the old patterns on all of them.
+- **One sibling helper deliberately not ported.** The others export `slotLabels(m)`
+  reading `m.label1 ?? m.t1`, because once a match is played their `t1`/`t2` hold real
+  teams and the drawn labels move to `label1`/`label2`. No match in this edition's
+  committed data carries those fields, so it would be dead code here. The module records
+  that, and says to add it if a future refresh starts writing them.
+- **New `test/slot-grammar.test.js` looks for the shape of the mistake**, not a known-good
+  value: it fails on any hand-written label regex or bare `R32` stage comparison under
+  `src/utils`. All three guards were verified to fail when the old code is put back.
 - **Deleted `src/utils/standings.js`, a module the app never imported.** Candidate 3 from
   the architecture review. It had zero importers in `src/`, despite a header claiming to
   keep "the small surface the Standings UI and its tests rely on". It held a bare
