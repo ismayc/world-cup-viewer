@@ -20,8 +20,10 @@
 //
 // Node built-ins only, so it runs with no `npm ci` (the same constraint the
 // refresh workflows have). Canonical copy lives in sports-viewer-meta; each repo
-// vendors it. Re-run `node sports-viewer-meta/scripts/check-smoke-sync.mjs`
-// after editing the canonical one.
+// vendors it. After editing the canonical one, re-vendor and then run
+// `node sports-viewer-meta/scripts/audit-family.mjs`, which diffs every copy against
+// it. (This used to name check-smoke-sync.mjs, a script that has never existed in this
+// repo. Thirteen copies of this file carried that instruction.)
 
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
