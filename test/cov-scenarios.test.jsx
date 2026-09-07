@@ -123,8 +123,8 @@ describe('ScenariosView — teams, ties and matchups the projection cannot fill 
       { num: 900, stage: 'R32', t1: 'Winner Group A', t2: 'Winner Match 5', ko: '2026-07-05T15:00:00Z' },
     ]
     render(<ScenariosView matches={board} />)
-    const first = document.querySelector('.sc-r32-row')
-    expect(first.querySelector('.sc-r32-opp').textContent).toBe('TBD')
-    expect(first.querySelector('.sc-r32-num').textContent).toBe('M900')
+    const first = document.querySelector('.sc-entry-row')
+    expect(first.querySelector('.sc-entry-opp').textContent).toBe('TBD')
+    expect(first.querySelector('.sc-entry-num').textContent).toBe('M900')
   })
 })

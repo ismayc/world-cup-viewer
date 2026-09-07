@@ -100,20 +100,25 @@ function ProjectedTable({ rows, decided, ties }) {
 // the matchup is mathematically locked given the results set so far.
 function R32Line({ label, dest, confirmed }) {
   if (!dest?.team) return null
+  // `sc-entry-confirmed` used to be added to the row below when `confirmed`. It had no
+  // CSS rule in any viewer in the family, so a confirmed row looked exactly like an
+  // unconfirmed one and the class did nothing at all. The tick below, which IS styled,
+  // is what actually marks a locked matchup today. Removed rather than styled: what a
+  // confirmed row should look like is a design decision, not a rename.
   return (
-    <li className={`sc-r32-row${confirmed ? ' sc-r32-confirmed' : ''}`}>
-      <span className="sc-r32-pos">{label}</span>
+    <li className="sc-entry-row">
+      <span className="sc-entry-pos">{label}</span>
       {/* Both names come out of the group tables, so they are committed members
           of this edition and always have a flag. The opponent is the one that
           can be missing: a knockout tie whose other side is not a group slot
           leaves it unprojected. */}
-      <span className="sc-r32-team">{FLAG_BY_TEAM[dest.team]} {dest.team}</span>
-      <span className="sc-r32-vs">vs</span>
-      <span className="sc-r32-opp">
+      <span className="sc-entry-team">{FLAG_BY_TEAM[dest.team]} {dest.team}</span>
+      <span className="sc-entry-vs">vs</span>
+      <span className="sc-entry-opp">
         {dest.opponent ? `${FLAG_BY_TEAM[dest.opponent]} ${dest.opponent}` : 'TBD'}
       </span>
-      {dest.matchNum && <span className="sc-r32-num">M{dest.matchNum}</span>}
-      {confirmed && <span className="sc-r32-lock" title="This matchup is confirmed — it can no longer change" aria-label="Matchup confirmed">✔️</span>}
+      {dest.matchNum && <span className="sc-entry-num">M{dest.matchNum}</span>}
+      {confirmed && <span className="sc-entry-lock" title="This matchup is confirmed — it can no longer change" aria-label="Matchup confirmed">✔️</span>}
     </li>
   )
 }
@@ -224,22 +229,22 @@ export default function ScenariosView({ matches }) {
 
               <ProjectedTable rows={qual.groups[g]} decided={allPicked} ties={ties} />
 
-              <div className="sc-r32">
-                <div className="sc-r32-title">Projected Round of 32</div>
-                <ul className="sc-r32-list">
+              <div className="sc-entry">
+                <div className="sc-entry-title">Projected Round of 32</div>
+                <ul className="sc-entry-list">
                   <R32Line label="1st" dest={proj.first} confirmed={isConfirmed(proj.first)} />
                   <R32Line label="2nd" dest={proj.second} confirmed={isConfirmed(proj.second)} />
                   {proj.thirdQualifies ? (
                     <R32Line label="3rd" dest={proj.third} confirmed={isConfirmed(proj.third)} />
                   ) : (
                     proj.thirdTeam && (
-                      <li className="sc-r32-row sc-r32-out">
-                        <span className="sc-r32-pos">3rd</span>
+                      <li className="sc-entry-row sc-entry-out">
+                        <span className="sc-entry-pos">3rd</span>
                         {/* thirdTeam is the third row of a ranked group table, which
                             rankGroup seeds from the committed group — so it is always a
                             member of this edition and always has a flag. */}
-                        <span className="sc-r32-team">{FLAG_BY_TEAM[proj.thirdTeam]} {proj.thirdTeam}</span>
-                        <span className="sc-r32-note">outside the best 8</span>
+                        <span className="sc-entry-team">{FLAG_BY_TEAM[proj.thirdTeam]} {proj.thirdTeam}</span>
+                        <span className="sc-entry-note">outside the best 8</span>
                       </li>
                     )
                   )}
