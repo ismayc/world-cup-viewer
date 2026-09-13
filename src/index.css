@@ -2278,6 +2278,9 @@ select {
 .sc-entry-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent); margin-bottom: 8px; }
 .sc-entry-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
 .sc-entry-row { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
+/* A confirmed matchup (locked given the results so far) gets a faint wash in the app's
+   accent so a settled row reads as settled at a glance; the ✔ marks it too. */
+.sc-entry-confirmed { background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 5px; padding-block: 3px; }
 .sc-entry-pos { font-size: 0.66rem; font-weight: 700; color: var(--text-faint); min-width: 24px; }
 .sc-entry-team { font-weight: 600; }
 .sc-entry-vs { font-size: 0.72rem; font-style: italic; color: var(--text-faint); }

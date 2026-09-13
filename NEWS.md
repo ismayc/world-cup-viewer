@@ -4,6 +4,13 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-13
+
+- **Confirmed knockout matchups now stand out in the Scenarios view.** A projected matchup
+  that is mathematically locked given the results so far gets a faint wash in the app's
+  accent color, so a settled pairing reads as settled at a glance. The ✔ that already
+  marked a locked matchup stays.
+
 ## 2026-09-10
 
 - **Fixed: the match-detail popup could not be closed on mobile.** The card was sized and

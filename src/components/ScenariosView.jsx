@@ -100,13 +100,11 @@ function ProjectedTable({ rows, decided, ties }) {
 // the matchup is mathematically locked given the results set so far.
 function R32Line({ label, dest, confirmed }) {
   if (!dest?.team) return null
-  // `sc-entry-confirmed` used to be added to the row below when `confirmed`. It had no
-  // CSS rule in any viewer in the family, so a confirmed row looked exactly like an
-  // unconfirmed one and the class did nothing at all. The tick below, which IS styled,
-  // is what actually marks a locked matchup today. Removed rather than styled: what a
-  // confirmed row should look like is a design decision, not a rename.
+  // A confirmed matchup (locked given the results so far) carries `sc-entry-confirmed`,
+  // which gives the row a faint accent wash so a settled matchup reads as settled at a
+  // glance; the tick below marks it too.
   return (
-    <li className="sc-entry-row">
+    <li className={`sc-entry-row${confirmed ? ' sc-entry-confirmed' : ''}`}>
       <span className="sc-entry-pos">{label}</span>
       {/* Both names come out of the group tables, so they are committed members
           of this edition and always have a flag. The opponent is the one that
