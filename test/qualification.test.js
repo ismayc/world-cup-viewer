@@ -269,6 +269,20 @@ describe('groupComplete', () => {
     const six = cMatches.map((m) => ({ ...m, score: [1, 0] }))
     expect(groupComplete('C', six)).toBe(true)
   })
+
+  it('does not count a live or voided sixth match as complete', () => {
+    // A live match has a provisional score; completing the group off it would let the
+    // standings emit a qualification verdict before the result is settled.
+    const cMatches = MATCHES.filter((m) => m.stage === 'Group' && m.group === 'C')
+    const fiveFinal = cMatches.slice(0, 5).map((m) => ({ ...m, score: [1, 0] }))
+    const liveSixth = { ...cMatches[5], score: [1, 0], live: true }
+    const voidedSixth = { ...cMatches[5], score: [1, 0], voided: true }
+    expect(groupComplete('C', [...fiveFinal, liveSixth])).toBe(false)
+    expect(groupComplete('C', [...fiveFinal, voidedSixth])).toBe(false)
+    // Once it goes final, the group is complete.
+    const finalSixth = { ...cMatches[5], score: [1, 0] }
+    expect(groupComplete('C', [...fiveFinal, finalSixth])).toBe(true)
+  })
 })
 
 describe('group rows ignore a fixture whose teams are not in the group', () => {

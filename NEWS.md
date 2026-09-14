@@ -4,6 +4,16 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-14
+
+- **Group completion now requires every match to be truly final.** The provisional "as it
+  stands" standings deliberately count a live match's score (and are labeled ● LIVE), but
+  `groupComplete` also counted a live match toward the group being finished, which could
+  flip the group to "complete" mid-match and let the qualification badges ('in' / 'out' / a
+  settled best-third) appear off a score that could still change. It now counts only final
+  matches, the same predicate the clinch engine and the standings component already use. No
+  change to the provisional table itself. Coverage stays at 100%.
+
 ## 2026-09-13
 
 - **Confirmed knockout matchups now stand out in the Scenarios view.** A projected matchup

@@ -150,9 +150,14 @@ export function rankGroup(group, matches) {
 }
 
 export function groupComplete(group, matches) {
+  // A group is complete only when every match is truly FINAL. A live match carries a
+  // provisional score, so counting it here would flip completion mid-match and let
+  // rowStatus emit a qualification verdict ('in' / 'out' / a settled best-third) off a
+  // score that can still change. Same final predicate as clinch.js and Standings.jsx.
   return (
-    matches.filter((m) => m.stage === 'Group' && m.group === group && m.score).length >=
-    GROUP_MATCH_COUNT
+    matches.filter(
+      (m) => m.stage === 'Group' && m.group === group && m.score && !m.live && !m.voided,
+    ).length >= GROUP_MATCH_COUNT
   )
 }
 
