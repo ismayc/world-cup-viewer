@@ -36,18 +36,18 @@ afterEach(() => {
 describe('App — what the results feed can leave behind', () => {
   it('stays quiet when the results request was aborted rather than failing', async () => {
     // A second load supersedes the first: the abort is the app's own doing, so
-    // telling the reader the feed is unreachable would be wrong.
+    // falling back to the committed snapshot would be wrong — nothing failed.
     fetchResults.mockRejectedValue(
       Object.assign(new Error('The operation was aborted.'), { name: 'AbortError' }),
     )
     render(<App />)
     await waitFor(() => expect(fetchResults).toHaveBeenCalled())
-    expect(screen.queryByText(/Couldn’t reach results feed/)).toBeNull()
+    expect(screen.queryByText(/showing committed final scores/)).toBeNull()
   })
 
-  it('still reports a genuine results failure', async () => {
+  it('falls back to committed final scores on a genuine results failure', async () => {
     fetchResults.mockRejectedValue(new Error('offline'))
     render(<App />)
-    expect(await screen.findByText(/Couldn’t reach results feed/)).toBeInTheDocument()
+    expect(await screen.findByText(/showing committed final scores/)).toBeInTheDocument()
   })
 })

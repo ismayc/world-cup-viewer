@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { applyResults, matchKey, fetchResults } from '../src/services/results.js'
+import {
+  applyResults,
+  matchKey,
+  fetchResults,
+  buildResultsMap,
+  COMMITTED_RESULTS,
+} from '../src/services/results.js'
 import { MATCHES } from '../src/data/matches.js'
 
 describe('results merge (applyResults)', () => {
@@ -119,5 +125,30 @@ describe('fetchResults (parsing OpenFootball shape)', () => {
   it('throws on a non-OK response', async () => {
     global.fetch = vi.fn(async () => ({ ok: false, status: 503 }))
     await expect(fetchResults()).rejects.toThrow(/503/)
+  })
+})
+
+describe('buildResultsMap (shared by the live fetch and the committed snapshot)', () => {
+  it('keys records and parses scores, skipping any it cannot key', () => {
+    const map = buildResultsMap([
+      { round: 'Matchday 1', team1: 'Mexico', team2: 'South Africa', score: { ft: [2, 0] } },
+      { round: 'Group stage', team1: 'Nobody', team2: 'Nowhere' }, // no num, unkeyable → skipped
+    ])
+    expect(map.size).toBe(1)
+    expect(map.get('pair:' + ['Mexico', 'South Africa'].sort().join('|')).score.ft).toEqual([2, 0])
+  })
+})
+
+describe('COMMITTED_RESULTS (the frozen fallback)', () => {
+  it('is populated and gives every finished match a final score when applied', () => {
+    // The committed snapshot is the safety net when the live feed is down. It
+    // must actually carry scores, not just exist.
+    expect(COMMITTED_RESULTS.size).toBeGreaterThan(0)
+    const merged = applyResults(MATCHES, COMMITTED_RESULTS)
+    const scored = merged.filter((m) => Array.isArray(m.score))
+    expect(scored.length).toBe(MATCHES.length) // a completed tournament: all matches final
+    // The Final in particular resolves to a real, scored result.
+    const final = merged.find((m) => m.stage === 'Final')
+    expect(Array.isArray(final.score)).toBe(true)
   })
 })

@@ -4,6 +4,17 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-15
+
+- **Committed-score fallback so results survive if the live feed goes down.** The app read
+  final scores only from OpenFootball at runtime, a single external dependency: if that feed
+  were moved, restructured, or taken offline, a finished tournament's scores would disappear
+  from the app with nothing to fall back on. A frozen snapshot of the feed now ships in
+  `src/data/finalResults.js` (regenerable via `scripts/freeze-results.mjs`), parsed by the
+  same code path as the live feed. When the live fetch fails, the app overlays the committed
+  snapshot instead of dropping to "schedule only", and the status bar says so. Coverage stays
+  at 100%.
+
 ## 2026-09-14
 
 - **Group completion now requires every match to be truly final.** The provisional "as it
