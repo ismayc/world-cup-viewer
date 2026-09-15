@@ -19,7 +19,13 @@ import { groupStageArchived, stageArchived } from './utils/scenarios.js'
 import { detectTimezone, formatDayKeyLong, dayKey, liveState } from './utils/time.js'
 import { readState, writeState } from './utils/urlState.js'
 import { parseQuery, matchesSearch } from './utils/search.js'
-import { fetchResults, applyResults, RESULTS_SOURCE, openFootballFinalScore } from './services/results.js'
+import {
+  fetchResults,
+  applyResults,
+  RESULTS_SOURCE,
+  openFootballFinalScore,
+  COMMITTED_RESULTS,
+} from './services/results.js'
 import { fetchLive, applyLive, LIVE_SOURCE, espnFinalScore, historyDates } from './services/espn.js'
 import { fetchBackup, BACKUP_SOURCE, sdbFinalScore } from './services/thesportsdb.js'
 import { annotateScoreChecks } from './services/reconcile.js'
@@ -152,7 +158,7 @@ export default function App() {
   const [live, setLive] = useState(null)
   const [history, setHistory] = useState(null)
   const [backup, setBackup] = useState(null)
-  const [resultsState, setResultsState] = useState('loading') // loading | ok | error
+  const [resultsState, setResultsState] = useState('loading') // loading | ok | fallback
   const [updatedAt, setUpdatedAt] = useState(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [goalAlerts, setGoalAlerts] = useState(readGoalAlerts)
@@ -186,7 +192,11 @@ export default function App() {
       setResultsState('ok')
       setUpdatedAt(Date.now())
     } else if (of.reason?.name !== 'AbortError') {
-      setResultsState('error')
+      // The live feed is unreachable. Rather than show the schedule with no
+      // scores, fall back to the committed snapshot so finished matches still
+      // have their finals. An abort (a superseding load) is left untouched.
+      setResults(COMMITTED_RESULTS)
+      setResultsState('fallback')
     }
   }, [])
 
@@ -551,7 +561,7 @@ export default function App() {
         <span className="results-dot" />
         <span className="results-text">
           {resultsState === 'loading' && 'Loading live results…'}
-          {resultsState === 'error' && 'Couldn’t reach results feed — showing schedule only.'}
+          {resultsState === 'fallback' && 'Live feed unavailable, showing committed final scores.'}
           {resultsState === 'ok' && finishedCount > 0 && `${finishedCount} match${finishedCount === 1 ? '' : 'es'} with scores`}
           {resultsState === 'ok' && finishedCount === 0 && 'No results yet — kickoff is June 11, 2026'}
         </span>

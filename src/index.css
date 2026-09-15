@@ -961,7 +961,7 @@ select {
 }
 .results-ok .results-dot { background: var(--accent); }
 .results-loading .results-dot { background: var(--gold); animation: pulse 1.2s infinite; }
-.results-error .results-dot { background: var(--accent-2); }
+.results-fallback .results-dot { background: var(--accent-2); }
 .results-text { font-weight: 600; color: var(--text); }
 .results-updated, .results-source { color: var(--text-faint); font-size: 0.76rem; }
 .results-source a { color: var(--accent); text-decoration: none; }
