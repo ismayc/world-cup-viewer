@@ -11,6 +11,7 @@
 // real team names, so we also use the feed to fill in the bracket.
 
 import { FLAG_BY_TEAM } from '../data/teams.js'
+import { FINAL_RESULTS } from '../data/finalResults.js'
 
 export const RESULTS_SOURCE = {
   name: 'OpenFootball',
@@ -96,20 +97,12 @@ function parseGoals(arr) {
   }))
 }
 
-export async function fetchResults(signal) {
-  const res = await fetch(RESULTS_SOURCE.url, { signal, cache: 'no-store' })
-  if (!res.ok) throw new Error(`Results request failed (HTTP ${res.status})`)
-  let data
-  try {
-    data = await res.json()
-  } catch {
-    throw new Error('Results response was not valid JSON')
-  }
-  // Guard against a 200 that isn't the feed we expect (e.g. an HTML error page
-  // that happens to parse) — better to surface an error than silently show none.
-  if (!Array.isArray(data.matches)) throw new Error('Results feed is missing a matches[] array')
+// Build the results map from an OpenFootball-shaped matches[] array. Shared by
+// the live fetch and the committed snapshot so the two can never parse
+// differently.
+export function buildResultsMap(matches) {
   const map = new Map()
-  for (const m of data.matches) {
+  for (const m of matches) {
     const key = apiKey(m)
     if (!key) continue
     map.set(key, {
@@ -122,6 +115,26 @@ export async function fetchResults(signal) {
   }
   return map
 }
+
+export async function fetchResults(signal) {
+  const res = await fetch(RESULTS_SOURCE.url, { signal, cache: 'no-store' })
+  if (!res.ok) throw new Error(`Results request failed (HTTP ${res.status})`)
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error('Results response was not valid JSON')
+  }
+  // Guard against a 200 that isn't the feed we expect (e.g. an HTML error page
+  // that happens to parse) — better to surface an error than silently show none.
+  if (!Array.isArray(data.matches)) throw new Error('Results feed is missing a matches[] array')
+  return buildResultsMap(data.matches)
+}
+
+// A committed fallback, built once from the frozen snapshot in data/finalResults.js.
+// The app overlays this whenever the live fetch fails, so scores survive even if
+// OpenFootball becomes unreachable. Empty until the tournament is frozen.
+export const COMMITTED_RESULTS = buildResultsMap(FINAL_RESULTS)
 
 // Return a new matches array with API scores merged in and knockout placeholders
 // resolved to real teams where known. The static schedule is never mutated.

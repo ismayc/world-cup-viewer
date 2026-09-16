@@ -276,7 +276,7 @@ describe('App coverage', () => {
     }
   })
 
-  it('shows error state when the OpenFootball feed fails', async () => {
+  it('falls back to committed final scores when the OpenFootball feed fails', async () => {
     global.fetch = vi.fn(async (url) => {
       if (typeof url === 'string' && url.startsWith(RESULTS_SOURCE.url)) {
         return { ok: false, status: 500, json: async () => ({}) }
@@ -284,7 +284,10 @@ describe('App coverage', () => {
       return { ok: true, json: async () => ({ events: [], matches: [] }) }
     })
     render(<App />)
-    await screen.findByText(/Couldn’t reach results feed/)
+    // The live feed is down, but the committed snapshot still supplies scores,
+    // so the app never drops to "schedule only".
+    await screen.findByText(/showing committed final scores/)
+    expect(screen.queryByText(/Couldn’t reach results feed/)).toBeNull()
   })
 
   it('advances the live poll timer (30s when something is live)', async () => {
@@ -398,7 +401,10 @@ describe('App coverage', () => {
             }),
           }
         }
-        return { ok: true, json: async () => ({ events: [] }) }
+        // OpenFootball responds with no final for this in-progress match (an
+        // empty but valid feed), so applyLive can mark it live rather than the
+        // committed fallback stamping it final.
+        return { ok: true, json: async () => ({ events: [], matches: [] }) }
       })
       render(<App />)
       await vi.waitFor(() => expect(screen.getByText(/live now/)).toBeInTheDocument())
@@ -543,7 +549,10 @@ describe('App coverage', () => {
             }),
           }
         }
-        return { ok: true, json: async () => ({ events: [] }) }
+        // OpenFootball responds with no final for this in-progress match (an
+        // empty but valid feed), so applyLive can mark it live rather than the
+        // committed fallback stamping it final.
+        return { ok: true, json: async () => ({ events: [], matches: [] }) }
       })
       render(<App />)
       await vi.waitFor(() => expect(screen.getByText(/live now/)).toBeInTheDocument())
