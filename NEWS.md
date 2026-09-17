@@ -4,6 +4,18 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-17
+
+- **The knockout bracket now draws elbow connectors between rounds.** Each match
+  sits in a `flex:1` cell so a round distributes its matches evenly, a child
+  centers on the boundary between its two feeders, and 1px elbows drawn as
+  percentage-height borders trace each round to the next. The bracket is
+  two-sided, so the left half's spines point right toward the Final and the right
+  half's point left; each half is wrapped in a `display:contents` element so the
+  connectors scope correctly whatever the round count. The Final column, which
+  also holds the third-place play-off, stays standalone with no connectors. The
+  one-round-at-a-time mobile view is unchanged.
+
 ## 2026-09-15
 
 - **Committed-score fallback so results survive if the live feed goes down.** The app read
