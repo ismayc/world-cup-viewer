@@ -88,6 +88,19 @@
   box-sizing: border-box;
 }
 
+/* Respect a reduced-motion preference: stop all looping motion (the live-row
+   pulse and the other status dots). One-shot reveals still land, just instantly.
+   The specific reduced-motion rules further down still apply. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
   margin: 0;
   background: var(--page-bg);
