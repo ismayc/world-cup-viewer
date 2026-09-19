@@ -4,6 +4,14 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-09-19
+
+- **The group legend no longer explains a mark that is not on screen.** With the
+  tournament over, the standings legend still read "Provisional 3rd best-third
+  spot, not yet clinched", though no row carries that badge once every group is
+  decided. The legend now shows that item only while some row actually has the
+  mark; the rest of it is unchanged.
+
 ## 2026-09-17
 
 - **The knockout bracket now draws elbow connectors between rounds.** Each match

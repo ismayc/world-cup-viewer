@@ -550,6 +550,18 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
     else groupState[g] = 'toplay'
   }
 
+  // The "Provisional 3rd" badge is only ever drawn on a row with no clinch verdict
+  // (see the row body), and once every group is decided no row carries it. The
+  // legend followed it out of habit rather than fact: a finished tournament still
+  // read "best-third spot, not yet clinched". Explain the mark only while it is on
+  // screen.
+  // No `|| []` guard: computeQualification ranks every group of the committed
+  // table, so qual.groups[g] is always an array (an unreachable fallback would
+  // also be an uncovered branch under the 100% gate).
+  const anyProvisional = GROUPS.some((g) =>
+    qual.groups[g].some((r) => !clinchBadge(clinch?.[r.name]) && rowStatus(r, g, qual) === 'best3')
+  )
+
   return (
     <>
       <p className="standings-tip">
@@ -559,7 +571,12 @@ export default function Standings({ matches, tz, hideScores, clinch, onGoToMatch
       </p>
       <p className="standings-legend">
         <span className="legend-swatch" /> Top two advance ·{' '}
-        <span className="q-badge q-best3">Provisional 3rd</span> best-third spot, not yet clinched ·{' '}
+        {anyProvisional && (
+          <>
+            <span className="q-badge q-best3">Provisional 3rd</span> best-third spot, not yet
+            clinched ·{' '}
+          </>
+        )}
         <span
           className="legend-tb"
           tabIndex={0}

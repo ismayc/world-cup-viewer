@@ -85,6 +85,41 @@ describe('Standings', () => {
     )
   })
 
+  it('explains the provisional-third mark only while a row carries it', () => {
+    // Group A decided, the rest to play: Czechia sits third on the bubble, so the
+    // legend has a mark on screen to explain.
+    const midway = MATCHES.map((m) => {
+      if (m.stage !== 'Group' || m.group !== 'A') return m
+      const s = { 1: [2, 0], 2: [2, 0], 25: [2, 0], 28: [1, 0], 53: [0, 2], 54: [0, 1] }[m.num]
+      return { ...m, score: s }
+    })
+    const { unmount } = render(
+      <FollowProvider>
+        <Standings matches={midway} hideScores={false} />
+      </FollowProvider>,
+    )
+    expect(document.querySelector('.standings-legend').textContent).toMatch(
+      /Provisional 3rd best-third spot, not yet clinched/,
+    )
+    unmount()
+
+    // Every group played out, as in the finished edition this viewer ships: the
+    // best thirds are settled, no row carries the mark, and the legend must not
+    // still say "not yet clinched".
+    const decided = MATCHES.map((m) => (m.stage === 'Group' ? { ...m, score: [2, 0] } : m))
+    render(
+      <FollowProvider>
+        <Standings matches={decided} hideScores={false} />
+      </FollowProvider>,
+    )
+    const legend = document.querySelector('.standings-legend')
+    expect(legend.querySelector('.q-badge.q-best3')).toBeNull()
+    expect(legend.textContent).not.toMatch(/not yet clinched/)
+    // The rest of the legend is untouched.
+    expect(legend.textContent).toMatch(/Top two advance/)
+    expect(legend.textContent).toMatch(/tie-breakers/)
+  })
+
   it('tints the best-third table per clinch: bubble yellow, clinched green, out red', () => {
     // Only Group A complete → Czechia is its (sole) third-placed team, so it is
     // the lone row in the best-third table.
