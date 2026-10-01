@@ -1,5 +1,5 @@
 ---
-name: verify
+name: drive-app
 description: Build, launch, and drive the World Cup viewer app to verify a change end-to-end in a real browser.
 ---
 
