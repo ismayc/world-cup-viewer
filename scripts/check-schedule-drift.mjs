@@ -152,7 +152,12 @@ async function espnByKey() {
         const cs = c?.competitors || []
         const home = cs.find((x) => x.homeAway === 'home')?.team?.displayName
         const away = cs.find((x) => x.homeAway === 'away')?.team?.displayName
-        const t = new Date(ev.date).getTime()
+        // A kickoff ESPN has not announced (`timeValid: false`) is midnight US Eastern
+        // standing in for a time, so comparing it against the committed schedule
+        // reports a drift of several hours that nobody can act on — and would bury the
+        // real drifts this script exists to surface. No time, nothing to compare.
+        // See sports-viewer-meta/docs/LINEAGES.md §6.
+        const t = c?.timeValid === false ? NaN : new Date(ev.date).getTime()
         if (home && away && !Number.isNaN(t)) map.set(pairKey(normEspn(home), normEspn(away)), t)
       }
     } catch {

@@ -226,7 +226,12 @@ export async function fetchLive(signal, dates) {
       goals: events.goals,
       cards: events.cards,
       subs: events.subs,
-      instant: ev.date ? new Date(ev.date).getTime() : null,
+      // Only a REAL kickoff. `timeValid: false` means ESPN has set the DATE and sends
+      // midnight US Eastern in place of the time; matching a knockout fixture on that
+      // instant would pair it with whatever else shares the placeholder, and anything
+      // reading it as a kickoff gets a time nobody announced, on the previous evening
+      // west of Eastern. See sports-viewer-meta/docs/LINEAGES.md §6.
+      instant: ev.date && comp.timeValid !== false ? new Date(ev.date).getTime() : null,
     }
     // Penalty shootout, if ESPN exposes it (knockouts).
     const hp = toNum(home.shootoutScore)
