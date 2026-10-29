@@ -25,4 +25,14 @@ describe('LiveBadge', () => {
     expect(badge).toHaveAttribute('title', 'Live')
     expect(badge).toHaveClass('custom')
   })
+
+  // Spoiler-free mode: a stoppage minute or an ET clock says the match went long.
+  it('shows only LIVE, with no clock or tooltip detail, when scores are hidden', () => {
+    render(<LiveBadge match={{ live: { clock: "ET 105’", detail: 'Extra Time 105’' } }} hideScores />)
+    const badge = screen.getByRole('status')
+    expect(badge).toHaveTextContent('● LIVE')
+    expect(badge.textContent).not.toMatch(/ET|105/)
+    expect(badge).toHaveAttribute('aria-label', 'Live')
+    expect(badge).toHaveAttribute('title', 'Live')
+  })
 })

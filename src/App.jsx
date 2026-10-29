@@ -694,7 +694,7 @@ export default function App() {
 
       {view === 'schedule' && (
         <>
-          <NextMatch matches={displayMatches} tz={tz} />
+          <NextMatch matches={displayMatches} tz={tz} hideScores={hideScores} />
           {hiddenStageNotes.map((s) => (
             <p key={s.stage} className="schedule-note">
               {s.title} complete — {s.count} {s.noun}

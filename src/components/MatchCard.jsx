@@ -138,7 +138,7 @@ export default function MatchCard({ match, tz, feed = 'both', hidden = false, cl
                 a match with a final score reads FT even if still inside the window.
                 A paused (delayed/suspended) match shows the LiveBadge, not a countdown. */}
             {match.live ? (
-              <LiveBadge match={match} />
+              <LiveBadge match={match} hideScores={hidden && !revealScore} />
             ) : status === 'live' ? (
               // Past kickoff but ESPN isn't ticking minutes yet → show "Delayed",
               // not a bare "LIVE". Once ESPN sends a clock the match.live branch

@@ -131,7 +131,7 @@ export default function MatchDetail({ match, tz, hideScores, allMatches, onClose
               {flag.label === 'Abandoned' || flag.label === 'Canceled' ? '⚠' : '⏸'} {flag.label}
             </span>
           ) : match.live ? (
-            <LiveBadge match={match} className="md-live" />
+            <LiveBadge match={match} className="md-live" hideScores={hideScores} />
           ) : (
             // In-window but ESPN isn't ticking yet → delayed, not live.
             status === 'live' && <span className="badge-delayed" role="status">⏸ Delayed</span>

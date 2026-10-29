@@ -56,6 +56,14 @@ describe('Bracket', () => {
     expect(screen.queryByText('3–0')).not.toBeInTheDocument()
   })
 
+  it('shows only LIVE on a live tie when hideScores is set', () => {
+    const live = MATCHES.map((m) => (m.num === 74 ? { ...m, live: { clock: "ET 105’", detail: "ET 105’" } } : m))
+    renderBracket(live, { hideScores: true })
+    const badge = document.querySelector('#bx-m74 .badge-live')
+    expect(badge.textContent).toBe('● LIVE')
+    expect(badge.getAttribute('title')).toBe('Live')
+  })
+
   it('opens detail on click and on keyboard activation', () => {
     const { openDetail } = renderBracket(MATCHES)
     const card = document.getElementById('bx-m74')

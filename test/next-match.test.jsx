@@ -6,11 +6,11 @@ import { MATCHES } from '../src/data/matches.js'
 
 const TZ = 'America/New_York'
 
-function renderNM(matches, followedTeams = []) {
+function renderNM(matches, followedTeams = [], hideScores = false) {
   localStorage.setItem('wc2026:followed', JSON.stringify(followedTeams))
   return render(
     <FollowProvider>
-      <NextMatch matches={matches} tz={TZ} />
+      <NextMatch matches={matches} tz={TZ} hideScores={hideScores} />
     </FollowProvider>,
   )
 }
@@ -46,6 +46,34 @@ describe('NextMatch', () => {
     expect(screen.getByText('Argentina')).toBeInTheDocument()
     expect(screen.getByText('2026 World Champions!')).toBeInTheDocument()
     expect(screen.getByText(/Runners-up:.*France/)).toBeInTheDocument()
+  })
+
+  // The champion is the biggest spoiler: hidden mode keeps the generic line.
+  it('does not crown the champion in spoiler-free mode', () => {
+    vi.setSystemTime(new Date('2026-08-01T00:00:00Z'))
+    const final = {
+      num: 104,
+      stage: 'Final',
+      t1: 'Argentina',
+      t2: 'France',
+      venue: 'metlife',
+      ko: '2026-07-19T15:00:00-04:00',
+      score: [3, 2],
+    }
+    renderNM([final], [], true)
+    expect(screen.queryByText('Argentina')).toBeNull()
+    expect(screen.queryByText(/Runners-up/)).toBeNull()
+    expect(screen.getByText(/tournament has concluded/)).toBeInTheDocument()
+  })
+
+  it('shows only LIVE, never the minute, on a live stack in spoiler-free mode', () => {
+    vi.setSystemTime(new Date('2026-06-24T20:00:00Z'))
+    const g = MATCHES.filter((m) => m.stage === 'Group').slice(0, 2)
+    const live = g.map((m) => ({ ...m, ko: '2026-06-24T19:30:00Z', live: { clock: "90+3’", detail: "90+3’" } }))
+    const { container } = renderNM(live, [], true)
+    const badges = [...container.querySelectorAll('.badge-live')]
+    expect(badges.length).toBeGreaterThan(0)
+    for (const b of badges) expect(b.textContent).toBe('● LIVE')
   })
 
   it('falls back to the generic message when the Final is not yet decided', () => {

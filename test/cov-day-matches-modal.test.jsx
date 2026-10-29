@@ -62,6 +62,14 @@ describe('DayMatchesModal (coverage)', () => {
     expect(screen.queryByRole('button', { name: /Reveal scores/ })).not.toBeInTheDocument()
   })
 
+  it('shows only LIVE until the day is revealed', () => {
+    const live = { ...GROUP_MATCH, live: { clock: "90+3’", detail: "90+3’" } }
+    renderModal({ matches: [live], hideScores: true })
+    expect(document.querySelector('.badge-live').textContent).toBe('● LIVE')
+    fireEvent.click(screen.getByRole('button', { name: /Reveal scores/ }))
+    expect(document.querySelector('.badge-live').textContent).toBe("● 90+3’")
+  })
+
   it('opens detail (and closes itself) when a row is clicked', () => {
     const m = { ...GROUP_MATCH, score: [1, 0] }
     const { openDetail, onClose } = renderModal({ matches: [m] })

@@ -39,6 +39,13 @@ describe('WeekView', () => {
     expect(screen.queryByText('3–0')).not.toBeInTheDocument()
   })
 
+  it('shows only LIVE on a hidden day, never the minute', () => {
+    const m = { ...MATCHES.find((x) => x.stage === 'Group'), live: { clock: "ET 105’", detail: "ET 105’" } }
+    renderWeek({ allMatches: [m], shown: [m], dayHidden: () => true })
+    expect(document.querySelector('.wc-live').textContent).toBe('● LIVE')
+    expect(document.querySelector('.wc-live').getAttribute('title')).toBe('Live')
+  })
+
   // Pinned mid-tournament so BOTH arrows are live. WeekView mounts on the week
   // containing today; on the real clock that's the last week, where `Next ▶` is
   // disabled and the forward click is a silent no-op.

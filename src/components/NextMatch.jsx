@@ -17,7 +17,7 @@ function parts(ms) {
   }
 }
 
-export default function NextMatch({ matches, tz }) {
+export default function NextMatch({ matches, tz, hideScores = false }) {
   const { isFollowed, count } = useFollow()
   const [now, setNow] = useState(() => Date.now())
 
@@ -62,7 +62,8 @@ export default function NextMatch({ matches, tz }) {
     // Tournament over: crown the winner of the Final if it's decided, otherwise
     // fall back to a generic message (final not yet recorded).
     const final = matches.find((m) => m.stage === 'Final')
-    const result = final ? decideMatch(final) : null
+    // The champion is the biggest spoiler, so spoiler-free mode keeps the generic line.
+    const result = final && !hideScores ? decideMatch(final) : null
     if (result?.winner) {
       return (
         <div className="nextmatch done nextmatch-champ">
@@ -102,7 +103,7 @@ export default function NextMatch({ matches, tz }) {
               <span className="nm-v">vs</span>
               <span className="nm-row-name">{m.t2}</span>
               <span className="nm-flag">{FLAG_BY_TEAM[m.t2] || '•'}</span>
-              <LiveBadge match={m} />
+              <LiveBadge match={m} hideScores={hideScores} />
               <span className="nm-when">{st} · {v.city}</span>
             </button>
           )

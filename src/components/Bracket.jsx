@@ -92,7 +92,7 @@ function BracketMatch({ num, byNum, tz, hideScores, pathTeam, path }) {
           <span className="status-badge" role="status" aria-label={flag.label}>
             {flag.label === 'Abandoned' || flag.label === 'Canceled' ? '⚠' : '⏸'} {flag.label}
           </span>
-        ) : m.live ? <LiveBadge match={m} /> : (
+        ) : m.live ? <LiveBadge match={m} hideScores={hideScores} /> : (
           <span>
             {date} · {formatTime(m.ko, tz)} {tzAbbrev(m.ko, tz)}
           </span>

@@ -210,6 +210,14 @@ describe('MatchDetail live states', () => {
     expect(screen.getByText(/Match 28/)).toBeInTheDocument()
   })
 
+  it('shows only LIVE (no clock) in the head while scores are hidden', () => {
+    const m = { ...groupMatch, live: { clock: "ET 105’", detail: "ET 105’" } }
+    const { container } = renderDetail({ match: m, hideScores: true })
+    const badge = container.querySelector('.md-live')
+    expect(badge.textContent).toBe('● LIVE')
+    expect(badge.getAttribute('title')).toBe('Live')
+  })
+
   it('renders "Delayed" (not LIVE) when inside the window but no live feed yet', () => {
     vi.useFakeTimers()
     try {

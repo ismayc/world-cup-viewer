@@ -60,7 +60,7 @@ function WeekCell({ m, tz, hidden, byNum }) {
         ) : (
           <>
             {formatTime(m.ko, tz)}
-            {m.live && <LiveBadge match={m} className="wc-live" />}
+            {m.live && <LiveBadge match={m} className="wc-live" hideScores={hidden} />}
           </>
         )}
       </div>

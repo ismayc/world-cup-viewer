@@ -69,7 +69,7 @@ function DayRow({ match, tz, scoreHidden, onOpen, byNum }) {
         </span>
         <span className="dm-status">
           {match.live ? (
-            <LiveBadge match={match} />
+            <LiveBadge match={match} hideScores={scoreHidden} />
           ) : voided ? (
             <span className="gg-badge gg-voided">{flag.label}</span>
           ) : state === 'finished' ? (

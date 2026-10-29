@@ -33,6 +33,27 @@ beforeEach(() => {
   global.URL.revokeObjectURL = vi.fn()
 })
 
+describe('MatchCard spoiler-free live badge', () => {
+  it('shows only LIVE (no minute or tooltip) while the card is hidden', () => {
+    const live = { ...groupMatch, live: { clock: "90+3’", detail: "90+3’" } }
+    const { container, unmount } = renderCard({ match: live, hidden: true })
+    const badge = container.querySelector('.badge-live')
+    expect(badge.textContent).toBe('● LIVE')
+    expect(badge.getAttribute('title')).toBe('Live')
+    unmount()
+    const shown = renderCard({ match: live }).container.querySelector('.badge-live')
+    expect(shown.textContent).toBe("● 90+3’")
+  })
+
+  it('brings the minute back once the card’s score is revealed', () => {
+    const live = { ...groupMatch, live: { clock: "90+3’", detail: "90+3’" }, score: [1, 1] }
+    const { container } = renderCard({ match: live, hidden: true })
+    expect(container.querySelector('.badge-live').textContent).toBe('● LIVE')
+    fireEvent.click(screen.getByTitle('Reveal score'))
+    expect(container.querySelector('.badge-live').textContent).toBe("● 90+3’")
+  })
+})
+
 describe('MatchCard rendering states', () => {
   it('renders an upcoming group match with the "v" separator and no badge', () => {
     vi.useFakeTimers()

@@ -76,6 +76,14 @@ describe('GroupGamesModal (coverage)', () => {
     expect(screen.queryByRole('button', { name: /Reveal scores/ })).not.toBeInTheDocument()
   })
 
+  it('shows only LIVE until the scores are revealed', () => {
+    const matches = MATCHES.map((m) => (m.num === 1 ? { ...m, live: { clock: "ET 105’", detail: "ET 105’" } } : m))
+    renderModal({ matches, hideScores: true })
+    expect(document.querySelector('.badge-live').textContent).toBe('● LIVE')
+    fireEvent.click(screen.getByRole('button', { name: /Reveal scores/ }))
+    expect(document.querySelector('.badge-live').textContent).toBe("● ET 105’")
+  })
+
   it('opens the detail modal (and closes itself) when a fixture row is clicked', () => {
     // Covers the openMatch path: onClose() then openDetail(m).
     const matches = MATCHES.map((m) => (m.num === 1 ? { ...m, score: [1, 0] } : m))

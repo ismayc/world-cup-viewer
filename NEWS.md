@@ -4,6 +4,18 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-10-29
+
+- **Spoiler-free mode no longer gives away extra time or the champion.** With scores
+  hidden, a live match still showed its minute (a stoppage-time clock like "90+3'" or an
+  "ET 105'" badge says the match went past full time) and the badge tooltip repeated
+  ESPN's clock. Live badges now read only "LIVE" while scores are hidden on the match
+  card, the Week view, the day and group pop-ups, the next-match banner, the bracket,
+  and the match detail header. In the pop-ups, "Reveal scores" brings the clock back.
+  The next-match banner also stopped crowning the champion and naming the runners-up
+  while scores are hidden. Finals already read plain "FT" and kept AET and penalties
+  behind the score.
+
 ## 2026-09-19
 
 - **The group legend no longer explains a mark that is not on screen.** With the
