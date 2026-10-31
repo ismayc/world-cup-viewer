@@ -437,6 +437,61 @@ describe('App coverage', () => {
     }
   })
 
+  it('raises no goal toast and no browser notification in spoiler-free mode', async () => {
+    const made = []
+    class FakeNotification {
+      static permission = 'granted'
+      static requestPermission = vi.fn(async () => 'granted')
+      constructor(title) {
+        made.push(title)
+      }
+    }
+    global.Notification = FakeNotification
+    window.Notification = FakeNotification
+    window.history.replaceState(null, '', '/?hide=1')
+    localStorage.setItem('wc2026:goalAlerts', JSON.stringify({ enabled: true, scope: 'all' }))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-11T19:00:00Z'))
+    try {
+      let goals = []
+      global.fetch = vi.fn(async (url) => {
+        if (typeof url === 'string' && url.startsWith(LIVE_SOURCE.url)) {
+          return {
+            ok: true,
+            json: async () => ({
+              events: [
+                espnEvent({
+                  home: 'Mexico',
+                  away: 'South Africa',
+                  date: '2026-06-11T19:00:00Z',
+                  state: 'in',
+                  hs: String(goals.length),
+                  as: '0',
+                  goals,
+                }),
+              ],
+            }),
+          }
+        }
+        return { ok: true, json: async () => ({ events: [], matches: [] }) }
+      })
+      render(<App />)
+      await vi.waitFor(() => expect(screen.getByText(/live now/)).toBeInTheDocument())
+
+      goals = [{ side: 'home', name: 'First', minute: 12 }]
+      await vi.advanceTimersByTimeAsync(31000)
+      // The poll after the goal has landed (the feed was asked again) ...
+      expect(global.fetch.mock.calls.some(([u]) => String(u).startsWith(LIVE_SOURCE.url))).toBe(true)
+      // ... and still nothing names the scorer, on the page or in the OS.
+      expect(screen.queryByRole('region', { name: /Goal alerts/ })?.textContent ?? '').not.toMatch(/First/)
+      expect(made).toEqual([])
+    } finally {
+      vi.useRealTimers()
+      delete global.Notification
+      delete window.Notification
+    }
+  })
+
   it('toggleGoalAlerts: granted -> enables, scope select, toggle scope, disable', async () => {
     class FakeNotification {
       static permission = 'granted'

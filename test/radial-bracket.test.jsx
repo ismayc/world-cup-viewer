@@ -363,3 +363,38 @@ describe('RadialBracket — the third-place section, and a champion off the boar
     expect(container.querySelector('.on-trail')).toBeNull()
   })
 })
+
+describe('RadialBracket: spoiler-free mode hides who advanced', () => {
+  it('leaves the winner rings, the champion, and the knocked-out fade off', () => {
+    const { container } = render(
+      <FollowProvider>
+        <DetailContext.Provider value={() => {}}>
+          <RadialBracket matches={playedBracket()} hideScores />
+        </DetailContext.Provider>
+      </FollowProvider>,
+    )
+    expect(container.querySelector('.rb-champ')).toBeNull()
+    expect(container.querySelectorAll('.champ-trail').length).toBe(0)
+    expect(container.querySelectorAll('.rb-node.out').length).toBe(0)
+    expect(container.textContent).not.toMatch(/Champions/)
+  })
+
+  it("leaves the third-place pair (the semifinal losers) empty", () => {
+    const draw = (hide) =>
+      render(
+        <FollowProvider>
+          <DetailContext.Provider value={() => {}}>
+            <RadialBracket matches={playedBracket()} hideScores={hide} />
+          </DetailContext.Provider>
+        </FollowProvider>,
+      ).container
+    // The third-place flags sit on the same row as its "vs".
+    const thirdFlags = (c) => {
+      const y = c.querySelector('.rb-3rd-vs').getAttribute('y')
+      return [...c.querySelectorAll('.rb-flag-bg')].filter((n) => n.getAttribute('cy') === y).length
+    }
+    // Premise: with scores shown, both third-place flags are drawn.
+    expect(thirdFlags(draw(false))).toBe(2)
+    expect(thirdFlags(draw(true))).toBe(0)
+  })
+})

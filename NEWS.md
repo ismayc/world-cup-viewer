@@ -4,6 +4,17 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-10-31
+
+- **Spoiler-free mode no longer raises goal alerts.** A goal alert names the scorer and
+  the score, so with scores hidden the viewer raises no goal toast and no browser
+  notification. The alerts start again when scores are shown, without replaying the
+  goals already scored.
+- **The circular bracket no longer shows the third-place pair while scores are
+  hidden.** The two teams in the third-place play-off are the semifinal losers, so
+  spoiler-free mode leaves both spots empty, and it now also leaves the winner rings,
+  the champion, and the knocked-out fade off.
+
 ## 2026-10-29
 
 - **Spoiler-free mode no longer gives away extra time or the champion.** With scores

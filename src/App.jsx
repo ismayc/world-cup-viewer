@@ -327,7 +327,9 @@ export default function App() {
       followed,
     })
     goalSnapRef.current = next
-    if (!goalAlerts.enabled || events.length === 0) return
+    // Spoiler-free mode raises no goal alerts at all: a goal alert is a score. The
+    // snapshot still advances, so turning spoilers back on does not replay them.
+    if (!goalAlerts.enabled || hideScores || events.length === 0) return
     // Defense-in-depth: a healthy poll yields at most a couple of new goals. A
     // large batch means the snapshot desynced (e.g. a feed gap restoring many
     // matches at once) — suppress rather than spam. The snapshot is already
@@ -360,7 +362,7 @@ export default function App() {
         /* some browsers throw if constructed outside a SW; ignore */
       }
     }
-  }, [matches, goalAlerts, followed])
+  }, [matches, goalAlerts, followed, hideScores])
 
   // Turn goal alerts on/off. Toasts work regardless of Notification permission,
   // so enabling never blocks on it — but we still ask (from this user gesture,
@@ -830,7 +832,7 @@ export default function App() {
         </p>
       </footer>
 
-      <GoalToasts items={toasts} onOpen={setDetailMatch} onDismiss={dismissToast} />
+      <GoalToasts items={hideScores ? [] : toasts} onOpen={setDetailMatch} onDismiss={dismissToast} />
 
       {detailMatch && (
         <MatchDetail
