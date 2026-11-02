@@ -4,6 +4,11 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-11-02
+
+- **The Week view fits a phone.** It shows one day per row and drops days with no matches. Seven side-by-side columns used to cut long team names in half, and a week whose games came late opened on blank columns.
+- **The Golden Boot table stays on the screen on a small phone.** It no longer pushes the page sideways at 320px.
+
 ## 2026-10-31
 
 - **Spoiler-free mode no longer raises goal alerts.** A goal alert names the scorer and

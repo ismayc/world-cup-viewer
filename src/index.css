@@ -2984,3 +2984,35 @@ select {
 th.pd-num, td.pd-num { text-align: right; width: 46px; }
 td.pd-num { color: var(--text-dim); font-weight: 600; }
 .pd-note { margin: 10px 0 0; font-size: 0.7rem; color: var(--text-faint); }
+
+/* Phone week: one day per row, matchless days dropped. Seven 116px columns cut names to
+   half their length, and a week whose games come late opened on three blank columns with
+   its matches off the right edge (November 2, 2026). */
+@media (max-width: 560px) {
+  .week-grid {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: visible;
+  }
+  .week-col.empty {
+    display: none;
+  }
+  .week-col {
+    min-height: 0;
+  }
+}
+
+/* Golden Boot on a small phone: tighter cells, and a scroller as the backstop, so the
+   table never pushes the page sideways (November 2, 2026). */
+@media (max-width: 360px) {
+  .boot-section {
+    overflow-x: auto;
+  }
+  .boot-table {
+    font-size: 0.8rem;
+  }
+  .boot-table th,
+  .boot-table td {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}
