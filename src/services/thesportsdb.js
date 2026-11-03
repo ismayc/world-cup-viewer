@@ -24,7 +24,7 @@ export const BACKUP_SOURCE = {
 }
 
 // Per-day results endpoint for one calendar date (YYYY-MM-DD).
-export const sdbDayUrl = (d) => `https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${d}&l=4429`
+export const sdbDayUrl = (d) => `https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d=${d}&l=4429`
 
 // Calendar dates (YYYY-MM-DD) from `spread` days before `base` to `spread` after
 // — the small window we poll, matching ESPN's 3-day scoreboard window.

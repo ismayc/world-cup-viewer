@@ -72,3 +72,13 @@ describe('sdbFinalScore (getter for the reconciler)', () => {
     expect(sdbFinalScore(match1, final)).toEqual({ home: 'Mexico', away: 'South Africa', ft: [2, 1] })
   })
 })
+
+// TheSportsDB permanently disabled key 3: every request answers 403 with a plain-text
+// notice, so the cross-check went quiet with no error anyone would see (found November 2,
+// 2026). The notice names 123 as the free test key.
+describe('sdbDayUrl', () => {
+  it('uses the free test key, not the disabled one', async () => {
+    const { sdbDayUrl } = await import('../src/services/thesportsdb.js')
+    expect(sdbDayUrl('2026-06-20')).toContain('/api/v1/json/123/eventsday.php?d=2026-06-20')
+  })
+})

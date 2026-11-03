@@ -6,6 +6,7 @@ data/source updates, deployment). Newest day on top.
 
 ## 2026-11-02
 
+- **The TheSportsDB score cross-check works again.** TheSportsDB permanently disabled the key this viewer used, so every request failed with no visible error. It now uses the free test key.
 - **The Week view fits a phone.** It shows one day per row and drops days with no matches. Seven side-by-side columns used to cut long team names in half, and a week whose games came late opened on blank columns.
 - **The Golden Boot table stays on the screen on a small phone.** It no longer pushes the page sideways at 320px.
 
