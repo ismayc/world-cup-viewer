@@ -24,8 +24,9 @@ city/stadium, a bracket, group standings, and live results.
 - **Goal alerts** — opt-in 🔔 browser notifications when a goal is scored (scorer,
   minute, and the running score), scoped to your followed teams or all matches.
   Fires while the app is open in a tab (no backend, so no background push).
-- **Four views** — chronological schedule, a Sunday–Saturday week calendar,
-  group standings, and the knockout bracket.
+- **Eight views** — chronological schedule, a Sunday–Saturday week calendar,
+  group standings, Scenarios, R32 Outlook, the knockout bracket, a radial bracket,
+  and tournament stats. The two group-stage tools retire once the group stage is over.
 - **Phone-friendly schedule** — past days collapse to tappable headers by default
   (or hide entirely), so the schedule opens on today's games instead of a long
   scroll.
@@ -74,7 +75,8 @@ city/stadium, a bracket, group standings, and live results.
   centre celebrate the winner (never in spoiler-free mode).
 - **Add to calendar** — per-match `.ics` download, plus a `webcal://`
   subscription feed (all matches or just your teams) that auto-updates.
-- **Spoiler-free mode** — hide scores globally, per day, or per match.
+- **Spoiler-free mode** — hide scores globally, per day, or per match. It also
+  hides the live clock, goal alerts, and the champion.
 - **Light/dark theme** — follows your system preference, with no flash on load.
 - **Shareable URLs** — view, timezone, spoiler mode, and filters persist to the
   query string; links unfurl with a title/description preview in chat apps.
@@ -110,7 +112,7 @@ projection and bracket-resolution layers to the views.
 
 The schedule data is validated against external sources and frozen into
 [`test/fixtures/official-kickoffs.js`](./test/fixtures/official-kickoffs.js).
-The test suite (75 tests) asserts every match's kickoff (to the minute, in
+The test suite asserts every match's kickoff (to the minute, in
 Eastern Time), venue, knockout-bracket slot, and group-draw assignment matches
 the official schedule, plus structural invariants (complete round-robins,
 simultaneous final-matchday kickoffs, no team double-booked, valid bracket
@@ -121,9 +123,9 @@ Sports (group draw).
 **Reschedule monitoring.** Because stored kickoffs are static, they're also
 re-validated continuously against **FIFA's official data API** (the authority),
 with ESPN, TheSportsDB and OpenFootball as corroboration — every group match,
-matched by team pair. It runs hourly as a red-build backstop and each morning
-(05:00 MST, before kickoff) as an emailed report. If FIFA's time no longer matches
-ours, the daily check rewrites both `src/data/matches.js` and the kickoff fixture
+matched by team pair. The hourly and daily runs were retired on July 20, 2026, so
+these checks now run on manual dispatch only. When run, if FIFA's time no longer
+matches ours, the schedule check rewrites both `src/data/matches.js` and the kickoff fixture
 to FIFA's time and opens a ready-to-merge PR, so a reschedule (like M32 moving an
 hour earlier) can't slip by unnoticed. See `npm run check:schedule`.
 
@@ -183,15 +185,14 @@ one (a disagreement, or a knockout whose goals can't be reconciled, is left for
 manual review rather than written as a bare score). All of that formatting/placement logic lives in
 [`scripts/cuptxt.mjs`](./scripts/cuptxt.mjs) and is unit-tested
 ([`test/cuptxt.test.js`](./test/cuptxt.test.js)). The
-[workflow](./.github/workflows/openfootball-autofill.yml) runs it at ~5-minute
-cadence, but **only while matches are finishing** — a coarse `*/15` trigger spins
-the job up and it self-loops every ~5 min while "now" is inside a match's
+[workflow](./.github/workflows/openfootball-autofill.yml) has run on manual
+dispatch only since July 20, 2026. When run, it works **only while matches are finishing**: the job
+self-loops every ~5 min while "now" is inside a match's
 finishing window (late second half through post-match confirmation, see
 [`scripts/active-window.mjs`](./scripts/active-window.mjs)); outside those windows
-it checks and exits in seconds. Because GitHub's scheduler is unreliable
-(it can go ~2h between firings), a loop run also **re-dispatches the next one**
-while another window is near, so coverage during a match day is self-sustaining
-and doesn't depend on the cron (which is just a backstop); see
+it checks and exits in seconds. While the cron ran, GitHub's scheduler was
+unreliable (it could go ~2h between firings), so a loop run also **re-dispatched the
+next one** while another window was near; see
 [`docs/autofill-scheduling.md`](./docs/autofill-scheduling.md). The scripts use
 only Node built-ins + repo source — no `npm ci`. It needs an `OF_PUSH_TOKEN`
 secret (push to `openfootball/worldcup`); without it — or with `DRY_RUN=1` — it
@@ -209,7 +210,7 @@ See [`NEWS.md`](./NEWS.md) for the changelog.
 
 ## Credits
 
-Created by [Chester Ismay](https://chester.rbind.io). Source on
+Created by [Chester Ismay](https://chesterismay.com). Source on
 [GitHub](https://github.com/ismayc/world-cup-viewer).
 
 The soccer ball in the app icons and share image is from

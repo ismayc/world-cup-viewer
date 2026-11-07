@@ -4,6 +4,10 @@ A dated changelog for the World Cup 2026 Schedule Viewer. Each heading is a
 calendar day; bullet points capture every change made that day (features, fixes,
 data/source updates, deployment). Newest day on top.
 
+## 2026-11-07
+
+- **The README is up to date again.** It now lists all eight views, says the schedule monitors and the autofill run on manual dispatch only, drops the stale test count, covers the wider spoiler-free mode, and points to chesterismay.com.
+
 ## 2026-11-02
 
 - **The TheSportsDB score cross-check works again.** TheSportsDB permanently disabled the key this viewer used, so every request failed with no visible error. It now uses the free test key.
