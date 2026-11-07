@@ -99,6 +99,7 @@ npm run dev      # http://localhost:5173
 npm run build    # production build to dist/
 npm run preview  # preview the production build
 npm test         # run the Vitest suite
+npm run check:bracket  # our resolved knockout matchups must match OpenFootball's
 ```
 
 Every push runs the tests + build in GitHub Actions; pushes to `main` deploy to
@@ -142,7 +143,9 @@ under the spellings the result-contribution autofill expects.
   match schedule (see *Schedule accuracy* above).
 - **Broadcast** — FOX Sports / NBCUniversal (Telemundo) US rights.
 - **Results (source of record)** — OpenFootball `worldcup.json` (public domain),
-  post-match final scores and goal timelines.
+  post-match final scores and goal timelines. A frozen copy ships in
+  `src/data/finalResults.js` (regenerate it with `scripts/freeze-results.mjs`), so if the
+  live fetch fails, the app shows the committed scores and the status bar says so.
 - **Live in-match scores** — ESPN's public scoreboard API (free, no API key,
   CORS-open). Used only while a match is underway, or just finished and
   OpenFootball hasn't posted yet; OpenFootball always wins once it has the score.
