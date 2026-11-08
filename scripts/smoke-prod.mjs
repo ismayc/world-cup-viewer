@@ -71,11 +71,21 @@ function declaredUrls() {
 // lives on the .netlify.app host even in the repos whose og tags point at GitHub
 // Pages: Pages runs no functions and can only 404 there. `PROD` in
 // CalendarModal.jsx is the app's own answer for where it tells users to
-// subscribe, so it is the right thing to test.
+// subscribe, so it is the right thing to test. Most repos set it as
+// `const PROD = LEAGUE.feedHost`, a reference the old literal-only match could
+// not read, so until November 8, 2026 nine of the ten repos with a feed skipped
+// this check and reported green. The host is now read from either place, and a
+// repo with a feed function but no readable host FAILS instead of skipping.
 function feedUrl() {
   if (!existsSync(join(ROOT, 'netlify/functions'))) return null
-  const m = read('src/components/CalendarModal.jsx').match(/const PROD = '([^']+)'/)
-  return m ? `${m[1].replace(/\/$/, '')}/calendar.ics` : null
+  const literal = read('src/components/CalendarModal.jsx').match(/const PROD = '([^']+)'/)
+  const config = read('src/config/league.js').match(/feedHost:\s*'([^']+)'/)
+  const host = literal?.[1] || config?.[1]
+  if (!host) {
+    record(false, 'calendar feed host', 'netlify/functions exists, but no `const PROD` or `feedHost` names the host')
+    return null
+  }
+  return `${host.replace(/\/$/, '')}/calendar.ics`
 }
 
 // ---------------------------------------------------------------------------
